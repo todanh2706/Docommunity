@@ -3,7 +3,7 @@ version: "3.9"
 services:
   postgres:
     image: postgres:16
-    container_name: badminton-db
+    container_name: writexploit_db
     restart: always
     environment:
       POSTGRES_USER: writexploit
