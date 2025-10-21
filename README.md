@@ -1,2 +1,2 @@
-# WriteExploit
+# WritExploit
 Hello world!
