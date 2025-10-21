@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: badminton-db
+    restart: always
+    environment:
+      POSTGRES_USER: writexploit
+      POSTGRES_PASSWORD: "123"
+      POSTGRES_DB: writexploit
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: writexploit_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    command: npm start
+
+  frontend:
+    build: ./frontend
+    container_name: writexploit_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -1,0 +1,21 @@
+# confidentialities & configurations
+**/.env
+*.log
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# frontend ignore
+frontend/node_modules
+frontend/dist
+frontend/build
+frontend/.vite
+
+#backend ignore
+backend/target
+backend/.mvn
+
+# other
+.vscode/
+.DS_Store
+Thumbs.db
