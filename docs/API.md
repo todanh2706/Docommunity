@@ -17,7 +17,7 @@
 
 ## 🔐 Authentication
 
-### Register
+### Register (checked)
 
 <details>
  <summary><code>POST</code> <code><b>auth/register</b></code> <code>(Create new user)</code></summary>
@@ -26,22 +26,23 @@
 
 > | name       | type      | data type | description        |
 > |------------|-----------|-----------|--------------------|
-> | `email`    | required  | string    | User email         |
-> | `password` | required  | string    | User password      |
-> | `name`     | optional  | string    | Display name       |
-
+> | `username`    | required  | string    | Username  |
+> | `password` | required  | string    | Password      |
+> | `fullname`     | required  | string    | Display name       |
+> | `phone`     | required  | string    | Phone number       |
+> | `email`    | required  | string    | User email  
 ##### Responses
 
 > | http code | content-type            | response                                               |
 > |-----------|-------------------------|--------------------------------------------------------|
-> | `201`     | `application/json`      | `{ "message": "Account created", "userId": "u_123" }`  |
+> | `201`     | `application/json`      | `{ "message": "Account created", "userId": "123" }`  |
 > | `400`     | `application/json`      | `{ "error": "Invalid input" }`                         |
 
 </details>
 
 ---
 
-### Login
+### Login (checked)
 
 <details>
  <summary><code>POST</code> <code><b>auth/login</b></code> <code>(Authenticate & issue JWT)</code></summary>
@@ -50,8 +51,8 @@
 
 > | name       | type      | data type | description       |
 > |------------|-----------|-----------|-------------------|
-> | `email`    | required  | string    | User email        |
-> | `password` | required  | string    | User password     |
+> | `username`    | required  | string    | Username        |
+> | `password` | required  | string    |Password     |
 
 ##### Responses
 
@@ -173,9 +174,9 @@
 
 ------------------------------------------------------------------------------------------
 
-## 📝 Notes (CRUD)
+## 📝 Notes (CRUD) 
 
-### Create Note
+### Create Note (checked)
 
 <details>
  <summary><code>POST</code> <code><b>/notes</b></code> <code>(Create new note)</code></summary>
