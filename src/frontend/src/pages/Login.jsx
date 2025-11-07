@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { TypeAnimation } from 'react-type-animation';
-import useLogin from '../hooks/useLogin.js';
+import useAuth from '../hooks/useAuth.js';
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,7 +9,7 @@ export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const { login, isLoading, error } = useLogin();
+    const { login, isLoading, error } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -25,7 +25,7 @@ export default function Login() {
         <div className='h-screen w-screen bg-[url(/bg.gif)] bg-cover flex justify-center items-center animate-gradient'>
             <div className='absolute top-0 left-0 p-8'>
                 <img
-                    className='aspect-auto w-30 h-auto'
+                    className='aspect-auto w-40 h-auto'
                     src='/logo.png'
                 />
             </div>
