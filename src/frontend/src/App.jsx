@@ -6,6 +6,13 @@ import './App.css'
 import { Routes, Route, BrowserRouter, useLocation, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Home from './pages/Home';
+import Bookmark from './pages/Home/Bookmark';
+import Tagslist from './pages/Home/Tagslist';
+import Myworkspace from './pages/Home/Myworkspace';
+import Myteam from './pages/Home/Myteam';
+import Mytrash from './pages/Home/Mytrash';
+import Community from './pages/Home/Community'
 
 function AppRoutes() {
   const location = useLocation();
@@ -14,6 +21,13 @@ function AppRoutes() {
       <Route path='/' element={<Navigate to='/login' replace />} />
       <Route path='/login' element={<Login />} />
       <Route path='/register' element={<Register />} />
+      <Route path='/home' element={<Home />} />
+      <Route path='/home/bookmark' element={<Bookmark />} />
+      <Route path='/home/tagslist' element={<Tagslist />} />
+      <Route path='/home/community' element={<Community />} />
+      <Route path='/home/myworkspace' element={<Myworkspace />} />
+      <Route path='/home/myteam' element={<Myteam />} />
+      <Route path='/home/mytrash' element={<Mytrash />} />
     </Routes >
   );
 }

@@ -23,12 +23,9 @@ export default function Login() {
                             wrapper='h1'
                             speed={40}
                             className='text-4xl font-mono tracking-tight text-blue-500 bg-clip-text'
-                            // [&>span:last-child]:text-white'
                             repeat={Infinity}
                             cursor={true}
                         />
-
-
 
                         <p className='mt-3 text-lg text-gray-400'>
                             The Markdown editor you can share!
