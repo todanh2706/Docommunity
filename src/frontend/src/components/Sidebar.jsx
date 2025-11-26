@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     LuChevronsLeft,
@@ -13,8 +12,7 @@ import {
 } from 'react-icons/lu';
 import { BsPersonWorkspace } from 'react-icons/bs';
 
-export default function Sidebar() {
-    const [showSidebar, setShowSidebar] = useState(true);
+export default function Sidebar({ showSidebar, setShowSidebar }) {
 
     const baseClasses = "flex items-center gap-3 rounded-lg px-3 py-2 transition-all";
     const activeClasses = "bg-blue-800 text-white";
