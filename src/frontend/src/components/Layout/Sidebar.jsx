@@ -11,8 +11,10 @@ import {
     LuMenu,
 } from 'react-icons/lu';
 import { BsPersonWorkspace } from 'react-icons/bs';
+import { useUIContext } from '../../context/useUIContext';
 
-export default function Sidebar({ showSidebar, setShowSidebar }) {
+export default function Sidebar() {
+    const { showSidebar, setShowSidebar } = useUIContext();
 
     const baseClasses = "flex items-center gap-3 rounded-lg px-3 py-2 transition-all";
     const activeClasses = "bg-blue-800 text-white";

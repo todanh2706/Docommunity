@@ -14,6 +14,7 @@ import Myteam from './pages/Home/Myteam';
 import Mytrash from './pages/Home/Mytrash';
 import Community from './pages/Home/Community'
 import Chatbot from './components/Chatbot/Chatbot';
+import { UIProvider } from './context/UIProvider';
 
 function AppRoutes() {
   const location = useLocation();
@@ -36,8 +37,10 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
-      <Chatbot />
+      <UIProvider>
+        <AppRoutes />
+        <Chatbot />
+      </UIProvider>
     </BrowserRouter>
   );
   // Markdown renderer

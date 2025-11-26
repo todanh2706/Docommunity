@@ -1,6 +1,6 @@
 import Sidebar from '../components/Layout/Sidebar';
-import { useState } from 'react';
 import { LuTerminal, LuShield, LuZap, LuActivity } from 'react-icons/lu';
+import { useUIContext } from '../context/useUIContext';
 
 function Card({ icon, label, value, trend }) {
     return (
@@ -34,15 +34,17 @@ function ActivityItem({ user, action, target, time, warning }) {
 }
 
 export default function Home() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const { showSidebar } = useUIContext();
 
     return (
         <div className="min-h-screen bg-gray-950 text-white selection:bg-blue-600 selection:text-white overflow:x-hidden">
-            <Sidebar showSidebar={isSidebarOpen} setShowSidebar={setIsSidebarOpen} />
+            {/* Sidebar */}
+            <Sidebar />
+
             {/* Main Content Wrapper - Adjusts margin based on sidebar state */}
             <main
                 className={`transition-all duration-300 ease-in-out min-h-screen relative
-                ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}
+                ${showSidebar ? 'ml-64' : 'ml-0'}`}
             >
                 {/* Background Decoration (Glow effects) */}
                 <div className="fixed inset-0 z-0 pointer-events-none">

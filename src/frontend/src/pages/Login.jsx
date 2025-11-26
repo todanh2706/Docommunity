@@ -1,14 +1,18 @@
 import { TypeAnimation } from 'react-type-animation';
 import LoginForm from '../components/Auth/LoginForm';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+    const navigate = useNavigate();
 
     return (
         <div className='h-screen w-screen bg-[url(/bg.gif)] bg-cover flex justify-center items-center animate-gradient'>
             <div className='absolute top-0 left-0 p-8'>
                 <img
-                    className='aspect-auto w-40 h-auto'
+                    className='aspect-auto w-50 h-auto'
                     src='/logo.png'
+                    onClick={() => navigate('/home')}
+                    alt="Go to home page"
                 />
             </div>
             <div className='w-full max-w-200 backdrop-blur-xs backdrop-grayscale border-2 border-gray-700 text-white p-8 rounded-lg shadow-lg'>
