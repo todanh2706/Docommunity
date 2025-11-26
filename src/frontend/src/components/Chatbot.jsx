@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { IoChatbubbleEllipsesOutline, IoClose, IoSend } from "react-icons/io5";
+import { TypeAnimation } from 'react-type-animation';
+
+const Chatbot = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState([
+        { id: 1, text: "Hello! How can I assist you today?", sender: "bot" }
+    ]);
+    const [inputValue, setInputValue] = useState("");
+
+    const toggleChat = () => {
+        setIsOpen(!isOpen);
+    };
+
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!inputValue.trim()) return;
+
+        const newMessage = {
+            id: Date.now(),
+            text: inputValue,
+            sender: "user"
+        };
+
+        setMessages([...messages, newMessage]);
+        setInputValue("");
+
+        // Simulate bot response
+        setTimeout(() => {
+            setMessages(prev => [...prev, {
+                id: Date.now() + 1,
+                text: "I'm just a demo bot for now, but I look cool!",
+                sender: "bot"
+            }]);
+        }, 1000);
+    };
+
+    return (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+            {/* Chat Panel */}
+            <div
+                className={`
+          transition-all duration-300 ease-in-out transform origin-bottom-right
+          ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4 pointer-events-none'}
+          w-80 sm:w-96 h-[500px] mb-4
+          bg-slate-900/80 backdrop-blur-md border border-white/10
+          rounded-2xl shadow-2xl overflow-hidden flex flex-col
+        `}
+            >
+                {/* Header */}
+                <div className="p-4 bg-white/5 border-b border-white/10 flex justify-between items-center backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                        <h3 className="text-white font-semibold tracking-wide">AI Assistant</h3>
+                    </div>
+                    <button
+                        onClick={toggleChat}
+                        className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-full"
+                    >
+                        <IoClose size={20} />
+                    </button>
+                </div>
+
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                    {messages.map((msg) => (
+                        <div
+                            key={msg.id}
+                            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div
+                                className={`
+                  max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed
+                  ${msg.sender === 'user'
+                                        ? 'bg-cyan-600/80 text-white rounded-br-none'
+                                        : 'bg-white/10 text-slate-200 rounded-bl-none border border-white/5'}
+                `}
+                            >
+                                {msg.sender === 'bot' ? (
+                                    <TypeAnimation
+                                        sequence={[msg.text]}
+                                        wrapper="span"
+                                        speed={50}
+                                        cursor={false}
+                                    />
+                                ) : (
+                                    msg.text
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSendMessage} className="p-4 bg-white/5 border-t border-white/10 backdrop-blur-sm">
+                    <div className="relative flex items-center">
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="Type a message..."
+                            className="w-full bg-slate-800/50 text-white text-sm rounded-full pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 placeholder-slate-400 transition-all"
+                        />
+                        <button
+                            type="submit"
+                            className="absolute right-2 p-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-full transition-all shadow-lg shadow-cyan-500/20"
+                        >
+                            <IoSend size={16} />
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* Toggle Button */}
+            <button
+                onClick={toggleChat}
+                className={`
+          group relative flex items-center justify-center w-14 h-14 rounded-full
+          bg-gradient-to-br from-cyan-600 to-blue-700
+          text-white shadow-lg shadow-cyan-900/40
+          hover:shadow-cyan-500/40 hover:scale-110 transition-all duration-300
+          border border-white/10
+          ${isOpen ? 'rotate-90 opacity-0 pointer-events-none absolute' : 'rotate-0 opacity-100'}
+        `}
+            >
+                <div className="absolute inset-0 rounded-full bg-white/20 blur-md group-hover:blur-lg transition-all"></div>
+                <IoChatbubbleEllipsesOutline size={28} className="relative z-10" />
+            </button>
+
+            {/* Close Toggle Button (visible when open, replaces the open button to allow closing from same spot if desired, 
+           but usually the panel close button is enough. 
+           However, user asked for "2 state... close (just show an icon to open it)".
+           Let's keep the main toggle button as the opener. 
+           When open, the panel is there. The user might want to close it by clicking the floating button again?
+           Common pattern is the floating button transforms into a close button or disappears.
+           My implementation hides the floating button when open, and the panel has a close button.
+           Let's adjust to keep the floating button visible but maybe changed icon or just rely on panel close.
+           The requirement says "2 state... open (show panel) and close (just show an icon)".
+           So when open, the icon might not need to be there, or it can be a close icon.
+           Let's make the floating button toggle between Open Icon and Close Icon for better UX.
+        */}
+            <button
+                onClick={toggleChat}
+                className={`
+          group relative flex items-center justify-center w-14 h-14 rounded-full
+          bg-slate-800
+          text-white shadow-lg
+          hover:bg-slate-700 transition-all duration-300
+          border border-white/10
+          ${isOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90 pointer-events-none absolute'}
+        `}
+            >
+                <IoClose size={28} />
+            </button>
+        </div>
+    );
+};
+
+export default Chatbot;
