@@ -8,7 +8,9 @@ const Chatbot = () => {
         { id: 1, text: "Hello! How can I assist you today?", sender: "bot" }
     ]);
     const [inputValue, setInputValue] = useState("");
+    const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -18,13 +20,29 @@ const Chatbot = () => {
         scrollToBottom();
     }, [messages]);
 
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            scrollToBottom();
+        });
+
+        if (chatContainerRef.current) {
+            observer.observe(chatContainerRef.current, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
     const toggleChat = () => {
         setIsOpen(!isOpen);
     };
 
     const handleSendMessage = (e) => {
         e.preventDefault();
-        if (!inputValue.trim()) return;
+        if (!inputValue.trim() || isTyping) return;
 
         const newMessage = {
             id: Date.now(),
@@ -34,14 +52,23 @@ const Chatbot = () => {
 
         setMessages([...messages, newMessage]);
         setInputValue("");
+        setIsTyping(true);
 
-        // Simulate bot response
+        // Simulate bot response --- CHANGE WHEN HAVE THE BOT SETUP ---
         setTimeout(() => {
+            const botText = "I'm just a demo bot for now, but I look cool!";
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
-                text: "I'm just a demo bot for now, but I look cool!",
+                text: botText,
                 sender: "bot"
             }]);
+
+            // Calculate typing duration: 50ms per char
+            // We set isTyping to false after the typing animation should be done
+            setTimeout(() => {
+                setIsTyping(false);
+            }, botText.length * 50);
+
         }, 1000);
     };
 
@@ -72,7 +99,10 @@ const Chatbot = () => {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                <div
+                    ref={chatContainerRef}
+                    className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                >
                     {messages.map((msg) => (
                         <div
                             key={msg.id}
@@ -109,12 +139,14 @@ const Chatbot = () => {
                             type="text"
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
-                            placeholder="Type a message..."
-                            className="w-full bg-slate-800/50 text-white text-sm rounded-full pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 placeholder-slate-400 transition-all"
+                            placeholder={isTyping ? "Bot is typing..." : "Type a message..."}
+                            disabled={isTyping}
+                            className={`w-full bg-slate-800/50 text-white text-sm rounded-full pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 placeholder-slate-400 transition-all ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         <button
                             type="submit"
-                            className="absolute right-2 p-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-full transition-all shadow-lg shadow-cyan-500/20"
+                            disabled={isTyping}
+                            className={`absolute right-2 p-2 bg-cyan-500 hover:bg-cyan-400 text-white rounded-full transition-all shadow-lg shadow-cyan-500/20 ${isTyping ? 'opacity-50 cursor-not-allowed hover:bg-cyan-500' : ''}`}
                         >
                             <IoSend size={16} />
                         </button>
