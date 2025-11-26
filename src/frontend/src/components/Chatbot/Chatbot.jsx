@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IoChatbubbleEllipsesOutline, IoClose, IoSend } from "react-icons/io5";
 import { TypeAnimation } from 'react-type-animation';
 
@@ -8,6 +8,15 @@ const Chatbot = () => {
         { id: 1, text: "Hello! How can I assist you today?", sender: "bot" }
     ]);
     const [inputValue, setInputValue] = useState("");
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const toggleChat = () => {
         setIsOpen(!isOpen);
@@ -90,6 +99,7 @@ const Chatbot = () => {
                             </div>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Area */}

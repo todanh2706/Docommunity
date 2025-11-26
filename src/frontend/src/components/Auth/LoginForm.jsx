@@ -1,5 +1,5 @@
 import { useState } from "react";
-import useAuth from "../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function LoginForm() {

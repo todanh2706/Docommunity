@@ -13,7 +13,7 @@ import Myworkspace from './pages/Home/Myworkspace';
 import Myteam from './pages/Home/Myteam';
 import Mytrash from './pages/Home/Mytrash';
 import Community from './pages/Home/Community'
-import Chatbot from './components/Chatbot';
+import Chatbot from './components/Chatbot/Chatbot';
 
 function AppRoutes() {
   const location = useLocation();

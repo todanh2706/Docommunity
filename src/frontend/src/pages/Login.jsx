@@ -1,5 +1,5 @@
 import { TypeAnimation } from 'react-type-animation';
-import LoginForm from '../components/LoginForm';
+import LoginForm from '../components/Auth/LoginForm';
 
 export default function Login() {
 

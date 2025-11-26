@@ -1,5 +1,5 @@
 import { TypeAnimation } from 'react-type-animation';
-import RegisterForm from '../components/RegisterForm';
+import RegisterForm from '../components/Auth/RegisterForm';
 
 export default function Register() {
 

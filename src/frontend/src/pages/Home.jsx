@@ -1,4 +1,4 @@
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../components/Layout/Sidebar';
 import { useState } from 'react';
 import { LuTerminal, LuShield, LuZap, LuActivity } from 'react-icons/lu';
 
