@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
     LuChevronsLeft,
     LuPlus,
@@ -8,7 +8,7 @@ import {
     LuUsers,
     LuBox,
     LuTrash2,
-    LuMenu,
+    LuChevronRight
 } from 'react-icons/lu';
 import { BsPersonWorkspace } from 'react-icons/bs';
 import { useUIContext } from '../../context/useUIContext';
@@ -26,10 +26,10 @@ export default function Sidebar() {
             {!showSidebar && (
                 <button
                     onClick={() => setShowSidebar(true)}
-                    className='fixed top-6 left-6 z-50 text-gray-800 w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200'
+                    className='fixed top-1/2 left-0 -translate-y-1/2 z-50 text-gray-400 w-6 h-12 rounded-r-lg flex items-center justify-center bg-gray-900/50 hover:bg-blue-600/80 hover:text-white backdrop-blur-md border-y border-r border-white/10 transition-all shadow-lg'
                     aria-label='Open sidebar'
                 >
-                    <LuMenu className='w-6 h-6' />
+                    <LuChevronRight className='w-5 h-5' />
                 </button>
             )}
 
@@ -50,9 +50,9 @@ export default function Sidebar() {
                     </button>
 
                     {/* Logo */}
-                    <a href='/home' className='mb-8'>
+                    <Link to='/home' className='mb-8'>
                         <img src='/logo.png' className='w-50 h-auto' alt='Logo' />
-                    </a>
+                    </Link>
 
                     {/* Action Buttons */}
                     <div className='flex flex-col gap-2 mb-6'>

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IoChatbubbleEllipsesOutline, IoClose, IoSend } from "react-icons/io5";
 import { TypeAnimation } from 'react-type-animation';
 
-const Chatbot = () => {
+export default function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         { id: 1, text: "Hello! How can I assist you today?", sender: "bot" }
@@ -73,7 +73,7 @@ const Chatbot = () => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+        <div className="fixed bottom-0 right-6 z-50 flex flex-col items-end font-sans">
             {/* Chat Panel */}
             <div
                 className={`
@@ -158,7 +158,7 @@ const Chatbot = () => {
             <button
                 onClick={toggleChat}
                 className={`
-          group relative flex items-center justify-center w-14 h-14 rounded-full
+          group relative flex items-center justify-center w-12 h-12 rounded-full
           bg-gradient-to-br from-cyan-600 to-blue-700
           text-white shadow-lg shadow-cyan-900/40
           hover:shadow-cyan-500/40 hover:scale-110 transition-all duration-300
@@ -185,7 +185,7 @@ const Chatbot = () => {
             <button
                 onClick={toggleChat}
                 className={`
-          group relative flex items-center justify-center w-14 h-14 rounded-full
+          group relative flex items-center justify-center w-12 h-12 rounded-full
           bg-slate-800
           text-white shadow-lg
           hover:bg-slate-700 transition-all duration-300
@@ -198,5 +198,3 @@ const Chatbot = () => {
         </div>
     );
 };
-
-export default Chatbot;
