@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { useState } from 'react';
+import { useApi } from './useApi.js'
 
 export default function useAuth() {
+    const { api } = useApi();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
@@ -11,7 +13,7 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/auth/login`, { username, password });
+            const res = await api.post(`/auth/login`, { username, password });
             setIsLoading(false);
 
             return res.data;
@@ -37,7 +39,7 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await axios.post(`${BACKEND_URL}/api/auth/register`, { username, password, fullName: fullname, phone, email });
+            const res = await api.post(`/auth/register`, { username, password, fullName: fullname, phone, email });
             setIsLoading(false);
             return res.data.message;
         } catch (err) {
