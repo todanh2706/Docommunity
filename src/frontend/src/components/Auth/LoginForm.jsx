@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useNavigate } from "react-router-dom";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
@@ -9,14 +10,16 @@ export default function LoginForm() {
     const [password, setPassword] = useState('');
 
     const { login, isLoading, error } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await login(username, password);
-            alert('Sign in successfully.');
+            const message = await login(username, password);
+            alert(message);
+            navigate('/home');
         } catch (err) {
-            console.log('An error occured!');
+            console.log('An error occured: ', err);
         }
     };
 

@@ -4,19 +4,17 @@ import { useState } from 'react';
 export default function useAuth() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
     const login = async (username, password) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const res = await axios.post('http://localhost:8080/api/auth/login', { username, password });
+            const res = await axios.post(`${BACKEND_URL}/api/auth/login`, { username, password });
             setIsLoading(false);
 
-            // delete when deploy
-            console.log('Log in successfully: ', res.data);
-
-            return res.data;
+            return res.data.message;
         } catch (err) {
             setIsLoading(false);
 
@@ -39,17 +37,12 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await axios.post('http://localhost:8080/api/auth/register', { username, password, fullName: fullname, phone, email });
+            const res = await axios.post(`${BACKEND_URL}/api/auth/register`, { username, password, fullName: fullname, phone, email });
             setIsLoading(false);
-
-            // delete when deploy
-            console.log('Registered successfully: ', res.data);
-
-            return res.data;
+            return res.data.message;
         } catch (err) {
             setIsLoading(false);
 
-            // const errMessage = err.response?.data?.message || "An error occured!";
             const errMessage = err.response?.data?.error || "An error occured!";
             setError(errMessage);
             console.error('Registered failed: ', errMessage);
