@@ -15,6 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.Customizer;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,16 +34,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults()) // Enable CORS
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless REST APIs
                 .authorizeHttpRequests(auth -> auth
                         // Allow /auth/** endpoints (login, register) to be public
                         .requestMatchers("/auth/**").permitAll()
                         // All other requests must be authenticated (protected)
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 // Set session management to STATELESS (we use tokens, not server sessions)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Set the Authentication Provider (tells Spring how to find users and check passwords)
+                // Set the Authentication Provider (tells Spring how to find users and check
+                // passwords)
                 .authenticationProvider(authenticationProvider())
                 // CRUCIAL: Add your JWT filter BEFORE the standard Spring Security filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -60,9 +67,23 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // 4. Exposes the AuthenticationManager bean, needed in your AuthController for login
+    // 4. Exposes the AuthenticationManager bean, needed in your AuthController for
+    // login
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173")); // Frontend URLs
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

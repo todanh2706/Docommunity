@@ -2,11 +2,11 @@ services:
   # 1. Database Service
   postgres:
     image: postgres:16-alpine
-    container_name: documinity-db
+    container_name: docommunity-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=documinity
+      - POSTGRES_DB=docommunity
     ports:
       - "5432:5432" # Allows you to connect via IntelliJ/pgAdmin from outside
     volumes:
@@ -15,19 +15,19 @@ services:
   # 2. Backend Service (Spring Boot)
   backend:
     build: ./backend
-    container_name: documinity-api
+    container_name: docommunity-api
     ports:
       - "8080:8080"
     depends_on:
       - postgres
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/documinity
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/docommunity
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
 
   frontend:
     build: ./frontend
-    container_name: writexploit_frontend
+    container_name: docommunity-frontend
     ports:
       - "3000:80"
     depends_on:

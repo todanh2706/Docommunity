@@ -13,10 +13,10 @@ export default function Community() {
                 className={`transition-all duration-300 ease-in-out min-h-screen p-8
                 ${showSidebar ? 'ml-64' : 'ml-0'}`}
             >
-                {/* Header */}
+                {/* Header
                 <h1 className="text-3xl font-black tracking-wider mb-8 text-white uppercase font-mono">
                     TEAM_HELLO
-                </h1>
+                </h1> */}
 
                 {/* Toolbar */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-white/10">

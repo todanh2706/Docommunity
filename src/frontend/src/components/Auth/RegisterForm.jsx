@@ -19,7 +19,7 @@ export default function RegisterForm() {
         e.preventDefault();
         try {
             await register(username, password, confirmPassword, fullname, phone, email);
-            alert('Sign in successfully.');
+            alert('Registered successfully.');
         } catch (err) {
             console.log('An error occured!');
         }

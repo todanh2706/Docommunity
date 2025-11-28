@@ -10,7 +10,7 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await axios.post('/auth/login', { username, password });
+            const res = await axios.post('http://localhost:8080/api/auth/login', { username, password });
             setIsLoading(false);
 
             // delete when deploy
@@ -20,7 +20,7 @@ export default function useAuth() {
         } catch (err) {
             setIsLoading(false);
 
-            const errMessage = err.response?.data?.message || "An error occured!";
+            const errMessage = err.response?.data?.error || "An error occured!";
             setError(errMessage);
             console.error('Log in failed: ', errMessage);
             throw new Error(errMessage);
@@ -39,7 +39,7 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await axios.post('/auth/register', { username, password, fullname, phone, email });
+            const res = await axios.post('http://localhost:8080/api/auth/register', { username, password, fullName: fullname, phone, email });
             setIsLoading(false);
 
             // delete when deploy
@@ -49,9 +49,10 @@ export default function useAuth() {
         } catch (err) {
             setIsLoading(false);
 
-            const errMessage = err.response?.data?.message || "An error occured!";
+            // const errMessage = err.response?.data?.message || "An error occured!";
+            const errMessage = err.response?.data?.error || "An error occured!";
             setError(errMessage);
-            console.error('Log in failed: ', errMessage);
+            console.error('Registered failed: ', errMessage);
             throw new Error(errMessage);
         }
     }
