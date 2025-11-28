@@ -1,1 +1,37 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@layer utilities {
+  /* Tên class: custom-scrollbar */
+  
+  /* 1. Kích thước thanh scroll */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;  /* Chiều rộng cho thanh dọc */
+    height: 6px; /* Chiều cao cho thanh ngang */
+  }
+
+  /* 2. Phần rãnh (Track) - Nền bên dưới */
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; /* Để trong suốt cho đẹp */
+  }
+
+  /* 3. Phần tay cầm (Thumb) - Cái cục để kéo */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1); /* Màu xám mờ */
+    border-radius: 20px; /* Bo tròn mềm mại */
+  }
+
+  /* 4. Hiệu ứng khi di chuột vào tay cầm */
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.3); /* Sáng hơn khi hover */
+  }
+
+  /* --- (Tùy chọn) Class ẩn scrollbar nhưng vẫn cuộn được --- */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
