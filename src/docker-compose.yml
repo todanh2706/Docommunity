@@ -1,32 +1,29 @@
-version: "3.9"
-
 services:
+  # 1. Database Service
   postgres:
-    image: postgres:16
-    container_name: writexploit_db
-    restart: always
+    image: postgres:16-alpine
+    container_name: documinity-db
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=documinity
     ports:
-      - "${DB_PORT}:5432"
+      - "5432:5432" # Allows you to connect via IntelliJ/pgAdmin from outside
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
+  # 2. Backend Service (Spring Boot)
   backend:
     build: ./backend
-    container_name: writexploit_backend
+    container_name: documinity-api
     ports:
-      - "8000:8080"
-    env_file:
-      - ./backend/.env
-    restart: always
+      - "8080:8080"
     depends_on:
       - postgres
-    volumes:
-      - ./backend:/app
-    command: npm start
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/documinity
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
 
   frontend:
     build: ./frontend
@@ -38,4 +35,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  pgdata:
+  postgres_data:

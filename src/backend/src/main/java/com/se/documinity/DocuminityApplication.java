@@ -1,13 +1,12 @@
-package com.writexploit.writexploit;
+package com.se.documinity;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class WritexploitApplication {
-
+public class DocuminityApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(WritexploitApplication.class, args);
+		SpringApplication.run(DocuminityApplication.class, args);
 	}
 
 }

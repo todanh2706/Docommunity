@@ -1,10 +1,10 @@
-package com.writexploit.writexploit;
+package com.se.documinity;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class WritexploitApplicationTests {
+class DocuminityApplicationTests {
 
 	@Test
 	void contextLoads() {
