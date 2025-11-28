@@ -17,7 +17,6 @@ const navGroups = [
   [
     { name: 'My workspace', icon: LayoutGrid, href: '#' },
     { name: 'Community', icon: Users, href: '#' },
-    { name: 'My team', icon: Grid, href: '#' },
   ],
   // Nhóm 3: Thẻ thùng rác
   [
