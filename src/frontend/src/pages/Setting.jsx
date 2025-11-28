@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sidebar } from "../components/Layout/Sidebar";
 import {
-    Settings, Edit2, Trash2, Camera, Shield, User, Mail, Save, AlertTriangle
+    Settings, Edit2, Trash2, Camera, Shield, User, Mail, Save, AlertTriangle, Phone
 } from 'lucide-react';
 
 // --- 1. COMPONENT: Confirm Dialog Đa Năng ---
@@ -81,7 +81,8 @@ export default function SettingsPage() {
         username: "toilaHinacon",
         fullname: "Hina Chono",
         email: "wibu23214@gmail.com",
-        avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s"
+        avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s",
+        phone: "0123412342314",
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -260,6 +261,7 @@ export default function SettingsPage() {
                                 </div>
                                 <InputField label="Username" name="username" value={formData.username} onChange={handleInputChange} disabled={!isEditing} />
                                 <InputField label="Email Address" name="email" type="email" icon={Mail} value={formData.email} onChange={handleInputChange} disabled={!isEditing} />
+                                <InputField label="Phone number" name="phone" type="phone" icon={Phone} value={formData.phone} onChange={handleInputChange} disabled={!isEditing} />
                             </div>
                         </div>
                     </div>
