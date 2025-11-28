@@ -1,5 +1,5 @@
 import { LuList, LuArrowUpDown, LuTag, LuSearch } from 'react-icons/lu';
-import Sidebar from '../../components/Layout/Sidebar';
+import Sidebar from '../../components/Layout/Sidebar1';
 import { useUIContext } from '../../context/useUIContext';
 
 export default function Community() {

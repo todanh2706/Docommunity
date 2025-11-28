@@ -12,8 +12,12 @@ import Tagslist from './pages/Home/Tagslist';
 import Myworkspace from './pages/Home/Myworkspace';
 import Myteam from './pages/Home/Myteam';
 import Mytrash from './pages/Home/Mytrash';
+import SettingsPage from './pages/Setting';
+import EditorPage from './pages/EditorPage';
 import Community from './pages/Home/Community'
 import Chatbot from './components/Chatbot/Chatbot';
+
+
 import { UIProvider } from './context/UIProvider';
 
 function AppRoutes() {
@@ -30,6 +34,8 @@ function AppRoutes() {
       <Route path='/home/myworkspace' element={<Myworkspace />} />
       <Route path='/home/myteam' element={<Myteam />} />
       <Route path='/home/mytrash' element={<Mytrash />} />
+      <Route path='/home/setting' element={<SettingsPage />} />
+      <Route path='/home/editor' element={<EditorPage />} />
     </Routes >
   );
 }

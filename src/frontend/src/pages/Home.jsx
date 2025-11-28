@@ -1,176 +1,164 @@
-import Sidebar from '../components/Layout/Sidebar';
-import { LuTerminal, LuShield, LuZap, LuActivity } from 'react-icons/lu';
-import { useUIContext } from '../context/useUIContext';
+import { Header } from '../components/Layout/Header';
+import { Link } from 'react-router'
+import { TypeWriter } from '../components/Layout/Typewriter';
+import './Home.css'
 
-function Card({ icon, label, value, trend }) {
+
+// 1. Tách Box nhỏ thành Component tái sử dụng để code gọn hơn
+const FeatureCard = ({ title, description }) => (
+
+    <div className='flex flex-col items-center justify-center z-12
+                  w-full h-full p-10
+                  rounded-[30px]
+                  bg-white/[0.15]  
+                  backdrop-blur-[7px]
+                  border border-white/20                   // Viền mỏng tinh tế
+                  shadow-lg hover:shadow-blue-500/20       // Shadow màu xanh nhẹ khi hover
+                  transition-all duration-300 hover:-translate-y-2' // Hiệu ứng nổi lên khi hover
+    >
+        <img src='logo.png' alt="Logo" className="h-30 w-auto" />
+
+        <h3 className="text-2xl font-bold text-white mb-4">{title}</h3>
+        <p className="text-blue-100 text-center">{description}</p>
+
+
+    </div>
+);
+
+
+export default function HomePage() {
     return (
-        <div className="bg-gray-900/60 backdrop-blur-md border border-gray-800 p-6 rounded-2xl hover:border-blue-500/30 hover:bg-gray-900/80 transition-all cursor-default group">
-            <div className="flex items-start justify-between mb-4">
-                <div className="p-2 bg-gray-800 rounded-lg text-gray-300 group-hover:text-white transition-colors">
-                    {icon}
-                </div>
+        <div className='flex flex-col min-h-screen font-sans text-slate selection:bg-blue-500/30 bg-[rgb(6,4,36)] text-white'>
+
+            {/* BACKGROUND LAYER */}
+            <div className='fixed inset-0 z-[-1]'>
+                <div
+                    className='absolute inset-0 bg-cover bg-center bg-no-repeat bg-[url("/homepage.png")]'
+
+                />
+                {/* Lớp phủ màu tối nhẹ để làm nổi bật nội dung trắng/sáng */}
+                <div className="absolute inset-0 bg-[#062452]/20"></div>
             </div>
-            <div className="space-y-1">
-                <p className="text-gray-400 text-sm font-medium">{label}</p>
-                <p className="text-2xl font-bold text-white font-mono">{value}</p>
-                <p className="text-xs text-blue-400/80">{trend}</p>
+
+            {/* HEADER */}
+            <div className='sticky top-0 z-50'>
+                <Header />
             </div>
-        </div>
-    );
-}
 
-function ActivityItem({ user, action, target, time, warning }) {
-    return (
-        <li className="flex items-center gap-4 text-sm">
-            <div className={`w-2 h-2 rounded-full ${warning ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-            <div className="flex-1">
-                <p className="text-gray-300">
-                    <span className="font-bold text-white">{user}</span> {action} <span className="text-blue-300 font-mono bg-blue-900/20 px-1 rounded">{target}</span>
-                </p>
-            </div>
-            <span className="text-gray-500 text-xs font-mono whitespace-nowrap">{time}</span>
-        </li>
-    );
-}
+            {/* MAIN CONTENT */}
+            <main className='flex flex-col items-center w-full pb-20'> {/* Padding bottom để không bị sát đáy */}
 
-export default function Home() {
-    const { showSidebar } = useUIContext();
 
-    return (
-        <div className="min-h-screen bg-gray-950 text-white selection:bg-blue-600 selection:text-white overflow:x-hidden">
-            {/* Sidebar */}
-            <Sidebar />
+                {/* 🌟 CÁC BUBBLE CHUYỂN ĐỘNG Ở PHÍA SAU 🌟 */}
+                <div className='absolute top-[10%] left-[10%] w-60 h-60  bg-[#325C9E] opacity-15 filter blur-xl z-0 bubble-1'></div>
+                <div className='absolute bottom-[5%] right-[20%] w-96 h-96  bg-[#325C9E] opacity-20 filter blur-xl z-0 bubble-2'></div>
+                <div className='absolute bottom-[30%] left-[35%] w-48 h-48  bg-[#325C9E] opacity-15 filter blur-xl z-0 bubble-3'></div>
+                {/*  */}
 
-            {/* Main Content Wrapper - Adjusts margin based on sidebar state */}
-            <main
-                className={`transition-all duration-300 ease-in-out min-h-screen relative
-                ${showSidebar ? 'ml-64' : 'ml-0'}`}
-            >
-                {/* Background Decoration (Glow effects) */}
-                <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]" />
-                    <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]" />
-                </div>
+                {/* === HERO SECTION === */}
+                <div className='relative z-10 flex justify-center items-center w-full min-h-[85vh] px-4  '>
 
-                {/* Content Container */}
-                <div className="relative z-10 p-8 lg:p-12 max-w-7xl mx-auto">
+                    {/* GLASS BOX LỚN */}
+                    <div className='flex flex-col lg:flex-row items-center justify-between
+                          w-full max-w-6xl                // Giới hạn chiều rộng tối đa chuẩn web
+                          p-8 md:p-12 gap-10 lg:gap-20    // Dùng gap thay vì margin/padding lẻ tẻ
+                          rounded-[40px]
+                          bg-white/[0.027]                     // Nền trong suốt nhẹ hơn
+                          backdrop-blur-[15px]             // Blur mạnh hơn cho sang trọng
+                          border border-white/20          // Viền kính
+                          shadow-2xl shadow-black/5'
+                    >
 
-                    {/* Header Section */}
-                    <header className="mb-12 mt-8">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-900/30 border border-blue-500/30 text-blue-400 text-xs font-mono mb-4">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            System Online
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-                            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Docommunity Space</span>
-                        </h1>
-                        <p className="text-gray-400 text-lg md:text-xl max-w-2xl font-light">
-                            The centralized hub for your document writing needs, security relevant field, and team collaboration. Secure. Fast. Organized.
-                        </p>
-                    </header>
+                        {/* CỘT TRÁI: TEXT */}
+                        <div className='w-full lg:w-1/2 space-y-6 text-center lg:text-left'>
 
-                    {/* Stats / Dashboard Grid --- CHANGE WHEN HAVE THE DATABASE --- */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                        <Card
-                            icon={<LuTerminal className="w-6 h-6 text-blue-400" />}
-                            label="Total Documents"
-                            value="128"
-                            trend="+12% this week"
-                        />
-                        <Card
-                            icon={<LuZap className="w-6 h-6 text-yellow-400" />}
-                            label="System Load"
-                            value="24ms"
-                            trend="Optimal latency"
-                        />
-                        <Card
-                            icon={<LuActivity className="w-6 h-6 text-green-400" />}
-                            label="Team Activity"
-                            value="Online"
-                            trend="3/5 members active"
-                        />
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                        {/* Left Column: Recent Activity */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <h2 className="text-2xl font-bold font-mono text-gray-200 flex items-center gap-3">
-                                <span className="text-blue-500">#</span> Recent Activity
+                            {/* Tiêu đề với hiệu ứng Gradient Text */}
+                            <h2 className='text-5xl md:text-7xl font-extrabold tracking-tight'>
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-blue-200 drop-shadow-lg">
+                                    DOCOMUNITY
+                                </span>
                             </h2>
 
-                            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-blue-500/30 transition-colors">
-                                <ul className="space-y-4">
-                                    <ActivityItem
-                                        user="Danh"
-                                        action="deployed a new document: "
-                                        target="2025 CSCV Write-ups"
-                                        time="2 mins ago"
-                                    />
-                                    <ActivityItem
-                                        user="Admin"
-                                        action="create a new Notification: "
-                                        target="Notification about the system renovation"
-                                        time="1 hour ago"
-                                        warning
-                                    />
-                                    <ActivityItem
-                                        user="Khoa"
-                                        action="created a new document:"
-                                        target="XSS Vulnerability Study"
-                                        time="4 hours ago"
-                                    />
-                                </ul>
-                            </div>
+                            {/* Khu vực Animated Box */}
+                            <div className='h-40 relative w-full overflow-hidden rounded-xl bg-black/5 border border-white/10 shadow-inner'>
 
-                            {/* Code Snippet / Technical Concept Area */}
-                            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 font-mono text-sm overflow-hidden relative group">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                                <div className="flex items-center gap-2 mb-4 text-gray-500">
-                                    <div className="w-3 h-3 rounded-full bg-red-500/20"></div>
-                                    <div className="w-3 h-3 rounded-full bg-yellow-500/20"></div>
-                                    <div className="w-3 h-3 rounded-full bg-green-500/20"></div>
-                                    <span className="ml-2">system_status.log</span>
+                                <div className='absolute top-4 left-4 bg-[#325C9E] text-white px-3 py-1 rounded-md text-xs shadow-lg'>Example AI</div>
+                                <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-center opacity-80'>
+                                    {/* Gọi component Typewriter và truyền danh sách từ */}
+                                    <h1 className='text-2xl md:text-4xl font-bold'>
+                                        <TypeWriter
+                                            words={["# Markdown Editor", "# AI Integrate", "# Community"]}
+                                        />
+                                    </h1>
                                 </div>
-                                <div className="space-y-1 text-gray-300">
-                                    <p><span className="text-blue-400">root@docommunity:~$</span> hello Docommunity</p>
-                                    <p><span className="text-green-400">✓</span> Hello, Danh</p>
-                                    <p><span className="text-blue-400">root@docommunity:~$</span> <span className="animate-pulse">_</span></p>
-                                </div>
+
                             </div>
                         </div>
 
-                        {/* Right Column: Quick Actions */}
-                        <div className="space-y-6">
-                            <h2 className="text-2xl font-bold font-mono text-gray-200 flex items-center gap-3">
-                                <span className="text-blue-500">/</span> Quick Access
-                            </h2>
-                            <div className="bg-gradient-to-b from-blue-900/20 to-gray-900/20 border border-blue-500/20 rounded-2xl p-6">
-                                <h3 className="text-blue-200 font-semibold mb-2">Explore Community</h3>
-                                <p className="text-sm text-gray-400 mb-4">
-                                    Connect with other security researchers and share your latest findings.
-                                </p>
-                                <button className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors">
-                                    Join Discussion
+                        {/* CỘT PHẢI: ACTIONS */}
+                        <div className='w-full lg:w-1/2 flex flex-col items-center gap-10'>
+                            <Link to="myworkspace" className='contents'>
+                                <button className='group relative px-10 py-5 rounded-2xl font-bold text-xl text-white shadow-xl
+                                     bg-gradient-to-r from-[#062452] to-[#325C9E] overflow-hidden
+                                     transition-all hover:scale-105 hover:shadow-blue-500/50'>
+                                    <span className="relative z-10">#WRITE NOW</span>
+                                    {/* Hiệu ứng sáng bóng khi hover */}
+                                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                                 </button>
+                            </Link>
+
+                            <div className="flex items-center gap-4 w-full justify-center">
+                                <div className="h-[1px] w-12 bg-white/30"></div>
+                                <span className="text-white/60 font-medium text-sm">OR</span>
+                                <div className="h-[1px] w-12 bg-white/30"></div>
                             </div>
-                            <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6">
-                                <h3 className="text-gray-200 font-semibold mb-2">Documentation</h3>
-                                <p className="text-sm text-gray-400 mb-4">
-                                    Learn how to use the markdown editor and formatting tools.
-                                </p>
-                                <button className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium transition-colors">
-                                    Read Docs
-                                </button>
-                            </div>
+
+                            <button className='px-8 py-4 rounded-xl font-semibold text-[#062452] bg-white/90
+                                     hover:bg-white hover:scale-105 transition-all shadow-lg'>
+                                GO TO COMMUNITY
+                            </button>
                         </div>
+
                     </div>
-
                 </div>
+
+
+                {/* === FEATURES SECTION (2 BOX BÊN DƯỚI) === */}
+                {/* Sử dụng Grid để chia cột đều nhau */}
+                <div className='relative z-10 w-full max-w-6xl px-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        <FeatureCard
+                            title="AI Integration"
+                            description="Tích hợp trí tuệ nhân tạo giúp bạn viết code nhanh hơn, sửa lỗi thông minh hơn."
+
+                        />
+                        <FeatureCard
+                            title="Open Community"
+                            description="Kết nối với hàng ngàn lập trình viên, chia sẻ kiến thức và cùng nhau phát triển."
+                        
+                        />
+                    </div>
+                </div>
+
+                <div className='flex flex-col lg:flex-row items-center justify-between
+                          w-full max-w-6xl                // Giới hạn chiều rộng tối đa chuẩn web
+                          p-8 md:p-12 gap-10 lg:gap-20    // Dùng gap thay vì margin/padding lẻ tẻ
+                          rounded-[40px]
+                          bg-white/[0.027]                     // Nền trong suốt nhẹ hơn
+                          backdrop-blur-[15px]             // Blur mạnh hơn cho sang trọng
+                          border border-white/20          // Viền kính
+                          shadow-2xl shadow-black/5
+                          mt-10'
+
+                >
+
+                    <h1>MARKDOWN EDITOR</h1>
+                </div>
+
+                <div className='m-10 underline'>
+                    about us
+                </div>
+
             </main>
         </div>
     );
