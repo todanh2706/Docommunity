@@ -1,8 +1,9 @@
-import { Sidebar } from "../../components/Layout/Sidebar";
-import { TagEditorModal } from "../../components/Layout/Tag";
+import Sidebar from "../../components/Layout/Sidebar1";
+import {TagEditorModal } from "../../components/Layout/Tag";
 import { ConfirmDialog } from "../../components/Layout/ConfirmDialog";
 import { useState } from 'react';
 import { Link } from "react-router";
+import { useUIContext } from '../../context/useUIContext';
 
 import {
     Edit, SortAsc, Tag, Search, X, Grid, List, Plus, Upload, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, PenLine
@@ -229,9 +230,7 @@ const DocumentCard = ({ card, isExpanded }) => {
 export default function Myworkspace() {
     const [isExpanded, setIsExpanded] = useState(true);
     const [value, setValue] = useState("");
-
-
-
+    const { showSidebar } = useUIContext();
 
     const toggleList = () => {
         setIsExpanded(!isExpanded)
@@ -242,7 +241,7 @@ export default function Myworkspace() {
         <>
             <div className="flex flex-row items-left justify-between h-screen">
                 <Sidebar />
-                <div className="flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100">
+                <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-64' : 'ml-0'}`}>
                     {/* Search and Action Bar */}
                     <div className="flex flex-col md:flex-row items-center justify-between p-2 mb-6 bg-gray-800 rounded-lg shadow-lg">
 

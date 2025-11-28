@@ -101,16 +101,6 @@ export default function Sidebar() {
                         </NavLink>
 
                         <NavLink
-                            to='/home/myteam'
-                            className={({ isActive }) =>
-                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
-                            }
-                        >
-                            <LuUsers className='w-5 h-5' />
-                            My team
-                        </NavLink>
-
-                        <NavLink
                             to='/home/community'
                             className={({ isActive }) =>
                                 `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
