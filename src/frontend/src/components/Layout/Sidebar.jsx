@@ -10,18 +10,21 @@ import {
 const navGroups = [
   // Nhóm 1: Thẻ cá nhân
   [
-    { name: 'Bookmark', icon: Bookmark, href: '#' },
-    { name: 'Tag list', icon: Tag, href: '#' },
+    { name: 'Bookmark', icon: Bookmark, href: '/home/bookmark' },
+    { name: 'Tag list', icon: Tag, href: '/home/tagslist' },
   ],
   // Nhóm 2: Thẻ cộng đồng/đội nhóm
   [
     { name: 'My workspace', icon: LayoutGrid, href: '/home/myworkspace' },
     { name: 'Community', icon: Users, href: '/home/community' },
+<<<<<<< HEAD
     { name: 'My team', icon: Grid, href: '/home/myteam' },
+=======
+>>>>>>> a1f8022719db292f4b35083bf126974ee3f88b93
   ],
   // Nhóm 3: Thẻ thùng rác
   [
-    { name: 'My trash', icon: Trash2, href: '#' },
+    { name: 'My trash', icon: Trash2, href: '/home/mytrash' },
   ],
 ];
 
@@ -73,15 +76,15 @@ export const Sidebar = () => {
           <React.Fragment key={groupIndex}>
             {/* Vòng lặp 2: Lặp qua các mục (item) trong nhóm */}
             {group.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition duration-150 ${!isExpanded && 'justify-center'}`}
                 title={!isExpanded ? item.name : ''}
               >
                 <item.icon size={20} className={`${isExpanded ? 'mr-3' : 'mr-0'}`} />
                 {isExpanded && <span className="whitespace-nowrap">{item.name}</span>}
-              </a>
+              </Link>
             ))}
 
             {/* CHÈN ĐƯỜNG KẺ NGANG (Separator) */}
