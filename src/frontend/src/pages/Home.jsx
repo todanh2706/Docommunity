@@ -25,16 +25,19 @@ const FeatureCard = ({ title, description }) => (
     </div>
 );
 
+const bg_logo = "./homepage.png"
+
 
 export default function HomePage() {
     return (
         <div className='flex flex-col min-h-screen font-sans text-slate selection:bg-blue-500/30 bg-[rgb(6,4,36)] text-white'>
 
             {/* BACKGROUND LAYER */}
-            <div className='fixed inset-0 z-[-1]'>
+            <div className='fixed inset-0 z-[0]'>
                 <div
-                    className='absolute inset-0 bg-cover bg-center bg-no-repeat bg-[url("/homepage.png")]'
-
+                    className='absolute inset-0 bg-cover bg-center bg-no-repeat'
+                    // Thử dòng này để kiểm tra đường dẫn trực tiếp
+                      style={{ backgroundImage: `url(${bg_logo})` }}
                 />
                 {/* Lớp phủ màu tối nhẹ để làm nổi bật nội dung trắng/sáng */}
                 <div className="absolute inset-0 bg-[#062452]/20"></div>
@@ -135,7 +138,7 @@ export default function HomePage() {
                         <FeatureCard
                             title="Open Community"
                             description="Kết nối với hàng ngàn lập trình viên, chia sẻ kiến thức và cùng nhau phát triển."
-                        
+
                         />
                     </div>
                 </div>
