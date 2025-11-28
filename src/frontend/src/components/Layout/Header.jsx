@@ -9,20 +9,20 @@ export function Header() {
         {/* Logo bên trái */}
 
         <Link to="/" className="contents">
-          <img src='logo.png' alt="Logo" className="h-12 w-auto" />
+          <img src='logo.png' alt="Logo" className="h-20 w-auto" />
         </Link>
 
         {/* Nút ở góc phải */}
         <div className="flex gap-3">
-          <Link to="#" className='contents'>
-            <button className="px-4 py-2 font-semibold rounded hover:bg-gray-700 transition">
+          <Link to="/login" className='contents'>
+            <button className="px-6 py-2 font-semibold rounded hover:bg-gray-700 transition text-xl">
               Sign In
             </button>
           </Link>
-          <Link to="#" className='contents'>
-            <button className="px-4 py-2 font-semibold rounded
+          <Link to="/register" className='contents'>
+            <button className="px-6 py-2 font-semibold rounded
            bg-gradient-to-r from-[#062452] to-[#325C9E]
-           hover:opacity-90 transition">
+           hover:opacity-90 transition text-xl ">
               Sign Up
             </button>
           </Link>
