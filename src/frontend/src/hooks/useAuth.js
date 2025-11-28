@@ -14,7 +14,7 @@ export default function useAuth() {
             const res = await axios.post(`${BACKEND_URL}/api/auth/login`, { username, password });
             setIsLoading(false);
 
-            return res.data.message;
+            return res.data;
         } catch (err) {
             setIsLoading(false);
 

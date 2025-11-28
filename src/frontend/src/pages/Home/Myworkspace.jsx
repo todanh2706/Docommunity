@@ -1,5 +1,6 @@
-import { Sidebar } from "../../components/Layout/Sidebar";
-import {  useState } from 'react';
+import Sidebar from "../../components/Layout/Sidebar1";
+import { useState } from 'react';
+import { useUIContext } from '../../context/useUIContext';
 
 import {
     Edit, SortAsc, Tag, Search, X, Grid, List, Plus, Upload, MoreVertical
@@ -19,20 +20,20 @@ const mockCards = [
 
 const DocumentCard = ({ card, isExpanded }) => {
     const isBlank = !card.note && card.members === 0 && card.tags.length === 0;
-    
+
     return (
         <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden hover:ring-2 hover:ring-blue-500 transition duration-200">
             <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
-            
+
                 {isBlank && isExpanded ? (
                     <div className="flex-grow flex items-center justify-center text-gray-500 ">
                         <Edit size={32} />
                     </div>
                 ) : (
-                    <>                     
-                        {isExpanded ? ( <img src='logo.png'  className="w-32 h-auto"  />) : null}
-                
-                        <div className={`flex justify-between items-center ${isExpanded? 'mt-4':''}`}>
+                    <>
+                        {isExpanded ? (<img src='logo.png' className="w-32 h-auto" />) : null}
+
+                        <div className={`flex justify-between items-center ${isExpanded ? 'mt-4' : ''}`}>
                             <div className="flex -space-x-2 overflow-hidden">
                                 <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
                                     <span role="img" aria-label="user">🙂</span>
@@ -69,6 +70,7 @@ const DocumentCard = ({ card, isExpanded }) => {
 export default function Myworkspace() {
     const [isExpanded, setIsExpanded] = useState(true);
     const [value, setValue] = useState("");
+    const { showSidebar } = useUIContext();
 
     const toggleList = () => {
         setIsExpanded(!isExpanded)
@@ -79,7 +81,7 @@ export default function Myworkspace() {
         <>
             <div className="flex flex-row items-left justify-between h-screen">
                 <Sidebar />
-                <div className="flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100">
+                <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-64' : 'ml-0'}`}>
                     {/* Search and Action Bar */}
                     <div className="flex flex-col md:flex-row items-center justify-between p-2 mb-6 bg-gray-800 rounded-lg shadow-lg">
 

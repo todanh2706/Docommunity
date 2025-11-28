@@ -1,3 +1,4 @@
+
 // import { useState, useEffect } from 'react'
 import './App.css'
 // import Markdown from 'react-markdown'
@@ -19,6 +20,7 @@ import Chatbot from './components/Chatbot/Chatbot';
 
 
 import { UIProvider } from './context/UIProvider';
+import { ToastProvider } from './context/ToastContext';
 
 function AppRoutes() {
   const location = useLocation();
@@ -44,8 +46,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <UIProvider>
-        <AppRoutes />
-        <Chatbot />
+        <ToastProvider>
+          <AppRoutes />
+          <Chatbot />
+        </ToastProvider>
       </UIProvider>
     </BrowserRouter>
   );
