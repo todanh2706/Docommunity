@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useAuth from "../../hooks/useAuth";
+import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 export default function RegisterForm() {
@@ -14,14 +15,16 @@ export default function RegisterForm() {
     const [email, setEmail] = useState('');
 
     const { register, isLoading, error } = useAuth();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await register(username, password, confirmPassword, fullname, phone, email);
-            alert('Registered successfully.');
+            const message = await register(username, password, confirmPassword, fullname, phone, email);
+            alert(message);
+            navigate('/login');
         } catch (err) {
-            console.log('An error occured!');
+            console.log('An error occured: ', err);
         }
     };
 

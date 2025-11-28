@@ -135,7 +135,7 @@ export default function HomePage() {
                         <FeatureCard
                             title="Open Community"
                             description="Kết nối với hàng ngàn lập trình viên, chia sẻ kiến thức và cùng nhau phát triển."
-                        
+
                         />
                     </div>
                 </div>

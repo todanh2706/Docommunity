@@ -1,4 +1,5 @@
 import { TypeAnimation } from 'react-type-animation';
+import { LuArrowLeft } from 'react-icons/lu';
 import RegisterForm from '../components/Auth/RegisterForm';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,6 +17,15 @@ export default function Register() {
                 />
             </div>
             <div className='w-full max-w-200 h-full max-h-200 backdrop-blur-xs backdrop-grayscale border-2 border-gray-700 text-white p-2 rounded-lg shadow-lg'>
+                <div className='absolute top-0 left-0 p-6'>
+                    <button
+                        onClick={() => navigate('/login')}
+                        className='flex items-center gap-2 text-gray-300 hover:text-white transition-colors font-mono text-sm group'
+                    >
+                        <LuArrowLeft className='w-4 h-4 group-hover:-translate-x-1 transition-transform' />
+                        Back to Login
+                    </button>
+                </div>
                 <div className='flex min-h-full flex-col justify-center px-6 py-12 lg:px-8'>
                     <div className='lg:mx-auto lg:w-full lg:max-w-lg text-center'>
 
