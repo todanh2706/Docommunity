@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080/api';
 
 // Create a singleton Axios instance
 const axiosInstance = axios.create({
@@ -41,85 +41,89 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 & Refresh via Cookie
-axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    async (error) => {
-        const originalRequest = error.config;
+// --- AXIOS INTERCEPTOR COMPONENT ---
+import { useNavigate } from 'react-router-dom';
 
-        // Filter out requests that shouldn't be retried
-        if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
-            return Promise.reject(error);
-        }
+export const AxiosInterceptor = ({ children }) => {
+    const navigate = useNavigate();
 
-        // Check if error is 401 and request hasn't been retried yet
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            if (isRefreshing) {
-                // If already refreshing, add this request to the queue
-                return new Promise(function (resolve, reject) {
-                    failedQueue.push({ resolve, reject });
-                })
-                    .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
+    useEffect(() => {
+        const interceptor = axiosInstance.interceptors.response.use(
+            (response) => {
+                return response;
+            },
+            async (error) => {
+                const originalRequest = error.config;
+
+                // Filter out requests that shouldn't be retried
+                if (originalRequest.url.includes('/auth/refresh') || originalRequest.url.includes('/auth/login')) {
+                    return Promise.reject(error);
+                }
+
+                // Check if error is 401 and request hasn't been retried yet
+                if (error.response?.status === 401 && !originalRequest._retry) {
+                    if (isRefreshing) {
+                        // If already refreshing, add this request to the queue
+                        return new Promise(function (resolve, reject) {
+                            failedQueue.push({ resolve, reject });
+                        })
+                            .then((token) => {
+                                originalRequest.headers.Authorization = `Bearer ${token}`;
+                                return axiosInstance(originalRequest);
+                            })
+                            .catch((err) => Promise.reject(err));
+                    }
+
+                    originalRequest._retry = true;
+                    isRefreshing = true;
+
+                    try {
+                        // --- SECURE REFRESH CALL ---
+                        const response = await axios.post(
+                            `${BASE_URL}/auth/refresh`,
+                            {},
+                            { withCredentials: true }
+                        );
+
+                        const { accessToken } = response.data;
+
+                        // Update the Access Token in storage
+                        localStorage.setItem('accessToken', accessToken);
+
+                        // Process queue with new access token
+                        processQueue(null, accessToken);
+
+                        // Retry original request
+                        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                         return axiosInstance(originalRequest);
-                    })
-                    .catch((err) => Promise.reject(err));
+
+                    } catch (refreshError) {
+                        // Handle refresh failure
+                        processQueue(refreshError, null);
+
+                        // Clear access token
+                        localStorage.removeItem('accessToken');
+
+                        // Redirect to login using navigate
+                        navigate('/login');
+
+                        return Promise.reject(refreshError);
+                    } finally {
+                        isRefreshing = false;
+                    }
+                }
+
+                return Promise.reject(error);
             }
+        );
 
-            originalRequest._retry = true;
-            isRefreshing = true;
+        return () => {
+            axiosInstance.interceptors.response.eject(interceptor);
+        };
+    }, [navigate]);
 
-            try {
-                // --- SECURE REFRESH CALL ---
-                // We do NOT pull the token from localStorage. 
-                // We send 'withCredentials: true' so the browser attaches the HttpOnly cookie.
-
-                // Note: We use a fresh axios call to avoid our own interceptors
-                const response = await axios.post(
-                    `${BASE_URL}/auth/refresh`,
-                    {}, // Body is empty (or whatever your API requires, but NO token here)
-                    { withCredentials: true } // CRITICAL: This sends the HttpOnly cookie
-                );
-
-                const { accessToken } = response.data;
-
-                // Update the Access Token in storage
-                localStorage.setItem('accessToken', accessToken);
-
-                // We do NOT save the new refresh token manually. 
-                // The browser handles the 'Set-Cookie' header from the response automatically.
-
-                // Process queue with new access token
-                processQueue(null, accessToken);
-
-                // Retry original request
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                return axiosInstance(originalRequest);
-
-            } catch (refreshError) {
-                // Handle refresh failure
-                processQueue(refreshError, null);
-
-                // Clear access token. We cannot clear the HttpOnly cookie from JS, 
-                // but the backend should have invalidated it or it expired.
-                localStorage.removeItem('accessToken');
-
-                // Ideally, call a logout endpoint to tell backend to clear the cookie
-                // await axios.post(`${BASE_URL}/auth/logout`);
-
-                window.location.href = '/login';
-
-                return Promise.reject(refreshError);
-            } finally {
-                isRefreshing = false;
-            }
-        }
-
-        return Promise.reject(error);
-    }
-);
+    return children;
+};
 
 // --- HOOK EXPORT ---
 
