@@ -1,7 +1,6 @@
 package com.se.documinity.service;
 
 import com.se.documinity.entity.UserEntity;
-import com.se.documinity.entity.UserEntity;
 import com.se.documinity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,7 +23,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
         // 2. Return a Spring Security 'User' object
-        // Note: We are passing an empty list for authorities (roles) for now.
         // If you implement role-based access later, you will add the roles here.
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),

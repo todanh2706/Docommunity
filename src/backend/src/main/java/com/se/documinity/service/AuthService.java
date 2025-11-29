@@ -2,6 +2,9 @@ package com.se.documinity.service;
 
 import com.se.documinity.dto.auth.LoginRequest;
 import com.se.documinity.dto.auth.LoginResponse;
+import com.se.documinity.dto.auth.LogoutRequest;
+import com.se.documinity.dto.auth.RefreshRequest;
+import com.se.documinity.dto.auth.RefreshResponse;
 import com.se.documinity.dto.auth.RegisterRequest;
 import com.se.documinity.dto.auth.RegisterResponse;
 import com.se.documinity.entity.UserEntity;
@@ -35,7 +38,7 @@ public class AuthService {
         UserEntity user = new UserEntity();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setFullName(request.getFullName());
+        user.setFullname(request.getFullname());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Set defaults
@@ -68,5 +71,47 @@ public class AuthService {
 
         // 4. Return response
         return new LoginResponse(accessToken, refreshToken);
+    }
+
+    public void logout(LogoutRequest request) {
+        String token = request.getRefreshToken();
+
+        // 1. Check if the token is valid (format and expiration)
+        try {
+            String username = jwtService.extractUsername(token);
+            
+            // TODO: In a production app, this is where you would:
+            // 1. Check if the token exists in a "refresh_tokens" database table.
+            // 2. Delete it or set a 'revoked' flag to true.
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Unauthorized or invalid token"); 
+        }
+    }
+
+    public RefreshResponse refreshToken(RefreshRequest request) {
+        String refreshToken = request.getRefreshToken();
+        String username;
+
+        // 1. Try to extract username (this will throw an exception if token is invalid/expired)
+        try {
+            username = jwtService.extractUsername(refreshToken);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid refresh token"); 
+        }
+
+        // 2. Load the user details
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+        // 3. Validate the token fully (check expiry and signature)
+        if (jwtService.validateToken(refreshToken, userDetails)) {
+            
+            // 4. Generate a NEW access token
+            String newAccessToken = jwtService.generateToken(userDetails);
+            
+            return new RefreshResponse(newAccessToken);
+        } else {
+            throw new RuntimeException("Invalid refresh token");
+        }
     }
 }

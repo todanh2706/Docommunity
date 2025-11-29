@@ -21,7 +21,7 @@ public class UserEntity {
     private String password;
 
     @Column(name = "fullname")
-    private String fullName;
+    private String fullname;
 
     @Column(name = "phone_number")
     private String phoneNumber;

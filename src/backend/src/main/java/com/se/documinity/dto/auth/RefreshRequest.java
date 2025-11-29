@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class RefreshRequest {
-    @NotBlank
-    private String accessToken;
+    @NotBlank(message = "Missing refresh token")
+    private String refreshToken;
 }

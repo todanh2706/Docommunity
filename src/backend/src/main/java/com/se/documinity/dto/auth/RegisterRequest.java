@@ -16,7 +16,7 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank(message = "Display name (fullname) is required")
-    private String fullName;
+    private String fullname;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Not a valid email address")
