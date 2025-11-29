@@ -78,11 +78,16 @@ export const AxiosInterceptor = ({ children }) => {
                     isRefreshing = true;
 
                     try {
-                        // --- SECURE REFRESH CALL ---
+                        const refreshToken = localStorage.getItem('refreshToken');
+
+                        if (!refreshToken) {
+                            throw new Error("No refresh token available");
+                        }
+
+                        // --- REFRESH CALL (BODY BASED) ---
                         const response = await axios.post(
                             `${BASE_URL}/auth/refresh`,
-                            {},
-                            { withCredentials: true }
+                            { refreshToken }
                         );
 
                         const { accessToken } = response.data;
@@ -101,8 +106,9 @@ export const AxiosInterceptor = ({ children }) => {
                         // Handle refresh failure
                         processQueue(refreshError, null);
 
-                        // Clear access token
+                        // Clear tokens
                         localStorage.removeItem('accessToken');
+                        localStorage.removeItem('refreshToken');
 
                         // Redirect to login using navigate
                         navigate('/login');

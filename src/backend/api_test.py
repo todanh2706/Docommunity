@@ -86,6 +86,18 @@ def main():
         resp = requests.post(refresh_url, json=refresh_req_data)
         print_response(resp, "REFRESH TOKEN")
 
+        # 6. CREATE DOCUMENT
+        print("Creating document...")
+        create_doc_url = f'{BASE_URL}/documents/'
+        doc_data = {
+            "title": "My First Document",
+            "content": "This is the content of my first document.",
+            "tags": ["test"],
+            "isPublic": True
+        }
+        resp = requests.post(create_doc_url, json=doc_data, headers=headers)
+        print_response(resp, "CREATE DOCUMENT")
+
     else:
         print("Login failed, skipping protected route tests.")
 

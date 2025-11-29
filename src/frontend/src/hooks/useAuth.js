@@ -17,9 +17,13 @@ export default function useAuth() {
             const res = await api.post(`/auth/login`, { username, password });
             setIsLoading(false);
 
-            const { accessToken } = res.data;
+            const { accessToken, refreshToken } = res.data;
+            console.log(res.data);
             if (accessToken) {
                 localStorage.setItem('accessToken', accessToken);
+            }
+            if (refreshToken) {
+                localStorage.setItem('refreshToken', refreshToken);
             }
             return res.data;
         } catch (err) {
@@ -41,6 +45,7 @@ export default function useAuth() {
 
     const logout = async () => {
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         navigate('/login');
     }
 

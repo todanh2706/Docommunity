@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> {
     Optional<DocumentEntity> findDocumentByUser(UserEntity user);
+
+    <S extends DocumentEntity> S save(S document);
 }

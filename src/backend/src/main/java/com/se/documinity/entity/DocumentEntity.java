@@ -19,7 +19,6 @@ public class DocumentEntity {
     @Column(columnDefinition = "TEXT")
     private String title;
 
-    @Lob // For LONGTEXT
     @Column(columnDefinition = "TEXT")
     private String content;
 
