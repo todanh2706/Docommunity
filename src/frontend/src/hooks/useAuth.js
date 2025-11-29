@@ -1,12 +1,13 @@
-import axios from 'axios';
 import { useState } from 'react';
-import { useApi } from './useApi.js'
+import { useApi } from './useApi.js';
+import { useNavigate } from 'react-router';
 
 export default function useAuth() {
-    const { api } = useApi();
+    const api = useApi();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
     const login = async (username, password) => {
         setIsLoading(true);
@@ -16,9 +17,20 @@ export default function useAuth() {
             const res = await api.post(`/auth/login`, { username, password });
             setIsLoading(false);
 
+            const { accessToken } = res.data;
+            if (accessToken) {
+                localStorage.setItem('accessToken', accessToken);
+            }
             return res.data;
         } catch (err) {
             setIsLoading(false);
+
+            console.log("Error details:", {
+                message: err.message,
+                code: err.code,
+                response: err.response,
+                backendUrl: BACKEND_URL
+            });
 
             const errMessage = err.response?.data?.error || "An error occured!";
             setError(errMessage);
@@ -26,6 +38,11 @@ export default function useAuth() {
             throw new Error(errMessage);
         }
     };
+
+    const logout = async () => {
+        localStorage.removeItem('accessToken');
+        navigate('/login');
+    }
 
     const register = async (username, password, confirmPassword, fullname, phone, email) => {
         if (password !== confirmPassword) {
@@ -52,5 +69,5 @@ export default function useAuth() {
         }
     }
 
-    return { login, register, isLoading, error };
+    return { login, logout, register, isLoading, error };
 }

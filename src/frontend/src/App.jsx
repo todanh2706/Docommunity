@@ -21,6 +21,7 @@ import Chatbot from './components/Chatbot/Chatbot';
 
 import { UIProvider } from './context/UIProvider';
 import { ToastProvider } from './context/ToastContext';
+import { AxiosInterceptor } from './hooks/useApi';
 
 function AppRoutes() {
   const location = useLocation();
@@ -47,8 +48,10 @@ export default function App() {
     <BrowserRouter>
       <UIProvider>
         <ToastProvider>
-          <AppRoutes />
-          <Chatbot />
+          <AxiosInterceptor>
+            <AppRoutes />
+            <Chatbot />
+          </AxiosInterceptor>
         </ToastProvider>
       </UIProvider>
     </BrowserRouter>
