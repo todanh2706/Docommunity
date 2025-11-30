@@ -1,112 +1,160 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router';
-
+import { NavLink, Link } from 'react-router-dom';
 import {
-  ChevronsLeft, Bookmark, Tag, Users, Trash2, Plus, Folder,
-  LayoutGrid, Grid, Edit, X, Search,
-} from 'lucide-react'; // Sử dụng thư viện icon Lucide React
+    LuChevronsLeft,
+    LuPlus,
+    LuFolderPlus,
+    LuBookmark,
+    LuTag,
+    LuUsers,
+    LuBox,
+    LuTrash2,
+    LuChevronRight
+} from 'react-icons/lu';
+import { useState } from 'react';
+import { BsPersonWorkspace } from 'react-icons/bs';
+import { useUIContext } from '../../context/useUIContext';
+import { CreateDocumentModal } from './Modal';
 
-// --- Dữ liệu cho Menu Item ---
-const navGroups = [
-  // Nhóm 1: Thẻ cá nhân
-  [
-    { name: 'Bookmark', icon: Bookmark, href: '/home/bookmark' },
-    { name: 'Tag list', icon: Tag, href: '/home/tagslist' },
-  ],
-  // Nhóm 2: Thẻ cộng đồng/đội nhóm
-  [
-    { name: 'My workspace', icon: LayoutGrid, href: '/home/myworkspace' },
-    { name: 'Community', icon: Users, href: '/home/community' },
-  ],
-  // Nhóm 3: Thẻ thùng rác
-  [
-    { name: 'My trash', icon: Trash2, href: '/home/mytrash' },
-  ],
-];
+export default function Sidebar({ onDocumentCreated }) {
+    const { showSidebar, setShowSidebar } = useUIContext();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-export const Sidebar = () => {
-  const [isExpanded, setIsExpanded] = useState(true);
 
-  const toggleSidebar = () => {
-    setIsExpanded(!isExpanded);
-  };
 
-  return (
-    <div
-      className={`h-screen flex flex-col bg-gray-900 text-gray-200 transition-all duration-300 ${isExpanded ? 'w-50 p-4' : 'w-20 p-4 items-center'
-        }`}
-    >
-      {/* Header Logo và Toggle Button */}
 
-      <div className={`flex flex-col ${isExpanded ? 'justify-between' : 'justify-center'} items-center mb-6`}>
-        <Link to="/" className="contents">
-          {isExpanded ? (
+    const baseClasses = "flex items-center gap-3 rounded-lg px-3 py-2 transition-all";
+    const activeClasses = "bg-blue-800 text-white";
+    const inactiveClasses = "text-gray-300 hover:bg-gray-700 hover:text-white";
 
-            <img src='/logo.png' className="h-[60%] w-auto " />
-          ) : (<img src='/logo_small.png' className="h-[60%] w-auto " />)}
-        </Link>
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-full hover:bg-gray-800 transition duration-150"
-          aria-label={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
-        >
-          <ChevronsLeft size={24} className={isExpanded ? 'transform rotate-0' : 'transform rotate-180'} />
-        </button>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="mb-8 space-y-3">
-        <button className={`w-full flex items-center p-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition duration-150 justify-center`}>
-          <Plus size={20} className="mr-2" />
-          {isExpanded && 'Add note'}
-        </button>
-        <button className={`w-full flex items-center p-3 rounded-lg bg-gray-700 hover:bg-gray-800 transition duration-150 justify-center`}>
-          <Folder size={20} className="mr-2" />
-          {isExpanded && 'Create folder'}
-        </button>
-      </div>
-
-      {/* Navigation Menu */}
-      <nav className="flex-grow space-y-2">
-        {navGroups.map((group, groupIndex) => (
-          <React.Fragment key={groupIndex}>
-            {/* Vòng lặp 2: Lặp qua các mục (item) trong nhóm */}
-            {group.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center p-3 rounded-lg hover:bg-gray-700 transition duration-150 ${!isExpanded && 'justify-center'}`}
-                title={!isExpanded ? item.name : ''}
-              >
-                <item.icon size={20} className={`${isExpanded ? 'mr-3' : 'mr-0'}`} />
-                {isExpanded && <span className="whitespace-nowrap">{item.name}</span>}
-              </Link>
-            ))}
-
-            {/* CHÈN ĐƯỜNG KẺ NGANG (Separator) */}
-            {/* Chỉ hiển thị đường kẻ ngang nếu đây KHÔNG phải là nhóm cuối cùng */}
-            {groupIndex < navGroups.length - 1 && (
-              <div className="my-4 border-t border-gray-700 mx-[-16px]"></div>
+    return (
+        <>
+            {/* Button to show the Sidebar */}
+            {!showSidebar && (
+                <button
+                    onClick={() => setShowSidebar(true)}
+                    className='fixed top-1/2 left-0 -translate-y-1/2 z-50 text-gray-400 w-6 h-12 rounded-r-lg flex items-center justify-center bg-gray-900/50 hover:bg-blue-600/80 hover:text-white backdrop-blur-md border-y border-r border-white/10 transition-all shadow-lg'
+                    aria-label='Open sidebar'
+                >
+                    <LuChevronRight className='w-5 h-5' />
+                </button>
             )}
-          </React.Fragment>
-        ))}
-      </nav>
-      {/* Footer Profile */}
-      <Link to="/home/setting" className='contents' >
-        <div className={`mt-auto pt-4 border-t border-gray-700 flex ${isExpanded ? 'flex-row' : 'flex-col items-center'} `}>
-          <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-            HK
-          </div>
-          {isExpanded && (
-            <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium whitespace-nowrap">Title</p>
-              <p className="text-xs text-gray-400 truncate">Description</p>
-            </div>
-          )}
-        </div>
-      </Link>
-    </div>
-  );
-};
 
-export default Sidebar;
+            {/* Sidebar Panel */}
+            <div
+                className={`transition-all duration-500 fixed top-0 ${showSidebar ? 'left-0' : '-left-64'
+                    }`}
+            >
+                <div className='flex h-screen flex-col overflow-y-auto bg-gray-900 w-64 px-4 py-8 relative'>
+                    {/* Close button */}
+                    <button
+                        onClick={() => {
+                            setShowSidebar(false);
+                        }}
+                        className='absolute top-6 right-2 text-gray-400 w-8 h-8 rounded-full flex items-center justify-center focus:outline-none hover:bg-gray-700 hover:text-white'
+                    >
+                        <LuChevronsLeft className='w-5 h-5' />
+                    </button>
+
+                    {/* Logo */}
+                    <Link to='/home' className='mb-8'>
+                        <img src='/logo.png' className='w-50 h-auto' alt='Logo' />
+                    </Link>
+
+                    {/* Action Buttons */}
+                    <div className='flex flex-col gap-2 mb-6'>
+                        <button onClick={() => setIsModalOpen(true)} className='flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 font-mono'>
+                            <LuPlus className='w-5 h-5' />
+                            Add note
+                        </button>
+                        <button className='flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 font-mono'>
+                            <LuFolderPlus className='w-5 h-5' />
+                            Create folder
+                        </button>
+                    </div>
+
+                    {/* Nav Links */}
+                    <nav className='flex flex-col gap-1 font-mono'>
+                        <NavLink
+                            to='/home/bookmark'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuBookmark className='w-5 h-5' />
+                            Bookmark
+                        </NavLink>
+
+                        <NavLink
+                            to='/home/tagslist'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuTag className='w-5 h-5' />
+                            Tags list
+                        </NavLink>
+
+                        <hr className='my-3 border-gray-700' />
+
+                        <NavLink
+                            to='/home/myworkspace'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <BsPersonWorkspace className='w-5 h-5' />
+                            My workspace
+                        </NavLink>
+
+                        <NavLink
+                            to='/home/community'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuBox className='w-5 h-5' />
+                            Community
+                        </NavLink>
+
+                        <hr className='my-3 border-gray-700' />
+
+                        <NavLink
+                            to='/home/mytrash'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuTrash2 className='w-5 h-5' />
+                            My trash
+                        </NavLink>
+                    </nav>
+                    <Link to="/home/setting" className='contents'>
+                        {/* User Profile */}
+                        <div className='mt-auto flex items-center gap-3 pt-6'>
+                            <img
+                                src='/dump_avt.jpg'
+                                alt='User Avatar'
+                                className='w-10 h-10 rounded-full'
+                            />
+                            <div>
+                                <p className='font-semibold text-white font-mono'>Danh</p> {/* Username */}
+                                <p className='text-sm text-gray-400 font-mono'>Flag owner</p> {/*some descriptions*/}
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+            <CreateDocumentModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => {
+                    // Khi tạo thành công: 
+                    // 1. Đóng modal (đã làm trong component Modal nhưng gọi lại cũng không sao)
+                    setIsModalOpen(false);
+                    // 2. Báo cho cha (Myworkspace) biết để load lại list
+                    if (onDocumentCreated) onDocumentCreated();
+                }}
+            />
+        </>
+    );
+}

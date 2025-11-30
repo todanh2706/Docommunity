@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { User, LogOut, Settings } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import useAuth from '../../hooks/useAuth.js';
