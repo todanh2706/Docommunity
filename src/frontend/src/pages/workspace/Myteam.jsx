@@ -1,4 +1,4 @@
-import Sidebar from "../../components/Layout/Sidebar1";
+import Sidebar from "../../components/Layout/Sidebar";
 
 export default function Myteam() {
     return (
