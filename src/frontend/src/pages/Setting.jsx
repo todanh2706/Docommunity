@@ -1,11 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sidebar } from "../components/Layout/Sidebar";
-import { ConfirmDialog } from '../components/Layout/ConfirmDialog';
+import { useUIContext } from '../context/useUIContext';
+import Sidebar from "../components/Layout/Sidebar";
+import { ConfirmDialog } from '../components/Layout/Dialog';
 
 import {
-    Settings, Edit2, Trash2, Camera, Shield, User, Mail, Save, Phone
+    Settings, Edit2, Trash2, Camera, Shield, User, Mail, Save, Phone, BadgeInfo, Lock, Users
 } from 'lucide-react';
+import { IoRadioButtonOff } from 'react-icons/io5';
 
+const PrivacyToggle = ({ isPrivate, togglePrivacy }) => {
+    return (
+        <div
+            onClick={togglePrivacy}
+            className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 ${isPrivate ? 'bg-red-900/20 hover:bg-red-900/30 border border-red-800' : 'bg-green-900/20 hover:bg-green-900/30 border border-green-800'
+                }`}
+        >
+            <div className={`relative w-12 h-6 rounded-full transition-all duration-300 ${isPrivate ? 'bg-red-600' : 'bg-green-600'}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 flex items-center justify-center ${isPrivate ? 'translate-x-0.5' : 'translate-x-6'
+                    }`}>
+                    {isPrivate ? <Lock size={14} className="text-red-600" /> : <Users size={14} className="text-green-600" />}
+                </div>
+            </div>
+
+            <div className="ml-4 flex flex-col">
+                <p className="font-semibold text-sm">
+                    {isPrivate ? "Private Account" : "Public Account"}
+                </p>
+                <p className="text-xs text-gray-400">
+                    {isPrivate ? "Only team members can view notes." : "Anyone can view shared notes."}
+                </p>
+            </div>
+        </div>
+    );
+};
 // --- 2. COMPONENT: Input Field ---
 const InputField = ({ label, name, value, onChange, type = "text", disabled, icon: Icon }) => {
     return (
@@ -38,8 +65,9 @@ export default function SettingsPage() {
         email: "wibu23214@gmail.com",
         avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s",
         phone: "0123412342314",
+        bio: "hello, i love computer science!!!"
     });
-
+    const { showSidebar } = useUIContext();
     const [isEditing, setIsEditing] = useState(false);
     const [backupData, setBackupData] = useState(null);
 
@@ -55,15 +83,20 @@ export default function SettingsPage() {
         onCancel: () => { }
     });
 
+    // / --- STATE QUẢN LÝ PRIVACY ---
+    const [isPrivate, setIsPrivate] = useState(true);
+
+    const togglePrivacy = () => {
+        setIsPrivate((prev) => !prev);
+        // TODO: Gọi API để lưu trạng thái mới vào DB
+        console.log(`Privacy set to: ${!isPrivate ? 'Private' : 'Public'}`);
+    };
+
+
     const fileInputRef = useRef(null);
     const formContainerRef = useRef(null);
     const toggleButtonRef = useRef(null);
 
-    // Dummy Data Team
-    const teamMembers = [
-        { id: 1, name: "Chinatsu", role: "Admin", avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS0gpaQJ_6LxZpG7xljR8Iae7fvQl_eAS3Vg&s" },
-        { id: 2, name: "Taiki", role: "Editor", avatar: "https://m.media-amazon.com/images/M/MV5BNGY0MjkxZWUtNzE2Zi00YmIyLTk2OWItZDE4OWUxZDhmYmM1XkEyXkFqcGc@._V1_QL75_UY281_CR31,0,500,281_.jpg" },
-    ];
 
     // Helper: Hàm mở Dialog nhanh
     const openDialog = (config) => {
@@ -160,7 +193,7 @@ export default function SettingsPage() {
         <div className="flex h-screen bg-[#020611] text-white font-sans overflow-hidden">
             <Sidebar />
 
-            <main className="flex-1 overflow-y-auto w-full">
+            <main className={`flex-1  overflow-y-auto w-full transition-all duration-500 ${showSidebar ? 'ml-64' : 'ml-0'}`}>
                 <div className="max-w-4xl mx-auto p-6 md:p-12">
 
                     {/* Header */}
@@ -171,7 +204,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold tracking-tight">Account Settings</h1>
-                                <p className="text-gray-400 text-sm">Manage your profile and preferences</p>
+                                <p className="text-gray-400 text-sm"> {!showSidebar && "Manage your profile and preferences"}</p>
                             </div>
                         </div>
 
@@ -214,6 +247,9 @@ export default function SettingsPage() {
                                 <div className="md:col-span-2">
                                     <InputField label="Full Name" name="fullname" icon={User} value={formData.fullname} onChange={handleInputChange} disabled={!isEditing} />
                                 </div>
+                                <div className="md:col-span-2 ">
+                                    <InputField label="Bio" name="bio" icon={BadgeInfo} value={formData.bio} onChange={handleInputChange} disabled={!isEditing} />
+                                </div>
                                 <InputField label="Username" name="username" value={formData.username} onChange={handleInputChange} disabled={!isEditing} />
                                 <InputField label="Email Address" name="email" type="email" icon={Mail} value={formData.email} onChange={handleInputChange} disabled={!isEditing} />
                                 <InputField label="Phone number" name="phone" type="phone" icon={Phone} value={formData.phone} onChange={handleInputChange} disabled={!isEditing} />
@@ -222,39 +258,36 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Team & Danger Zone */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div className="grid grid-cols-1 gap-8 mb-8 w-[100%] w-full md:max-w-lg lg:max-w-xl xl:max-w-2xl md:mx-auto md:ml-0 ">
                         {/* Security Actions (Chiếm 1 phần) */}
-                        <div className="flex flex-col gap-6">
-                            {/* Change Password */}
+                        <div className="flex flex-col  gap-6">
                             <div>
-                                <h2 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">Security</h2>
-                                <div className="bg-[#0B1221] border border-gray-800 rounded-xl p-5">
-                                    <p className="text-sm text-gray-400 mb-4">Protect your account with a strong password.</p>
-                                    <button className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg border border-gray-700 transition-colors">
-                                        Change Password
-                                    </button>
+                                <h2 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">Security & Privacy</h2>
+                                <div className="bg-[#0B1221] border border-gray-800 rounded-xl p-5 space-y-5">
+
+                                    {/* THAY THẾ/THÊM TÙY CHỌN PRIVACY */}
+                                    <div className='flex items-center'>
+                                        <PrivacyToggle
+                                            isPrivate={isPrivate}
+                                            togglePrivacy={togglePrivacy}
+
+                                        />
+
+                                    </div>
+
+                                    <div className="h-px bg-gray-700 mx-[-5px]"></div> {/* Đường phân cách */}
+
+                                    {/* PHẦN CHANGE PASSWORD GIỮ NGUYÊN (HOẶC THAY ĐỔI ĐỂ KHỚP VỚI UI) */}
+                                    <div className='pt-2'>
+                                        <p className="text-sm text-gray-400 mb-4">Protect your account with a strong password.</p>
+                                        <button className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg border border-gray-700 transition-colors">
+                                            Change Password
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-
                         </div>
-                        <div className="lg:col-span-2">
-                            <h2 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider flex items-center gap-2"><Shield size={16} /> Team Members</h2>
-                            <div className="bg-[#0B1221] border border-gray-800 rounded-xl overflow-hidden">
-                                {teamMembers.map((member) => (
-                                    <div key={member.id} className="flex items-center justify-between p-4 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors group">
-                                        <div className="flex items-center gap-3">
-                                            <img src={member.avatar} alt={member.name} className="w-10 h-10 rounded-full bg-gray-700" />
-                                            <div>
-                                                <p className="text-sm font-medium text-white">{member.name}</p>
-                                                <p className="text-xs text-gray-500">{member.role}</p>
-                                            </div>
-                                        </div>
-                                        <button className="text-gray-600 hover:text-red-500 p-2 rounded-lg hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+
 
                         <div className="flex flex-col gap-6">
                             <div>
