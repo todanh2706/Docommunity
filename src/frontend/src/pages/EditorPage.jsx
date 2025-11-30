@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
+import { TagEditorModal } from '../components/Layout/Modal'
+import { Link, useLocation } from "react-router-dom";
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
+
 import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
     List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck,
     GripVertical, X, User // Đảm bảo đã import User và X
 } from "lucide-react";
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css';
 
 // --- COMPONENTS CON ---
 const ToolbarBtn = ({ icon: Icon, isActive, onClick }) => (
@@ -32,8 +35,13 @@ const INITIAL_COMMENTS = [
 
 export default function EditorPage() {
     // --- 1. KHAI BÁO STATE (QUAN TRỌNG: PHẢI CÓ ĐỦ Ở ĐÂY) ---
-    const [markdown, setMarkdown] = useState("");
-
+    // Khởi tạo state với giá trị mặc định (rỗng hoặc giá trị từ document nếu có)
+    const location = useLocation();
+    const document = location.state?.document;
+    const [title, setTitle] = useState(document?.title || "");
+    const [markdown, setMarkdown] = useState(document?.content || "");
+    const [activeTags, setActiveTags] = useState(document?.tags || []); // Sử dụng tags từ document
+ 
     // State cho Toolbar & UI
     const [selectedTools, setSelectedTools] = useState([]);
     const [isOpen, setIsOpen] = useState(false); // User dropdown
@@ -46,11 +54,44 @@ export default function EditorPage() {
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState(INITIAL_COMMENTS);
     const [newCommentText, setNewCommentText] = useState("");
-    const [isInputActive, setIsInputActive] = useState(false); // <--- KIỂM TRA DÒNG NÀY
+    const [isInputActive, setIsInputActive] = useState(true); // <--- KIỂM TRA DÒNG NÀY
 
     // Refs
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
+
+    //Toasts
+    const { success } = useToast();
+    const [isBookmark, setIsBookmark] = useState(true)
+
+
+    const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
+
+
+    // --- MỚI: Hàm lưu tags từ modal ---
+    const handleOpenTagEditor = () => {
+        setIsTagEditorOpen(true);
+    }
+
+    const handleSaveTags = (newTags) => {
+        setActiveTags(newTags); // Cập nhật state activeTags (hiển thị trên UI)
+
+        // Ở đây bạn sẽ gọi API để lưu vào DB: updateDocTags(card.id, newTags)
+        // Bạn có thể thêm console.log('Tags updated to API:', newTags);
+
+        setIsTagEditorOpen(false); // Đóng modal sau khi lưu
+    };
+
+
+    // --- LOGIC BOOKMARK ---
+    const toggleBookmarkSection = () => {
+        if (isBookmark == true)
+            success("Bookmark successfully")
+        else
+            success("unbookmark successfully")
+        setIsBookmark(!isBookmark)
+
+    }
 
     // --- LOGIC EDITOR ---
     const toggleFormat = (symbol) => {
@@ -72,9 +113,21 @@ export default function EditorPage() {
     const handleToolClick = (toolName) => {
         setSelectedTools(prev => prev.includes(toolName) ? prev.filter(t => t !== toolName) : [...prev, toolName]);
     };
+    // --- LOGIC DOCUMENT ---
+    useEffect(() => {
+        if (document) {
+            setTitle(document.title || "Untitled Notebook");
+            setMarkdown(document.content || "");
+            setActiveTags(document.tags || []);
+            // ... (các state khác)
+        }
+    }, [document]);
+
 
     // --- LOGIC COMMENT ---
     const toggleCommentSection = () => setShowComments(!showComments);
+
+
 
     const handlePostComment = () => {
         if (!newCommentText.trim()) {
@@ -123,7 +176,8 @@ export default function EditorPage() {
     const renderToolbarBtn = (Icon, toolName, action) => (
         <ToolbarBtn
             icon={Icon}
-            isActive={toolName === 'comment' ? showComments : selectedTools.includes(toolName)}
+            isActive={(toolName === 'comment' ? showComments : selectedTools.includes(toolName)) ||
+                ((toolName == 'bookmark' && !isBookmark) ? true : false)}
             onClick={action ? action : () => handleToolClick(toolName)}
         />
     );
@@ -134,17 +188,24 @@ export default function EditorPage() {
             {/* HEADER */}
             <header className="flex h-16 shrink-0 border-b border-white/10 px-4 justify-between items-center z-20 bg-[rgb(6,4,36)]">
                 <div className="flex items-center gap-6">
-                    <img src='/logo_small.png' className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity" alt="Logo" />
+                    <Link to="/home/myworkspace" className="contents">
+                        <img src='/logo_small.png' className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity" alt="Logo" />
+                    </Link>
                     <div className="flex items-center gap-2 group">
-                        <input className="bg-transparent text-sm sm:text-lg font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 rounded px-2 py-1 w-24 md:w-48 transition-all placeholder:text-gray-600" type="text" placeholder="Untitled Notebook" />
+                        <input className="bg-transparent text-sm sm:text-lg font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 rounded px-2 py-1 w-24 md:w-48 transition-all placeholder:text-gray-600" 
+                                type="text" placeholder="Untitled Notebook" 
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)} />
                         <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                 </div>
                 <div className="flex items-center gap-5">
                     <div className="flex items-center bg-gray-900/50 rounded-lg p-1 border border-white/5 relative">
                         <ToolbarBtn icon={Columns2} />
-                        <ToolbarBtn icon={Bookmark} />
-                        <ToolbarBtn icon={Tag} />
+
+                        {renderToolbarBtn(Bookmark, 'bookmark', toggleBookmarkSection)}
+                        {renderToolbarBtn(Tag, 'tag', handleOpenTagEditor)}
+
                         {renderToolbarBtn(MessageSquareText, 'comment', toggleCommentSection)}
                         {comments.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse pointer-events-none"></span>}
                     </div>
@@ -286,9 +347,15 @@ export default function EditorPage() {
                                 </div>
                             )}
                         </div>
+
                     </div>
                 )}
-
+                <TagEditorModal
+                    isOpen={isTagEditorOpen}
+                    onClose={() => setIsTagEditorOpen(false)}
+                    currentTags={activeTags}
+                    onSave={handleSaveTags} // Hàm này sẽ cập nhật activeTags
+                />
                 {isResizing && <div className="fixed inset-0 z-[9999] cursor-col-resize bg-transparent" />}
             </div>
         </main>
