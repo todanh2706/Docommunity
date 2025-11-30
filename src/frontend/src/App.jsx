@@ -8,15 +8,16 @@ import { Routes, Route, BrowserRouter, useLocation, Navigate } from 'react-route
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
-import Bookmark from './pages/Home/Bookmark';
-import Tagslist from './pages/Home/Tagslist';
-import Myworkspace from './pages/Home/Myworkspace';
-import Myteam from './pages/Home/Myteam';
-import Mytrash from './pages/Home/Mytrash';
+import Bookmark from './pages/workspace/Bookmark';
+import Tagslist from './pages/workspace/Tagslist';
+import Myworkspace from './pages/workspace/Myworkspace';
+import Myteam from './pages/workspace/Myteam';
+import Mytrash from './pages/workspace/Mytrash';
 import SettingsPage from './pages/Setting';
 import EditorPage from './pages/EditorPage';
-import Community from './pages/Home/Community'
+import Community from './pages/workspace/Community'
 import Chatbot from './components/Chatbot/Chatbot';
+
 
 
 import { UIProvider } from './context/UIProvider';
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path='/home/mytrash' element={<Mytrash />} />
       <Route path='/home/setting' element={<SettingsPage />} />
       <Route path='/home/editor' element={<EditorPage />} />
+
     </Routes >
   );
 }
