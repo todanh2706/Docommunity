@@ -39,9 +39,17 @@ export default function Sidebar({ onDocumentCreated }) {
                 </button>
             )}
 
+            {/* Backdrop for mobile */}
+            {showSidebar && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setShowSidebar(false)}
+                />
+            )}
+
             {/* Sidebar Panel */}
             <div
-                className={`transition-all duration-500 fixed top-0 ${showSidebar ? 'left-0' : '-left-64'
+                className={`transition-all duration-500 fixed top-0 z-50 ${showSidebar ? 'left-0' : '-left-64'
                     }`}
             >
                 <div className='flex h-screen flex-col overflow-y-auto bg-gray-900 w-64 px-4 py-8 relative'>

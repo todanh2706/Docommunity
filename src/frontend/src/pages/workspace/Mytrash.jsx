@@ -320,7 +320,7 @@ export default function Myworkspace() {
             <div className="flex flex-row items-left justify-between h-screen" >
                 <Sidebar />
 
-                <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-64' : 'ml-0'}`}>
+                <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}>
 
                     {/* Toolbar */}
                     <div className="w-full p-3 mb-6 bg-gray-800 rounded-xl shadow-lg" >

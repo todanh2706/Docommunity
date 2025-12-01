@@ -193,7 +193,7 @@ export default function SettingsPage() {
         <div className="flex h-screen bg-[#020611] text-white font-sans overflow-hidden">
             <Sidebar />
 
-            <main className={`flex-1  overflow-y-auto w-full transition-all duration-500 ${showSidebar ? 'ml-64' : 'ml-0'}`}>
+            <main className={`flex-1  overflow-y-auto w-full transition-all duration-500 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}>
                 <div className="max-w-4xl mx-auto p-6 md:p-12">
 
                     {/* Header */}

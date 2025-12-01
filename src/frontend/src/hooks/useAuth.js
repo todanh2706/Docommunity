@@ -61,7 +61,7 @@ export default function useAuth() {
         setError(null);
 
         try {
-            const res = await api.post(`/auth/register`, { username, password, fullName: fullname, phone, email });
+            const res = await api.post(`/auth/register`, { username, password, fullname, phone, email });
             setIsLoading(false);
             return res.data.message;
         } catch (err) {
