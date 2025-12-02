@@ -1,7 +1,7 @@
 import axiosInstance from '../hooks/useApi';
 
 const BACKEND_ROOT = '/documents'; 
-const USE_MOCK_DATA = true; 
+const USE_MOCK_DATA = false; 
 
 // --- MOCK DATA ---
 const mockCards = [
@@ -86,6 +86,7 @@ export const createDocument = async (docData) => {
 
     try {
         const response = await axiosInstance.post(`${BACKEND_ROOT}`, docData);
+        console.log(response)
         return response.data;
     } catch (error) {
         throw error;

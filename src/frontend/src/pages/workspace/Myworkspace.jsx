@@ -1,6 +1,6 @@
 import Sidebar from "../../components/Layout/Sidebar";
 import { ConfirmDialog } from "../../components/Layout/Dialog";
-import { CreateDocumentModal, TagEditorModal } from '../../components/Layout/Modal';
+import { CreateDocumentModal, DocumentSettingsModal } from '../../components/Layout/Modal';
 import { TagDropMenu, SortDropMenu } from "../../components/Layout/DropMenu";
 import { useDocument } from '../../context/DocumentContext';
 import { useState, useEffect } from 'react';
@@ -15,11 +15,15 @@ import {
 
 
 const DocumentCard = ({ card, isExpanded }) => {
+    console.log("Full Card Data:", card);
 
     const { deleteDocument, handleDocumentUpdate } = useDocument();
     const [showMenu, setShowMenu] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(card.tags.includes('bookmarked'));
 
+    const [title, setTitle] = useState(card?.title || "");
+
+    const [privacy, setPrivacy] = useState(card.isPublic ? 'public' : 'private');
 
     // --- MỚI: State quản lý tags và Modal ---
     const [activeTags, setActiveTags] = useState(card.tags);
@@ -28,6 +32,7 @@ const DocumentCard = ({ card, isExpanded }) => {
     const [menuPositionClass, setMenuPositionClass] = useState("left-0 top-full mt-2");
 
     const isBlank = !card.note && card.members === 0 && activeTags.length === 0; // Lưu ý dùng activeTags thay vì card.tags để check blank
+
 
     const toggleMenu = (e) => {
         // Nếu menu đang ĐÓNG và chuẩn bị MỞ
@@ -116,10 +121,31 @@ const DocumentCard = ({ card, isExpanded }) => {
     // --- MỚI: Hàm lưu tags từ modal ---
     const handleSaveTags = (newTags) => {
         setActiveTags(newTags);
-        // Gọi hàm update (giả sử bạn đã thêm updateDocument vào Context như bài trước)
         handleDocumentUpdate(card.id, { tags: newTags });
         console.log(`Saved tags for ${card.title}:`, newTags);
         setIsTagEditorOpen(false);
+    };
+
+    const handleTitleAndPrivacyUpdate = (newTitle, newPrivacy) => {
+        // Kiểm tra ID
+        const docId = card?.id || card?._id;
+        if (!docId) {
+            console.error("❌ ERROR: Document ID is missing");
+            return;
+        }
+
+     
+
+        // Cập nhật State UI ngay lập tức
+        setTitle(newTitle);
+        setPrivacy(newPrivacy);
+
+        // Gọi API với dữ liệu đã chuẩn hóa
+        handleDocumentUpdate(docId, {
+            title: newTitle,
+            isPublic: newPrivacy === 'public',
+            tags: activeTags // Gửi kèm tags để đảm bảo không bị mất
+        });
     };
 
     // LOGIC XỬ LÝ HIỂN THỊ TAG
@@ -184,7 +210,7 @@ const DocumentCard = ({ card, isExpanded }) => {
                 {/* Footer */}
                 <div className={`p-3 ${isExpanded ? "border-t border-gray-700" : ""} `}>
                     <div className="flex flex-row justify-between items-center relative">
-                        <p className="text-lg font-semibold truncate">{card.title}</p>
+                        <p className="text-lg font-semibold truncate">{title}</p>
 
                         <div className="relative">
                             <button
@@ -212,8 +238,10 @@ const DocumentCard = ({ card, isExpanded }) => {
                                         className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition"
                                     >
                                         <Tag size={16} />
-                                        <span>Edit tags</span>
+                                        <span>Edit document</span>
                                     </button>
+
+
 
                                     <button
                                         onClick={handleBookmark}
@@ -241,21 +269,28 @@ const DocumentCard = ({ card, isExpanded }) => {
                 </div>
             </div>
 
-            {/* --- MỚI: Nhúng Component TagEditorModal --- */}
-            {/* Modal nằm ngoài cấu trúc DOM của Card để tránh bị overflow:hidden nếu có, nhưng ở đây đặt cạnh Card vẫn ổn vì dùng position fixed */}
-            <TagEditorModal
+            {/* --- MỚI: Nhúng Component DocumentSettingsModal --- */}
+
+            <DocumentSettingsModal
                 isOpen={isTagEditorOpen}
                 onClose={() => setIsTagEditorOpen(false)}
                 currentTags={activeTags}
-                onSave={handleSaveTags}
+                onSave={handleSaveTags} // Lưu Tags
+
+
+                documentTitle={title}
+                currentPrivacy={privacy}
+
+                onUpdateInfo={(newTitle, newPrivacy) => {
+                    handleTitleAndPrivacyUpdate(newTitle, newPrivacy);
+                }}
+
             />
             <ConfirmDialog
                 isOpen={dialogConfig.isOpen}
                 onClose={closeDialog}
                 {...dialogConfig} // Truyền toàn bộ config (title, msg, onConfirm...) vào
             />
-
-
         </>
     );
 };
@@ -380,7 +415,7 @@ export default function Myworkspace() {
                             <div className="flex flex-wrap items-center gap-3 flex-1">
 
                                 {/* Sort */}
-                                <div className="relative  flex-shrink-0">
+                                <div className="relative" >
                                     <button onClick={toggleSort} className="flex items-center px-2 py-1 rounded-lg hover:bg-gray-700 transition flex-shrink-0">
                                         <SortAsc size={20} className="mr-2" />
                                         <span className="hidden md:block font-medium">Sort</span>

@@ -1,4 +1,3 @@
-// context/DocumentContext.jsx
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import {
     createDocument as createDocumentAPI,
@@ -6,14 +5,12 @@ import {
     updateDocument,
     deleteDocument as deleteDocumentAPI,
     getAllDocument
-} from '../services/documentService'; // 👈 Import các hàm Service
+} from '../services/documentService'; 
 
 const DocumentContext = createContext();
 
 export const DocumentProvider = ({ children }) => {
-    // State cho tài liệu hiện tại đang được chỉnh sửa
     const [currentDocument, setCurrentDocument] = useState(null);
-    // State cho danh sách các tài liệu (dùng cho trang Workspace)
     const [listDocuments, setListDocuments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -44,18 +41,46 @@ export const DocumentProvider = ({ children }) => {
             return data;
         } catch (err) {
             setError(err.message || 'Lỗi tải chi tiết tài liệu');
-            throw err; // Ném lỗi để component biết tải thất bại
+            throw err; 
         } finally {
             setLoading(false);
         }
     }, []);
 
     // 3. Cập nhật nội dung tài liệu (cho Editor)
-    const handleDocumentUpdate = useCallback((newData) => {
+    const handleDocumentUpdate = useCallback(async (id, newData) => {
+        if (!id) {
+            console.error("Cannot update document: ID is missing.");
+            return;
+        }
 
-        setCurrentDocument(prev => ({ ...prev, ...newData, updated_at: new Date().toISOString() }));
+        try {
+           
+            const response = await updateDocument(id, newData);
+            console.log("Document saved successfully:", response);
 
-    }, []);
+         
+            setCurrentDocument(prev => {
+                if (!prev) return null;
+
+                return {
+                    ...prev,
+                    ...newData,
+                    updated_at: new Date().toISOString()
+                };
+            });
+
+        
+            return response;
+
+        } catch (error) {
+       
+            console.error("Failed to save document:", error);
+          
+            throw error;
+        }
+
+    }, [setCurrentDocument]); 
 
     // 4. Lưu tài liệu vào DB
     const saveDocument = async (docId, updateData) => {
@@ -64,7 +89,7 @@ export const DocumentProvider = ({ children }) => {
         } catch (err) {
             setError('Lỗi lưu tài liệu');
             console.log(err)
-            // Xử lý hoàn tác hoặc báo lỗi cho người dùng
+          
         }
     };
 
@@ -86,21 +111,16 @@ export const DocumentProvider = ({ children }) => {
 
     //6. Xoá tài liệu
     const deleteDocument = async (documentId) => {
-        // 1. Gửi lệnh xóa lên Server
         await deleteDocumentAPI(documentId);
-
-        // 2. Cập nhật state cục bộ (KHÔNG GỌI LẠI FETCH)
         setListDocuments(prevList => {
-            // Dùng filter để tạo mảng mới, loại bỏ item có id trùng khớp
             return prevList.filter(doc => doc.id !== documentId);
         });
 
-        // 3. (Tùy chọn) Nếu tài liệu đang mở bị xóa, hãy đặt về null
         setCurrentDocument(prevDoc => (prevDoc && prevDoc.id === documentId ? null : prevDoc));
 
     }
 
-     
+
 
     return (
         <DocumentContext.Provider

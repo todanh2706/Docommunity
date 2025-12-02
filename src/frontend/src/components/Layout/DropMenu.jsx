@@ -67,6 +67,9 @@ export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag }) => {
                     )}
                 </div>
 
+
+             
+
                 {/* 3. Footer: Clear Filter */}
                 {selectedTags.length > 0 && (
                     <div className="p-2 border-t border-gray-700/50 bg-gray-800/50">

@@ -1,6 +1,6 @@
 import Sidebar from "../../components/Layout/Sidebar";
 import { ConfirmDialog } from "../../components/Layout/Dialog";
-import { CreateDocumentModal, TagEditorModal } from '../../components/Layout/Modal';
+import { CreateDocumentModal } from '../../components/Layout/Modal';
 import { TagDropMenu, SortDropMenu } from "../../components/Layout/DropMenu";
 
 import { useState } from 'react';

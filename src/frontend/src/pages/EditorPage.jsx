@@ -3,6 +3,8 @@ import { useToast } from "../context/ToastContext";
 import { TagEditorModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
 import { Link, useLocation } from "react-router-dom";
+import { useDocument } from "../context/DocumentContext";
+
 import Markdown from 'react-markdown';
 
 
@@ -93,6 +95,61 @@ export default function EditorPage({ initialContent = '' }) {
     const [future, setFuture] = useState([]);
 
 
+    //Document handle
+     // --- LOGIC DOCUMENT ---
+    useEffect(() => {
+        if (document) {
+            setTitle(document.title || "Untitled Notebook");
+            setMarkdown(document.content || "");
+            setActiveTags(document.tags || []);
+            setIsBookmark(document.Bookmark || false)
+        }
+    }, [document]);
+    const { handleDocumentUpdate } = useDocument();
+    const docDataRef = useRef({
+        id: document?.id, // Giả sử document có id
+        title,
+        content: markdown,
+        tags: activeTags,
+        isBookmark
+    });
+    useEffect(() => {
+        docDataRef.current = {
+            id: document?.id,
+            title,
+            content: markdown,
+            tags: activeTags, // State này bạn đang dùng
+            isBookmark
+        };
+    }, [title, markdown, activeTags, isBookmark, document?.id]);
+    useEffect(() => {
+        // A. Hàm lưu dữ liệu
+        const saveData = () => {
+            const currentData = docDataRef.current;
+            console.log("Saving data...", currentData);
+
+            // Gọi hàm updateDocument từ context
+            // Lưu ý: Cấu trúc tham số phụ thuộc vào cách bạn viết hàm updateDocument
+            handleDocumentUpdate(currentData.id, {
+                title: currentData.title,
+                content: currentData.content,
+                tags: currentData.tags,
+                isBookmark: currentData.isBookmark
+            });
+        };
+
+        // B. Setup Interval 15s (15000ms)
+        const intervalId = setInterval(() => {
+            saveData();
+        }, 10000);
+
+        // C. Cleanup function (Chạy khi component unmount / rời trang)
+        return () => {
+            clearInterval(intervalId); // Xóa bộ đếm giờ
+            saveData(); // LƯU LẦN CUỐI trước khi component biến mất hoàn toàn
+        };
+    }, []); // Empty
+
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
 
@@ -163,8 +220,10 @@ export default function EditorPage({ initialContent = '' }) {
     const handleSaveTags = (newTags) => {
         setActiveTags(newTags); // Cập nhật state activeTags (hiển thị trên UI)
 
-        // Ở đây bạn sẽ gọi API để lưu vào DB: updateDocTags(card.id, newTags)
-        // Bạn có thể thêm console.log('Tags updated to API:', newTags);
+        handleDocumentUpdate(document?.id, {
+            ...docDataRef.current, // Giữ nguyên các thông tin cũ (content, title...)
+            tags: newTags // Chỉ cập nhật tags mới
+        });
 
         setIsTagEditorOpen(false); // Đóng modal sau khi lưu
     };
@@ -172,12 +231,17 @@ export default function EditorPage({ initialContent = '' }) {
 
     // --- LOGIC BOOKMARK ---
     const toggleBookmarkSection = () => {
-        if (isBookmark == true)
-            success("Bookmark successfully")
-        else
-            success("unbookmark successfully")
-        setIsBookmark(!isBookmark)
+        const newBookmarkStatus = !isBookmark; // Tính toán trạng thái mới
+        setIsBookmark(newBookmarkStatus); // Cập nhật state UI
 
+        if (newBookmarkStatus) success("Bookmark successfully");
+        else success("Unbookmark successfully");
+
+        // Gọi updateDocument NGAY LẬP TỨC
+        handleDocumentUpdate(document?.id, {
+            ...docDataRef.current,
+            isBookmark: newBookmarkStatus
+        });
     }
 
     // --- LOGIC EDITOR ---
@@ -535,15 +599,7 @@ export default function EditorPage({ initialContent = '' }) {
     const handleToolClick = (toolName) => {
         setSelectedTools(prev => prev.includes(toolName) ? prev.filter(t => t !== toolName) : [...prev, toolName]);
     };
-    // --- LOGIC DOCUMENT ---
-    useEffect(() => {
-        if (document) {
-            setTitle(document.title || "Untitled Notebook");
-            setMarkdown(document.content || "");
-            setActiveTags(document.tags || []);
-            // ... (các state khác)
-        }
-    }, [document]);
+   
 
 
     // --- LOGIC COMMENT ---
@@ -621,14 +677,14 @@ export default function EditorPage({ initialContent = '' }) {
                 </div>
                 <div className="flex items-center gap-5">
                     <div className="flex items-center bg-gray-900/50 rounded-lg p-1 border border-white/5 relative">
-                        <div   onClick={() => setIsViewMenuOpen(!isViewMenuOpen)} className="contents ">
+                        <div onClick={() => setIsViewMenuOpen(!isViewMenuOpen)} className="contents ">
                             <ToolbarBtn
                                 icon={
                                     viewMode === 'editor' ? Pencil :
                                         viewMode === 'preview' ? Eye : Columns2
                                 }
                                 isActive={isViewMenuOpen}
-                              
+
                             >
                             </ToolbarBtn>
                             {viewMode}

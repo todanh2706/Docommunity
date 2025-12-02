@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, Plus, Tag, HelpCircle, Settings, Globe, ChevronDown, LinkIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, ChevronDown, LinkIcon } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useDocument } from '../../context/DocumentContext'; // 1. Import Context
 const AVAILABLE_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
@@ -99,34 +99,37 @@ export const CreateDocumentModal = ({ isOpen, onClose }) => {
             />
           </div>
 
-   
+
 
           {/* Visibility Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Visibility</label>
-            <div className="flex items-center space-x-6">
+            <label className="text-sm text-gray-400 mb-3 block">Access Control (Privacy)</label>
+            <div className="flex gap-4">
               {/* Public */}
-              <label className="flex items-center cursor-pointer group">
+              <label className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer bg-gray-800/50 border-gray-700 hover:bg-gray-700/50`}>
                 <input
                   type="radio"
                   name="isPublic"
                   checked={formData.isPublic === true}
                   onChange={() => setFormData({ ...formData, isPublic: true })}
-                  className="h-4 w-4 text-blue-600 bg-gray-900 border-gray-600 focus:ring-blue-500"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-900"
                 />
-                <span className="ml-2 text-sm font-medium text-gray-300 group-hover:text-white transition">Public</span>
+                <GlobeIcon size={20} className="text-green-400" />
+                <span className="text-sm font-medium text-white">Public</span>
               </label>
 
               {/* Private */}
-              <label className="flex items-center cursor-pointer group">
+              <label className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer bg-gray-800/50 border-gray-700 hover:bg-gray-700/50`}>
                 <input
                   type="radio"
                   name="isPublic"
                   checked={formData.isPublic === false}
                   onChange={() => setFormData({ ...formData, isPublic: false })}
-                  className="h-4 w-4 text-blue-600 bg-gray-900 border-gray-600 focus:ring-blue-500"
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-600 bg-gray-900"
                 />
-                <span className="ml-2 text-sm font-medium text-gray-300 group-hover:text-white transition">Private</span>
+
+                <LockIcon size={20} className="text-red-400" />
+                <span className="text-sm font-medium text-white">Private</span>
               </label>
             </div>
           </div>
@@ -146,7 +149,7 @@ export const CreateDocumentModal = ({ isOpen, onClose }) => {
               className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center shadow-lg shadow-blue-900/20"
             >
               {loading && <span className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent rounded-full"></span>}
-              {loading ? 'Creating...'  : 'Create Note ' }
+              {loading ? 'Creating...' : 'Create Note '}
             </button>
           </div>
         </form>
@@ -214,6 +217,29 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
         <div className="p-6 space-y-6">
 
           {/* Khu vực 1: Tags đã assign (Có thể xóa) */}
+
+          {/* Ten document */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Current title</label>
+            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
+              {selectedTags.length === 0 && <span className="text-gray-500 text-sm italic p-1">No tags assigned...</span>}
+
+              {selectedTags.map(tag => (
+                <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-blue-900/40 text-blue-300 rounded-full text-sm border border-blue-800/50 group">
+                  {tag}
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:text-red-400 transition ml-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* set privcay */}
+
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Assigned Tags</label>
             <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
@@ -233,7 +259,238 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
             </div>
           </div>
 
+
           {/* Khu vực 2: Search & Add New */}
+          <div className="relative">
+            <label className="text-sm text-gray-400 mb-2 block">Add / Search Tags</label>
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                className="w-full bg-gray-800 text-white pl-10 pr-4 py-2.5 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="Search or create new tag..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+
+            {/* Dropdown gợi ý */}
+            {searchTerm && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-48 overflow-y-auto z-10">
+                {filteredSuggestions.length > 0 ? (
+                  filteredSuggestions.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => handleAddTag(tag)}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-700 text-gray-300 flex items-center justify-between group"
+                    >
+                      <span>{tag}</span>
+                      <Plus size={16} className="opacity-0 group-hover:opacity-100 text-blue-400" />
+                    </button>
+                  ))
+                ) : (
+                  <button
+                    onClick={() => handleAddTag(searchTerm)}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-700 text-blue-400 italic flex items-center gap-2"
+                  >
+                    <Plus size={16} /> Create new tag "{searchTerm}"
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+
+
+
+
+        {/* Footer Buttons */}
+        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-800/50 border-t border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(selectedTags)}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg shadow-blue-900/20 transition"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+export const DocumentSettingsModal = ({
+  isOpen,
+  onClose,
+  currentTags,
+  onSave, // Vẫn dùng onSave cho tags
+  documentTitle,
+  currentPrivacy,
+  onUpdateInfo
+}) => {
+
+  const [selectedTags, setSelectedTags] = useState(currentTags);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [titleState, setTitState] = useState(documentTitle);
+  const [privacyState, setPrivacyState] = useState(currentPrivacy);
+
+  // Dùng Ref để lưu trữ trạng thái trước khi đóng (Optional, nhưng tốt)
+  const initialTagsRef = useRef(currentTags);
+
+  // Reset lại state khi mở modal
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedTags(currentTags);
+      setTitState(documentTitle);
+      setPrivacyState(currentPrivacy);
+      setSearchTerm("");
+      initialTagsRef.current = currentTags;
+    }
+  }, [isOpen, currentTags, documentTitle, currentPrivacy]);
+
+  if (!isOpen) return null;
+
+
+
+  // Lọc các tag gợi ý: Phải khớp từ khóa search VÀ chưa được chọn
+  const filteredSuggestions = AVAILABLE_TAGS.filter(
+    tag => tag.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedTags.includes(tag)
+  );
+
+  // Xử lý thêm tag (từ gợi ý hoặc tạo mới)
+  const handleAddTag = (tag) => {
+    if (!selectedTags.includes(tag)) {
+      setSelectedTags([...selectedTags, tag]);
+      setSearchTerm(""); // Reset search sau khi chọn
+    }
+  };
+
+  // Xử lý xóa tag
+  const handleRemoveTag = (tagToRemove) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  // Xử lý khi nhấn Enter để tạo tag mới (nếu không có trong gợi ý)
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && searchTerm.trim() !== "") {
+      handleAddTag(searchTerm.trim());
+    }
+  };
+
+  // Xử lý khi nhấn nút Save
+  const handleSave = () => {
+    // 1. Cập nhật Title và Privacy lên EditorPage ngay lập tức
+
+    if (onUpdateInfo) {
+
+      onUpdateInfo(titleState, privacyState);
+    }
+
+    if (JSON.stringify(initialTagsRef.current.sort()) !== JSON.stringify(selectedTags.sort())) {
+      onSave(selectedTags);
+    } else {
+      // Nếu tags không đổi, chỉ đóng modal
+      onClose();
+    }
+
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Tag size={20} className="text-blue-400" /> Document Settings
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-6">
+
+          {/* Khu vực 1: Rename Document Title */}
+          <div>
+            <label htmlFor="document-title" className="text-sm text-gray-400 mb-2 block">Document Title</label>
+            <input
+              id="document-title"
+              type="text"
+              value={titleState}
+              onChange={(e) => setTitState(e.target.value)}
+              className="w-full bg-gray-800 text-white px-4 py-2.5 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              placeholder="Untitled Notebook"
+            />
+          </div>
+
+          {/* Khu vực 2: Set Privacy */}
+          <div>
+            <label className="text-sm text-gray-400 mb-3 block">Access Control (Privacy)</label>
+            <div className="flex gap-4">
+
+              {/* Radio 1: Public */}
+              <label className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${privacyState === 'public' ? 'bg-blue-900/40 border-blue-600 ring-2 ring-blue-500/50' : 'bg-gray-800/50 border-gray-700 hover:bg-gray-700/50'}`}>
+                <input
+                  type="radio"
+                  name="privacy"
+                  value="public"
+                  checked={privacyState === 'public'}
+                  onChange={(e) => setPrivacyState(e.target.value)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-900"
+                />
+                <GlobeIcon size={20} className="text-green-400" />
+                <span className="text-sm font-medium text-white">Public</span>
+              </label>
+
+              {/* Radio 2: Private */}
+              <label className={`flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${privacyState === 'private' ? 'bg-red-900/40 border-red-600 ring-2 ring-red-500/50' : 'bg-gray-800/50 border-gray-700 hover:bg-gray-700/50'}`}>
+                <input
+                  type="radio"
+                  name="privacy"
+                  value="private"
+                  checked={privacyState === 'private'}
+                  onChange={(e) => setPrivacyState(e.target.value)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-600 bg-gray-900"
+                />
+                <LockIcon size={20} className="text-red-400" />
+                <span className="text-sm font-medium text-white">Private</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Khu vực 3: Tags đã assign (Cũ) */}
+          <div>
+            <label className="text-sm text-gray-400 mb-2 block">Assigned Tags</label>
+            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
+              {selectedTags.length === 0 && <span className="text-gray-500 text-sm italic p-1">No tags assigned...</span>}
+
+              {selectedTags.map(tag => (
+                <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-blue-900/40 text-blue-300 rounded-full text-sm border border-blue-800/50 group">
+                  {tag}
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:text-red-400 transition ml-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+
+          {/* Khu vực 4: Search & Add New Tags (Cũ) */}
           <div className="relative">
             <label className="text-sm text-gray-400 mb-2 block">Add / Search Tags</label>
             <div className="relative">
@@ -284,7 +541,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
             Cancel
           </button>
           <button
-            onClick={() => onSave(selectedTags)}
+            onClick={handleSave} // Gọi hàm handleSave mới
             className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg shadow-blue-900/20 transition"
           >
             Save Changes
@@ -294,6 +551,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
     </div>
   );
 };
+
 
 
 export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
@@ -400,7 +658,7 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">
-                  {generalAccess === 'anyone' ? <Globe size={18} /> : <User size={18} />}
+                  {generalAccess === 'anyone' ? <GlobeIcon size={18} /> : <User size={18} />}
                 </div>
                 <div className="flex flex-col">
                   <div className="relative group cursor-pointer flex items-center gap-1">
