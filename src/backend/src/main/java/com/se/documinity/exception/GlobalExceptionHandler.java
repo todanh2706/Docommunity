@@ -41,4 +41,23 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
+
+    @ExceptionHandler(NotAuthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleNotAuthorized(NotAuthorizedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentNotFound(NotAuthorizedException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+    }
 }

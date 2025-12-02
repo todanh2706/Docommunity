@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "documents")
@@ -35,8 +37,11 @@ public class DocumentEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    // Based on your SQL: document has tag_id
-    @ManyToOne
-    @JoinColumn(name = "tag_id")
-    private TagEntity tag;
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "document_tags", // The new join table name
+            joinColumns = @JoinColumn(name = "document_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<TagEntity> tags = new HashSet<>();
 }
