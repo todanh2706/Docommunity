@@ -1,8 +1,8 @@
 package com.se.documinity.controller;
 
-import com.se.documinity.dto.document.CreateDocumentRequest;
-import com.se.documinity.dto.document.DocumentResponse;
-import com.se.documinity.dto.document.UpdateDocumentRequest;
+import com.se.documinity.dto.document.*;
+import com.se.documinity.exception.NoContentToRefineException;
+import com.se.documinity.service.AIService;
 import com.se.documinity.service.DocumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +18,7 @@ import java.util.List;
 public class DocumentController {
 
     private final DocumentService documentService;
+    private final AIService aiService;
 
     @PostMapping
     public ResponseEntity<DocumentResponse> createDocument(@Valid @RequestBody CreateDocumentRequest request) {
@@ -42,5 +43,28 @@ public class DocumentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDocument(@PathVariable Long id) {
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/refine")
+    public ResponseEntity<RefineDocumentResponse> refineDocument(
+            @PathVariable Long id,
+            @RequestBody RefineDocumentRequest request) {
+
+        // 1. Fetch doc securely (will throw 403/404 if invalid)
+        DocumentResponse doc = documentService.getDocument(id);
+
+        // 2. Decide: Use override content OR existing doc content
+        String textToRefine = (request.getContent() != null && !request.getContent().isBlank())
+                ? request.getContent()
+                : doc.getContent();
+
+        if (textToRefine == null || textToRefine.isBlank()) {
+            throw new NoContentToRefineException("No content to refine");
+        }
+
+        // 3. Call AI
+        String result = aiService.refineText(textToRefine, request.getAction());
+
+        return ResponseEntity.ok(new RefineDocumentResponse(result));
     }
 }

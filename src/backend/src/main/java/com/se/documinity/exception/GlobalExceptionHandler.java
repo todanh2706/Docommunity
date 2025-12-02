@@ -50,7 +50,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DocumentNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleDocumentNotFound(NotAuthorizedException ex) {
+    public ResponseEntity<ErrorResponse> handleDocumentNotFound(DocumentNotFoundException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(NoContentToRefineException.class)
+    public ResponseEntity<ErrorResponse> handleNoContentToRefine(NoContentToRefineException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
