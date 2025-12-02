@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useToast } from "../context/ToastContext";
 import { TagEditorModal } from '../components/Layout/Modal'
+import { ShareModal } from '../components/Layout/Modal'
 import { Link, useLocation } from "react-router-dom";
 import Markdown from 'react-markdown';
+
+
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
@@ -10,11 +13,13 @@ import 'highlight.js/styles/github-dark.css';
 import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
-    List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck,
+    List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck, Eye, Pencil,
     GripVertical, X, User // Đảm bảo đã import User và X
 } from "lucide-react";
 
-// --- COMPONENTS CON ---
+
+
+
 const ToolbarBtn = ({ icon: Icon, isActive, onClick }) => (
     <button
         onClick={onClick}
@@ -33,7 +38,7 @@ const INITIAL_COMMENTS = [
     { id: 3, user: "User03", avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s", content: "Hello everyone my name is user03", time: "1 hour ago" },
 ];
 
-export default function EditorPage() {
+export default function EditorPage({ initialContent = '' }) {
     // --- 1. KHAI BÁO STATE (QUAN TRỌNG: PHẢI CÓ ĐỦ Ở ĐÂY) ---
     // Khởi tạo state với giá trị mặc định (rỗng hoặc giá trị từ document nếu có)
     const location = useLocation();
@@ -41,7 +46,7 @@ export default function EditorPage() {
     const [title, setTitle] = useState(document?.title || "");
     const [markdown, setMarkdown] = useState(document?.content || "");
     const [activeTags, setActiveTags] = useState(document?.tags || []); // Sử dụng tags từ document
- 
+
     // State cho Toolbar & UI
     const [selectedTools, setSelectedTools] = useState([]);
     const [isOpen, setIsOpen] = useState(false); // User dropdown
@@ -64,9 +69,91 @@ export default function EditorPage() {
     const { success } = useToast();
     const [isBookmark, setIsBookmark] = useState(true)
 
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+
+    const [viewMode, setViewMode] = useState('side-by-side');
+    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
+
+    const handleCopyLink = () => {
+        // Logic copy link hiện tại (URL trình duyệt hoặc link custom)
+        const currentUrl = window.location.href;
+        navigator.clipboard.writeText(currentUrl);
+        success("Link copied to clipboard!"); // Dùng lại toast có sẵn của bạn
+    };
+
+
+
 
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
 
+    // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
+    const [history, setHistory] = useState([initialContent]);
+    // Lưu trữ các trạng thái có thể làm lại (Redo)
+    const [future, setFuture] = useState([]);
+
+
+    const handleContentChange = useCallback((newMarkdown) => {
+        setMarkdown(newMarkdown);
+
+        setHistory(prevHistory => {
+            const lastState = prevHistory[prevHistory.length - 1];
+
+            // Chỉ ghi vào lịch sử nếu nội dung thực sự thay đổi
+            if (newMarkdown !== lastState) {
+                const maxHistory = 50; // Giới hạn lịch sử
+                let newHistory = [...prevHistory, newMarkdown];
+
+                if (newHistory.length > maxHistory) {
+                    newHistory = newHistory.slice(newHistory.length - maxHistory);
+                }
+
+                // Nếu có nội dung mới, không thể Redo được nữa
+                setFuture([]);
+
+                return newHistory;
+            }
+            return prevHistory; // Không thay đổi history
+        });
+    }, []);
+    // Lưu ý: Các hàm format (toggleFormat, handleListFormat) cần gọi handleContentChange thay vì setMarkdown
+
+    const handleUndo = useCallback(() => {
+        if (history.length > 1) {
+            // Lấy trạng thái hiện tại
+            const currentState = history[history.length - 1];
+
+            // 1. Chuyển trạng thái hiện tại sang mảng future (để có thể Redo)
+            setFuture(prevFuture => [currentState, ...prevFuture]);
+
+            // 2. Cập nhật History: Xóa trạng thái hiện tại
+            const newHistory = history.slice(0, history.length - 1);
+            setHistory(newHistory);
+
+            // 3. Cập nhật nội dung hiển thị
+            setMarkdown(newHistory[newHistory.length - 1]);
+
+            setTimeout(() => { textareaRef.current?.focus(); }, 0);
+        }
+    }, [history]);
+
+    const handleRedo = useCallback(() => {
+        if (future.length > 0) {
+            // Lấy trạng thái redo (phần tử đầu tiên của future)
+            const nextState = future[0];
+
+            // 1. Chuyển trạng thái redo sang mảng history
+            setHistory(prevHistory => [...prevHistory, nextState]);
+
+            // 2. Cập nhật Future: Xóa trạng thái vừa Redo
+            setFuture(prevFuture => prevFuture.slice(1));
+
+            // 3. Cập nhật nội dung hiển thị
+            setMarkdown(nextState);
+
+            setTimeout(() => { textareaRef.current?.focus(); }, 0);
+        }
+    }, [future]);
 
     // --- MỚI: Hàm lưu tags từ modal ---
     const handleOpenTagEditor = () => {
@@ -109,6 +196,341 @@ export default function EditorPage() {
             textarea.setSelectionRange(start + symbol.length, end + symbol.length);
         }, 0);
     };
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            const textarea = textareaRef.current;
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            // Lấy dòng hiện tại
+            const value = textarea.value;
+            const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+            const lineEnd = value.indexOf('\n', start);
+            const currentLine = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+
+            // Regex nhận diện List
+            // Group 1: Khoảng trắng đầu dòng (indent)
+            // Group 2: Ký hiệu (*, -, 1., - [ ])
+            const listRegex = /^(\s*)(\*|-|\d+\.|- \[[ x]\])\s+(.*)$/;
+            const match = currentLine.match(listRegex);
+
+            if (match) {
+                e.preventDefault(); // Ngăn hành vi xuống dòng mặc định
+
+                const indent = match[1];
+                const symbol = match[2];
+                const content = match[3];
+
+                // TRƯỜNG HỢP 1: Dòng hiện tại RỖNG -> Thoát khỏi List
+                if (content.trim() === '') {
+                    // Xóa ký hiệu list ở dòng hiện tại
+                    const newValue = value.substring(0, lineStart) + indent + value.substring(end);
+                    setMarkdown(newValue);
+
+                    // Đặt con trỏ về đầu dòng (sau indent)
+                    setTimeout(() => {
+                        textarea.setSelectionRange(lineStart + indent.length, lineStart + indent.length);
+                    }, 0);
+                    return;
+                }
+
+                // TRƯỜNG HỢP 2: Dòng có nội dung -> Tạo dòng mới với ký hiệu tiếp theo
+                let nextSymbol = symbol;
+
+                // Nếu là số (1., 2.), tự động tăng
+                if (/^\d+\.$/.test(symbol)) {
+                    const num = parseInt(symbol);
+                    nextSymbol = `${num + 1}.`;
+                }
+                // Nếu là checklist (- [x]), dòng mới luôn là chưa check (- [ ])
+                else if (symbol === '- [x]') {
+                    nextSymbol = '- [ ]';
+                }
+
+                const insertText = `\n${indent}${nextSymbol} `;
+                const newValue = value.substring(0, start) + insertText + value.substring(end);
+
+                setMarkdown(newValue);
+
+                // Đặt con trỏ sau ký hiệu mới
+                setTimeout(() => {
+                    const newCursorPos = start + insertText.length;
+                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+                }, 0);
+            }
+        }
+    };
+
+    const handleListFormat = (symbol) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        let start = textarea.selectionStart;
+        let end = textarea.selectionEnd;
+
+        // --- Bổ sung: Xử lý trường hợp con trỏ nằm ở đầu dòng trống ---
+        // Tìm vị trí bắt đầu dòng hiện tại
+        let lineStart = start;
+        while (lineStart > 0 && markdown[lineStart - 1] !== '\n') {
+            lineStart--;
+        }
+
+        // Kiểm tra nếu con trỏ ở đầu dòng VÀ dòng đó trống (hoặc chỉ có khoảng trắng)
+        const lineContent = markdown.substring(lineStart, end).trim();
+        if (start === end && lineContent === '') {
+
+            let newSymbol = symbol;
+            if (symbol === '1.') {
+                // Khi dòng trống, ta mặc định thêm 1. và người dùng sẽ sửa lại khi cần
+                newSymbol = '1.';
+            }
+            const insertText = `${newSymbol} `; // Thêm ký hiệu list và khoảng trắng
+
+            const newText = `${markdown.substring(0, start)}${insertText}${markdown.substring(end)}`;
+
+            setMarkdown(newText);
+
+            // Đặt con trỏ sau ký hiệu list đã chèn
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(start + insertText.length, start + insertText.length);
+            }, 0);
+
+            return; // Thoát khỏi hàm để không chạy logic xử lý dòng phức tạp bên dưới
+        }
+        // -------------------------------------------------------------------
+
+
+        // 1. Mở rộng vùng chọn ra toàn bộ dòng (Logic cũ vẫn cần cho trường hợp Toggle)
+        while (start > 0 && markdown[start - 1] !== '\n') start--;
+        while (end < markdown.length && markdown[end] !== '\n') end++;
+
+        const before = markdown.substring(0, start);
+        const selected = markdown.substring(start, end);
+        const after = markdown.substring(end);
+
+        const lines = selected.split('\n');
+
+        // Regex để nhận diện các loại list (giữ nguyên)
+        const listRegex = /^(\s*)(\*|-|\d+\.|- \[[ x]\])\s+/;
+        const isOrderedList = symbol === '1.';
+
+        // Kiểm tra xem TẤT CẢ các dòng đã có đúng format chưa để quyết định toggle (giữ nguyên)
+        const allHaveSymbol = lines.every(line => {
+            if (line.trim() === '') return true;
+            const match = line.match(listRegex);
+            if (!match) return false;
+
+            if (isOrderedList) return /^\d+\./.test(match[2]);
+            return match[2].startsWith(symbol.trim());
+        });
+
+        // Hàm phụ để luôn lấy ra (indentation + content) (giữ nguyên)
+        const getCleanLineParts = (line) => {
+            const indentMatch = line.match(/^\s*/);
+            const indentation = indentMatch ? indentMatch[0] : '';
+            const remaining = line.substring(indentation.length);
+            const listMatch = remaining.match(listRegex);
+
+            let contentToUse = remaining;
+
+            if (listMatch) {
+                contentToUse = remaining.substring(listMatch[0].length);
+            }
+            return { indentation, contentToUse: contentToUse.trim() };
+        }
+
+        const newLines = lines.map((line, index) => {
+            if (line.trim() === '') return line;
+
+            const { indentation, contentToUse } = getCleanLineParts(line);
+
+            if (allHaveSymbol) {
+                // -- XÓA LIST (Un-list) --
+                return `${indentation}${contentToUse}`;
+            } else {
+                // -- THÊM LIST --
+                let newSymbol = symbol;
+
+                if (isOrderedList) {
+                    newSymbol = `${index + 1}.`;
+                }
+
+                return `${indentation}${newSymbol} ${contentToUse}`;
+            }
+        });
+
+        const newSelected = newLines.join('\n');
+        const newText = `${before}${newSelected}${after}`;
+
+        setMarkdown(newText);
+
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start, start + newSelected.length);
+        }, 0);
+    };
+    // Bạn nên lưu vị trí con trỏ hiện tại vào một ref mỗi khi mở popup (Optional but recommended)
+    // Nhưng cách đơn giản nhất là lấy vị trí hiện tại khi bấm Insert
+
+    const insertTable = () => {
+        // Mặc định tạo bảng 3x3
+        const rows = 3;
+        const cols = 3;
+
+        let headerRow = "|";
+        let separatorRow = "|";
+        for (let c = 0; c < cols; c++) {
+            headerRow += ` Header ${c + 1} |`;
+            separatorRow += " --- |";
+        }
+
+        let bodyRows = "";
+        for (let r = 0; r < rows; r++) {
+            bodyRows += "\n|";
+            for (let c = 0; c < cols; c++) {
+                bodyRows += ` R${r + 1}C${c + 1} |`;
+            }
+        }
+
+        const tableMarkdown = `\n${headerRow}\n${separatorRow}${bodyRows}\n`;
+
+        // Chèn vào editor
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newText = markdown.substring(0, start) + tableMarkdown + markdown.substring(end);
+
+        setMarkdown(newText);
+
+
+        setTimeout(() => {
+            textarea.focus();
+            const newCursor = start + tableMarkdown.length;
+            textarea.setSelectionRange(newCursor, newCursor);
+        }, 0);
+    };
+
+
+    const handleFormat = (type) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = markdown.substring(0, start);
+        // Lấy văn bản được chọn và loại bỏ khoảng trắng thừa ở hai đầu
+        let selected = markdown.substring(start, end).trim();
+        const after = markdown.substring(end);
+        let newText;
+        let newCursorPosition = null;
+
+        if (type === 'img') {
+            // --- Xử lý Chèn Ảnh ---
+            const altTextPlaceholder = 'Alt text';
+            const urlPlaceholder = 'đường_dẫn_ảnh';
+            const titlePlaceholder = '"Optional title"';
+
+            if (selected) {
+                // Trường hợp 1: Người dùng bôi đen link ảnh
+                const imageSyntax = `![${altTextPlaceholder}](${selected} ${titlePlaceholder})`;
+                newText = `${before}${imageSyntax}${after}`;
+
+                // Đặt con trỏ để bôi đen/chọn "Alt text"
+                const altTextStart = before.length + 2;
+                const altTextEnd = altTextStart + altTextPlaceholder.length;
+                newCursorPosition = { start: altTextStart, end: altTextEnd };
+
+            } else {
+                // Trường hợp 2: Người dùng nhấn nút, chèn cú pháp mẫu
+                const imageSyntax = `![${altTextPlaceholder}](${urlPlaceholder} ${titlePlaceholder})`;
+                newText = `${before}${imageSyntax}${after}`;
+
+                // Đặt con trỏ để bôi đen/chọn "đường_dẫn_ảnh"
+                const linkStart = before.length + `![${altTextPlaceholder}](`.length;
+                const linkEnd = linkStart + urlPlaceholder.length;
+                newCursorPosition = { start: linkStart, end: linkEnd };
+            }
+
+        } else if (type === 'code') {
+            // --- Xử lý Chèn Block Code ---
+            const codeSyntaxDelimiter = '```';
+            const languagePlaceholder = 'ngôn_ngữ';
+
+            if (selected) {
+                // Trường hợp 3: Người dùng bôi đen code
+                // Cú pháp: ```ngôn_ngữ\nselected_code\n```
+                const codeSyntax = `${codeSyntaxDelimiter}${languagePlaceholder}\n${selected}\n${codeSyntaxDelimiter}`;
+                newText = `${before}${codeSyntax}${after}`;
+
+                // Đặt con trỏ để bôi đen/chọn "ngôn_ngữ"
+                const langStart = before.length + codeSyntaxDelimiter.length;
+                const langEnd = langStart + languagePlaceholder.length;
+                newCursorPosition = { start: langStart, end: langEnd };
+            } else {
+                // Trường hợp 4: Người dùng nhấn nút Code, chèn block mẫu
+                const codePlaceholder = '\n// Viết code của bạn ở đây\n';
+                const codeSyntax = `${codeSyntaxDelimiter}${languagePlaceholder}${codePlaceholder}${codeSyntaxDelimiter}`;
+                newText = `${before}${codeSyntax}${after}`;
+
+                // Đặt con trỏ vào vị trí code để người dùng bắt đầu viết
+                const codeStart = before.length + codeSyntaxDelimiter.length + languagePlaceholder.length + 1;
+                const codeEnd = codeStart + codePlaceholder.length - 2; // -2 bỏ qua 2 kí tự xuống dòng ở đầu và cuối
+                newCursorPosition = { start: codeStart, end: codeStart }; // Chỉ đặt con trỏ ở đầu block code
+            }
+        } else if (type == 'link') {
+
+            // --- Xử lý Chèn Link ---
+            const textPlaceholder = 'Tên_Link';
+            const urlPlaceholder = 'đường_dẫn_URL';
+
+            if (selected) {
+                // Trường hợp 1: Người dùng bôi đen Text/Tên Link
+                const linkSyntax = `[${selected}](${urlPlaceholder} "Optional title")`;
+                newText = `${before}${linkSyntax}${after}`;
+
+                // Đặt con trỏ để bôi đen/chọn "đường_dẫn_URL"
+                const urlStart = before.length + `[${selected}](`.length;
+                const urlEnd = urlStart + urlPlaceholder.length;
+                newCursorPosition = { start: urlStart, end: urlEnd };
+            } else {
+                // Trường hợp 2: Người dùng nhấn nút, chèn cú pháp mẫu
+                const linkSyntax = `[${textPlaceholder}](${urlPlaceholder} "Optional title")`;
+                newText = `${before}${linkSyntax}${after}`;
+
+                // Đặt con trỏ để bôi đen/chọn "Tên_Link"
+                const textStart = before.length + 1; // Sau dấu '['
+                const textEnd = textStart + textPlaceholder.length;
+                newCursorPosition = { start: textStart, end: textEnd };
+            }
+
+        } else if (type === 'table') {
+            // --- Xử lý Chèn Bảng (Table) ---
+            const tableSyntax = `\n| Cột 1 | Cột 2 | Cột 3 |\n|---|---|---|\n| Dữ liệu 1 | Dữ liệu 2 | Dữ liệu 3 |\n| Dữ liệu 4 | Dữ liệu 5 | Dữ liệu 6 |\n`;
+            newText = `${before}${tableSyntax}${after}`;
+
+            // Đặt con trỏ vào đầu bảng
+            const cursorStart = before.length + 1;
+            newCursorPosition = { start: cursorStart, end: cursorStart };
+        } else {
+            return; // Không xử lý định dạng không xác định
+        }
+
+        setMarkdown(newText);
+
+        // Điều chỉnh vị trí con trỏ
+        setTimeout(() => {
+            textarea.focus();
+            if (newCursorPosition) {
+                textarea.setSelectionRange(newCursorPosition.start, newCursorPosition.end || newCursorPosition.start);
+            } else {
+                // Nếu không có vị trí cụ thể, đặt con trỏ ở cuối phần được chèn
+                textarea.setSelectionRange(before.length + newText.length, before.length + newText.length);
+            }
+        }, 0);
+    };
 
     const handleToolClick = (toolName) => {
         setSelectedTools(prev => prev.includes(toolName) ? prev.filter(t => t !== toolName) : [...prev, toolName]);
@@ -126,8 +548,6 @@ export default function EditorPage() {
 
     // --- LOGIC COMMENT ---
     const toggleCommentSection = () => setShowComments(!showComments);
-
-
 
     const handlePostComment = () => {
         if (!newCommentText.trim()) {
@@ -192,16 +612,56 @@ export default function EditorPage() {
                         <img src='/logo_small.png' className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity" alt="Logo" />
                     </Link>
                     <div className="flex items-center gap-2 group">
-                        <input className="bg-transparent text-sm sm:text-lg font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 rounded px-2 py-1 w-24 md:w-48 transition-all placeholder:text-gray-600" 
-                                type="text" placeholder="Untitled Notebook" 
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)} />
+                        <input className="bg-transparent text-sm sm:text-lg font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 rounded px-2 py-1 w-24 md:w-48 transition-all placeholder:text-gray-600"
+                            type="text" placeholder="Untitled Notebook"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)} />
                         <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                 </div>
                 <div className="flex items-center gap-5">
                     <div className="flex items-center bg-gray-900/50 rounded-lg p-1 border border-white/5 relative">
-                        <ToolbarBtn icon={Columns2} />
+                        <div   onClick={() => setIsViewMenuOpen(!isViewMenuOpen)} className="contents ">
+                            <ToolbarBtn
+                                icon={
+                                    viewMode === 'editor' ? Pencil :
+                                        viewMode === 'preview' ? Eye : Columns2
+                                }
+                                isActive={isViewMenuOpen}
+                              
+                            >
+                            </ToolbarBtn>
+                            {viewMode}
+                        </div>
+
+
+                        {isViewMenuOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-40 bg-[#1e1f22] border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="py-1">
+                                    <button
+                                        onClick={() => { setViewMode('editor'); setIsViewMenuOpen(false); }}
+                                        className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-white/5 transition-colors ${viewMode === 'editor' ? 'text-blue-400' : 'text-gray-300'}`}
+                                    >
+                                        <Pencil size={14} />
+                                        <span>Editor only</span>
+                                    </button>
+                                    <button
+                                        onClick={() => { setViewMode('preview'); setIsViewMenuOpen(false); }}
+                                        className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-white/5 transition-colors ${viewMode === 'preview' ? 'text-blue-400' : 'text-gray-300'}`}
+                                    >
+                                        <Eye size={14} />
+                                        <span>Render view</span>
+                                    </button>
+                                    <button
+                                        onClick={() => { setViewMode('side-by-side'); setIsViewMenuOpen(false); }}
+                                        className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-white/5 transition-colors ${viewMode === 'side-by-side' ? 'text-blue-400' : 'text-gray-300'}`}
+                                    >
+                                        <Columns2 size={14} />
+                                        <span>Side-by-side</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {renderToolbarBtn(Bookmark, 'bookmark', toggleBookmarkSection)}
                         {renderToolbarBtn(Tag, 'tag', handleOpenTagEditor)}
@@ -209,7 +669,7 @@ export default function EditorPage() {
                         {renderToolbarBtn(MessageSquareText, 'comment', toggleCommentSection)}
                         {comments.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse pointer-events-none"></span>}
                     </div>
-                    <button className="flex items-center py-1.5 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-900/20">Share</button>
+                    <button onClick={() => setIsShareModalOpen(true)} className="flex items-center py-1.5 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-900/20">Share</button>
                     <div className="relative">
                         <div onClick={() => setIsOpen(!isOpen)} className="w-9 h-9 rounded-full overflow-hidden shrink-0 cursor-pointer ring-2 ring-transparent hover:ring-blue-500/50 transition-all">
                             <img className="w-full h-full object-cover" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s" alt="User" />
@@ -235,26 +695,49 @@ export default function EditorPage() {
             <div className="flex flex-1 overflow-hidden relative" ref={containerRef}>
 
                 {/* 1. Left: Editor */}
-                <div className="flex flex-col border-r border-white/10" style={{ width: `${editorRatio}%` }}>
+                <div
+                    className={`flex flex-col border-r border-white/10 ${viewMode === 'preview' ? 'hidden' : 'flex'}`}
+                    style={{
+                        // Nếu mode là editor -> width 100%, side-by-side -> theo ratio
+                        width: viewMode === 'editor' ? '100%' : `${editorRatio}%`
+                    }}
+                >
                     <div className="flex items-center gap-1 px-4 py-2 border-b border-white/5 sticky top-0 z-10 overflow-x-auto no-scrollbar bg-[#0f1011]">
-                        <div className="flex items-center gap-0.5"><ToolbarBtn icon={Undo2} /><ToolbarBtn icon={Redo2} /></div>
+                        <div className="flex items-center gap-0.5">
+                            <ToolbarBtn icon={Undo2} onClick={handleUndo}
+                                // Disable nếu chỉ còn trạng thái khởi tạo
+                                disabled={history.length <= 1} />
+                            <ToolbarBtn icon={Redo2} onClick={handleRedo}
+                                // Disable nếu không có trạng thái nào trong future
+                                disabled={future.length === 0} />
+                        </div>
                         <Divider />
                         <div className="flex items-center gap-0.5">
                             {renderToolbarBtn(Bold, 'bold', () => toggleFormat('**'))}
                             {renderToolbarBtn(Italic, 'italic', () => toggleFormat('_'))}
-                            {renderToolbarBtn(Underline, 'underline', () => toggleFormat('__'))}
                             {renderToolbarBtn(Strikethrough, 'strikethrough', () => toggleFormat('~~'))}
                         </div>
                         <Divider />
                         <div className="flex items-center gap-0.5">
-                            {renderToolbarBtn(Code, 'code', () => toggleFormat('``` \n'))}
-                            {renderToolbarBtn(List, 'ul')}
-                            {renderToolbarBtn(ListOrdered, 'ol')}
-                            {renderToolbarBtn(SquareCheck, 'check')}
+                            {renderToolbarBtn(Code, 'code', () => handleFormat('code'))}
+                            {renderToolbarBtn(List, 'ul', () => handleListFormat('*'))}           {/* SỬ DỤNG HÀM MỚI */}
+                            {renderToolbarBtn(ListOrdered, 'ol', () => handleListFormat('1.'))}   {/* SỬ DỤNG HÀM MỚI */}
+                            {renderToolbarBtn(SquareCheck, 'check', () => handleListFormat('- [ ]'))}
+                        </div>
+                        <Divider />
+                        <div className="flex items-center gap-0.5">
+                            {renderToolbarBtn(ImageIcon, 'img', () => handleFormat('img'))}
+                            {renderToolbarBtn(LinkIcon, 'link', () => handleFormat('link'))}
+                            {renderToolbarBtn(TableIcon, 'table', insertTable)}
                         </div>
                     </div>
                     <div className="flex bg-[#121315] flex-1 relative">
-                        <textarea ref={textareaRef} className="flex-1 w-full h-full bg-transparent p-6 text-gray-300 resize-none focus:outline-none font-mono text-sm leading-relaxed custom-scrollbar" placeholder="# Start writing..." value={markdown} onChange={(e) => setMarkdown(e.target.value)} />
+                        <textarea
+                            ref={textareaRef}
+                            className="flex-1 w-full h-full bg-transparent p-6 text-gray-300 resize-none focus:outline-none font-mono text-sm leading-relaxed custom-scrollbar"
+                            placeholder="# Start writing..." value={markdown}
+                            onChange={(e) => handleContentChange(e.target.value)}
+                            onKeyDown={handleKeyDown} />
                     </div>
                 </div>
 
@@ -263,8 +746,16 @@ export default function EditorPage() {
                     <GripVertical size={10} className="text-gray-500" />
                 </div>
 
+
+
                 {/* 3. Right: Preview */}
-                <div className="flex flex-col bg-[#121315]" style={{ width: `${100 - editorRatio}%` }}>
+                <div
+                    className={`flex flex-col bg-[#121315] ${viewMode === 'editor' ? 'hidden' : 'flex'}`}
+                    style={{
+                        // Nếu mode là preview -> width 100%, side-by-side -> phần còn lại
+                        width: viewMode === 'preview' ? '100%' : `${100 - editorRatio}%`
+                    }}
+                >
                     <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-[#0f1011]">
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Preview</span>
                     </div>
@@ -272,6 +763,8 @@ export default function EditorPage() {
                         <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{markdown}</Markdown>
                     </div>
                 </div>
+
+
 
                 {/* --- COMMENT PANEL --- */}
                 {/* Đã sửa z-index lên 9999 để không bị che bởi bất cứ thứ gì */}
@@ -339,6 +832,7 @@ export default function EditorPage() {
                                         onChange={(e) => setNewCommentText(e.target.value)}
                                         className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none min-h-[60px]"
                                         placeholder="Type your thoughts..."
+
                                     />
                                     <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-white/5">
                                         <button onClick={handleCancelComment} className="text-xs font-medium text-gray-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-white/5 transition-colors">Cancel</button>
@@ -350,6 +844,13 @@ export default function EditorPage() {
 
                     </div>
                 )}
+
+                <ShareModal
+                    isOpen={isShareModalOpen}
+                    onClose={() => setIsShareModalOpen(false)}
+                    documentTitle={title}
+                    onCopyLink={handleCopyLink}
+                />
                 <TagEditorModal
                     isOpen={isTagEditorOpen}
                     onClose={() => setIsTagEditorOpen(false)}
