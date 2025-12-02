@@ -22,7 +22,7 @@ export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag }) => {
 
 
             {/* Menu Dropdown */}
-            <div className="absolute top-20 left-30 mt-2 w-64 bg-[#1e1f22] border border-gray-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+            <div className="absolute top-8  mt-2 w-64 bg-[#1e1f22] border border-gray-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col">
 
                 {/* 1. Header & Search Bar */}
                 <div className="p-3 border-b border-gray-700/50 bg-gray-800/50">
@@ -102,7 +102,7 @@ export const SortDropMenu = ({
 
             {/* SỬA LỖI ĐỊNH VỊ: Thay thế vị trí cứng top-20 left-15 bằng top-full left-0 */}
             {/* Component này được đặt bên trong một thẻ cha có thuộc tính relative */}
-            <div className="absolute top-20 left-10 mt-2 w-64 bg-[#1e1f22] border border-gray-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col">
+            <div className="absolute top-8  mt-2 w-64 bg-[#1e1f22] border border-gray-700/50 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col">
 
                 {/* GROUP 1: BY TITLE */}
                 <div className="p-2 border-b border-gray-700/50">

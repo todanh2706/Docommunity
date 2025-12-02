@@ -2,8 +2,9 @@ import Sidebar from "../../components/Layout/Sidebar";
 import { ConfirmDialog } from "../../components/Layout/Dialog";
 import { CreateDocumentModal, TagEditorModal } from '../../components/Layout/Modal';
 import { TagDropMenu, SortDropMenu } from "../../components/Layout/DropMenu";
+import { useDocument } from '../../context/DocumentContext';
+import { useState, useEffect } from 'react';
 
-import { useState } from 'react';
 import { useUIContext } from "../../context/useUIContext";
 import { Link } from "react-router";
 
@@ -12,33 +13,52 @@ import {
     Edit, SortAsc, Tag, Search, X, Grid, List, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, Check, ArrowDownAZ, ArrowUpZA, Calendar, Clock
 } from 'lucide-react';
 
-const mockCards = [
-    { id: '1', title: 'aproject 02', date: '23/06/1782', tags: [], members: 2, note: 'Nội dung tóm tắt...' },
-    { id: '2', title: 'bMML - note', date: '21/05/1782', tags: [], members: 0, note: '' },
-    { id: '3', title: 'cproject 01', date: '23/04/1782', tags: ['security', 'mailflood'], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '4', title: 'dWriteup CTF', date: '23/03/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '6', title: 'eWriteup CTF', date: '21/02/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '7', title: 'fMML - note', date: '21/08/1782', tags: [], members: 0, note: '' },
-    { id: '8', title: 'gproject 02', date: '21/09/1782', tags: ['security', 'mailflood'], members: 3, note: 'Nội dung tóm tắt...' },
-    { id: '9', title: 'zproject 01', date: '20/10/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-]
 
 const DocumentCard = ({ card, isExpanded }) => {
+
+    const { deleteDocument, handleDocumentUpdate } = useDocument();
     const [showMenu, setShowMenu] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(card.tags.includes('bookmarked'));
+
 
     // --- MỚI: State quản lý tags và Modal ---
     const [activeTags, setActiveTags] = useState(card.tags);
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
 
-
-
-
+    const [menuPositionClass, setMenuPositionClass] = useState("left-0 top-full mt-2");
 
     const isBlank = !card.note && card.members === 0 && activeTags.length === 0; // Lưu ý dùng activeTags thay vì card.tags để check blank
 
+    const toggleMenu = (e) => {
+        // Nếu menu đang ĐÓNG và chuẩn bị MỞ
+        if (!showMenu) {
+            const buttonRect = e.currentTarget.getBoundingClientRect();
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
 
-    const toggleMenu = () => {
+            // Ước lượng kích thước menu (w-48 ~ 200px, chiều cao ~ 250px)
+            const menuWidth = 200;
+            const menuHeight = 250;
+
+            // 1. Xử lý trục Ngang (Left/Right)
+            // Nếu khoảng cách từ nút đến mép phải < chiều rộng menu -> Canh phải (right-0)
+            // Ngược lại -> Canh trái (left-0)
+            let xClass = "left-0";
+            if (buttonRect.left + menuWidth > screenWidth) {
+                xClass = "right-0";
+            }
+
+            // 2. Xử lý trục Dọc (Top/Bottom)
+            // Nếu khoảng cách từ đáy nút đến mép dưới màn hình < chiều cao menu -> Xổ lên trên (bottom-full)
+            // Ngược lại -> Xổ xuống dưới (top-full)
+            let yClass = "top-full mt-2";
+            if (buttonRect.bottom + menuHeight > screenHeight) {
+                yClass = "bottom-full mb-2";
+            }
+
+            setMenuPositionClass(`${xClass} ${yClass}`);
+        }
+
         setShowMenu(!showMenu);
     };
     const [dialogConfig, setDialogConfig] = useState({
@@ -56,18 +76,28 @@ const DocumentCard = ({ card, isExpanded }) => {
     };
 
     const confirmDeleteNote = () => {
+        setShowMenu(!showMenu)
         openDialog({
             title: "Delete note",
-            msg: "Are you sure you want to delete your note? Your note will be moved to My trash",
+            msg: "Are you sure you want to delete your note?",
             confirmText: "Yes, Delete It",
             cancelText: "Cancel",
-            isDanger: true, // Bật màu đỏ
-            onConfirm: () => {
-                console.log("Note Deleted!");
-                // Logic logout/redirect...
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    // Gọi hàm xóa từ Context
+                    await deleteDocument(card.id);
+
+                    console.log("Deleted via Context");
+                    closeDialog();
+                } catch (error) {
+                    console.error("Failed to delete", error);
+                    alert("Không thể xóa tài liệu: " + error.message);
+                }
             }
         });
     };
+
     const closeDialog = () => {
         setDialogConfig((prev) => ({ ...prev, isOpen: false }));
     };
@@ -85,10 +115,11 @@ const DocumentCard = ({ card, isExpanded }) => {
 
     // --- MỚI: Hàm lưu tags từ modal ---
     const handleSaveTags = (newTags) => {
-        setActiveTags(newTags); // Cập nhật UI
-        // Ở đây bạn sẽ gọi API để lưu vào DB: updateDocTags(card.id, newTags)
+        setActiveTags(newTags);
+        // Gọi hàm update (giả sử bạn đã thêm updateDocument vào Context như bài trước)
+        handleDocumentUpdate(card.id, { tags: newTags });
         console.log(`Saved tags for ${card.title}:`, newTags);
-        setIsTagEditorOpen(false); // Đóng modal
+        setIsTagEditorOpen(false);
     };
 
     // LOGIC XỬ LÝ HIỂN THỊ TAG
@@ -103,7 +134,7 @@ const DocumentCard = ({ card, isExpanded }) => {
         <>
             {/* Component Card chính */}
 
-            <div className="bg-gray-800 rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
+            <div className="bg-gray-800  rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
                 {/* Phần Body giữ nguyên, CHỈ sửa card.tags thành activeTags */}
                 <Link to="/home/editor" state={{ document: card }}>
                     <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
@@ -165,7 +196,9 @@ const DocumentCard = ({ card, isExpanded }) => {
 
                             {/* Menu Popup */}
                             {showMenu && (
-                                <div className="absolute left-2 bottom-end mb-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                <div
+                                    className={`absolute w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${menuPositionClass}`}
+                                >
                                     <Link to="/home/editor" >
                                         <button className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition">
                                             <Eye size={16} />
@@ -232,7 +265,8 @@ export default function Myworkspace() {
     const [isExpanded, setIsExpanded] = useState(true);
     const [value, setValue] = useState("");
     const { showSidebar } = useUIContext();
-    const [documents, setDocuments] = useState(mockCards);
+    const { listDocuments, loading, fetchListDocuments, error } = useDocument();
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState({
@@ -242,6 +276,11 @@ export default function Myworkspace() {
     const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
     const [filterTags, setFilterTags] = useState([]); // Mảng chứa các tag đang lọc
 
+
+    useEffect(() => {
+        fetchListDocuments();
+
+    }, [fetchListDocuments]);
 
     const handleToggleFilterTag = (tag) => {
         setFilterTags(prev => {
@@ -262,7 +301,6 @@ export default function Myworkspace() {
         setSortConfig({ title: null, date: null });
         setIsSortOpen(false);
     };
-
 
     // ---  State cho Sort Filter ---
     const toggleSort = () => {
@@ -294,32 +332,24 @@ export default function Myworkspace() {
 
 
     // ---  Hàm cho Sort và Tag filter ---
-    const filteredAndSortedDocuments = [...documents]
-        // BƯỚC A: LỌC THEO TAG VÀ SEARCH BAR
+
+    const safeDocuments = Array.isArray(listDocuments) ? listDocuments : [];
+    const filteredAndSortedDocuments = [...safeDocuments]
         .filter(doc => {
             const searchTerm = value.toLowerCase().trim();
+            const docTags = doc.tags || []; // An toàn nếu tags bị null
+
             const matchesTagFilter = (filterTags.length === 0) ||
-                filterTags.some(filterTag => doc.tags.includes(filterTag));
+                filterTags.some(filterTag => docTags.includes(filterTag));
 
-            // Điều kiện 1: Kiểm tra xem tài liệu có thỏa mãn bộ lọc tags đã chọn không
-            // Điều kiện 2: Kiểm tra xem tài liệu có thỏa mãn thanh search không
-
-            // --- LOGIC LỌC TỔNG HỢP ---
             const matchesSearchTerm =
-                // Nếu thanh search trống thì luôn thỏa mãn (true)
                 (searchTerm === "") ||
-                // HOẶC (Title chứa từ khóa search)
                 doc.title.toLowerCase().includes(searchTerm) ||
-                // HOẶC (Bất kỳ Tag nào của document chứa từ khóa search)
-                doc.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+                docTags.some(tag => tag.toLowerCase().includes(searchTerm));
 
-
-            // Điều kiện cuối cùng: Tài liệu phải thỏa mãn cả Lọc Tags (nếu có) VÀ Lọc Search (nếu có)
             return matchesTagFilter && matchesSearchTerm;
         })
-        // BƯỚC B: SẮP XẾP (Giữ nguyên logic cũ)
         .sort((a, b) => {
-            // ... Logic sortConfig cũ giữ nguyên ...
             if (sortConfig.date) {
                 const dateA = parseDate(a.date);
                 const dateB = parseDate(b.date);
@@ -328,9 +358,7 @@ export default function Myworkspace() {
                 }
             }
             if (sortConfig.title) {
-                return sortConfig.title === 'asc'
-                    ? a.title.localeCompare(b.title)
-                    : b.title.localeCompare(a.title);
+                return sortConfig.title === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
             }
             return 0;
         });
@@ -340,6 +368,8 @@ export default function Myworkspace() {
             <div className="flex flex-row items-left justify-between h-screen" >
                 <Sidebar />
 
+
+
                 <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}>
 
                     {/* Toolbar */}
@@ -347,30 +377,51 @@ export default function Myworkspace() {
                         <div className="flex flex-wrap items-center justify-between gap-3">
 
                             {/* LEFT AREA */}
-                            <div className="flex items-center gap-3 flex-1">
+                            <div className="flex flex-wrap items-center gap-3 flex-1">
 
                                 {/* Sort */}
-                                <button onClick={toggleSort} className="flex items-center px-2 py-1 rounded-lg hover:bg-gray-700 transition flex-shrink-0">
-                                    <SortAsc size={20} className="mr-2" />
-                                    <span className="hidden md:block font-medium">Sort</span>
-                                </button>
+                                <div className="relative  flex-shrink-0">
+                                    <button onClick={toggleSort} className="flex items-center px-2 py-1 rounded-lg hover:bg-gray-700 transition flex-shrink-0">
+                                        <SortAsc size={20} className="mr-2" />
+                                        <span className="hidden md:block font-medium">Sort</span>
+                                    </button>
+                                    <SortDropMenu
+                                        isOpen={isSortOpen}
+                                        onClose={handleCloseSort}
+                                        sortConfig={sortConfig}
+                                        onSelect={handleSortSelection}
+                                        onClear={handleClearSort}
+                                    />
+                                </div>
 
 
+                                <div className="relative flex-shrink-0">
+                                    {/* Tags Button (Nút bấm để mở/đóng) */}
+                                    <button
+                                        onClick={() => setIsTagMenuOpen(!isTagMenuOpen)}
+                                        className={`flex items-center px-2 py-1 rounded-lg transition flex-shrink-0 
+                ${isTagMenuOpen || filterTags.length > 0 ? 'bg-gray-700 text-white' : 'hover:bg-gray-700'}
+            `}
+                                    >
+                                        <span className="hidden md:block font-medium">Tags</span>
+                                    </button>
 
-
-                                {/* Tags */}
-                                <button
-                                    onClick={() => setIsTagMenuOpen(!isTagMenuOpen)}
-                                    className={`flex items-center px-2 py-1 rounded-lg transition flex-shrink-0 
-                                            ${isTagMenuOpen || filterTags.length > 0 ? 'bg-gray-700 text-white' : 'hover:bg-gray-700'}
-                                        `}
-                                >
-                                    <span className="hidden md:block font-medium">Tags</span>
-                                </button>
+                                    {/* Menu Dropdown (Chỉ hiển thị khi isTagMenuOpen là true) */}
+                                    {isTagMenuOpen && (
+                                        <TagDropMenu
+                                            // Truyền vị trí top/left/right qua props nếu cần căn chỉnh
+                                            isOpen={isTagMenuOpen}
+                                            onClose={() => setIsTagMenuOpen(false)}
+                                            selectedTags={filterTags}
+                                            onToggleTag={handleToggleFilterTag}
+                                        // Nếu bạn cần tính toán vị trí động như Card Dropdown, bạn cần thêm logic đó ở đây
+                                        />
+                                    )}
+                                </div>
 
                                 {/* SEARCH BAR */}
                                 <div className="flex items-center bg-gray-700 rounded-full px-3 py-1 
-                            w-full md:w-auto md:max-w-sm">
+        w-full md:w-auto md:max-w-sm">
                                     <Search size={14} className="text-gray-400 mr-2" />
 
                                     <input
@@ -413,37 +464,36 @@ export default function Myworkspace() {
                     </div>
 
                     {/* Document Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-
-                        {filteredAndSortedDocuments.map(doc => (
-                            <DocumentCard key={doc.id} card={doc} isExpanded={isExpanded} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div className="text-center text-gray-400 mt-10">Đang tải dữ liệu...</div>
+                    ) : error ? (
+                        <div className="text-center text-red-400 mt-10">Lỗi: {error}</div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {filteredAndSortedDocuments.map(doc => (
+                                <DocumentCard key={doc.id} card={doc} isExpanded={isExpanded} />
+                            ))}
+                            {filteredAndSortedDocuments.length === 0 && (
+                                <div className="col-span-full text-center text-gray-500 py-10">
+                                    Không tìm thấy tài liệu nào.
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 </div>
 
             </div>
 
 
-            <SortDropMenu
-                isOpen={isSortOpen}
-                onClose={handleCloseSort}
-                sortConfig={sortConfig}
-                onSelect={handleSortSelection}
-                onClear={handleClearSort}
-            />
+
 
             <CreateDocumentModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
             />
 
-            <TagDropMenu
-                isOpen={isTagMenuOpen}
-                onClose={() => setIsTagMenuOpen(false)}
-                selectedTags={filterTags}
-                onToggleTag={handleToggleFilterTag}
-            />
+
 
 
         </>

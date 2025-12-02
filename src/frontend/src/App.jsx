@@ -11,7 +11,7 @@ import Home from './pages/Home';
 import Bookmark from './pages/workspace/Bookmark';
 import Tagslist from './pages/workspace/Tagslist';
 import Myworkspace from './pages/workspace/Myworkspace';
-import Myteam from './pages/workspace/Myteam';
+import { DocumentProvider } from './context/DocumentContext';
 import Mytrash from './pages/workspace/Mytrash';
 import SettingsPage from './pages/Setting';
 import EditorPage from './pages/EditorPage';
@@ -36,7 +36,7 @@ function AppRoutes() {
       <Route path='/home/tagslist' element={<Tagslist />} />
       <Route path='/home/community' element={<Community />} />
       <Route path='/home/myworkspace' element={<Myworkspace />} />
-      <Route path='/home/myteam' element={<Myteam />} />
+
       <Route path='/home/mytrash' element={<Mytrash />} />
       <Route path='/home/setting' element={<SettingsPage />} />
       <Route path='/home/editor' element={<EditorPage />} />
@@ -50,10 +50,14 @@ export default function App() {
     <BrowserRouter>
       <UIProvider>
         <ToastProvider>
-          <AxiosInterceptor>
-            <AppRoutes />
-            <Chatbot />
-          </AxiosInterceptor>
+          <DocumentProvider>
+            <AxiosInterceptor>
+
+              <AppRoutes />
+
+              {/* <Chatbot /> */}
+            </AxiosInterceptor>
+          </DocumentProvider>
         </ToastProvider>
       </UIProvider>
     </BrowserRouter>
