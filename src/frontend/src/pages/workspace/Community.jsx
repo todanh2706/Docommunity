@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SortAsc, Search, X } from 'lucide-react';
 import Sidebar from '../../components/Layout/Sidebar';
+import DocCard from '../../components/Community/DocCard';
 import { useUIContext } from '../../context/useUIContext';
 
 export default function Community() {
@@ -58,49 +59,21 @@ export default function Community() {
 
                 {/* Feed Content */}
                 <div className="space-y-6">
-                    {/* Feed Card */}
-                    <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer group">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
-                            <img
-                                src="/dump_avt.jpg"
-                                alt="User"
-                                className="w-16 h-16 rounded-full object-cover border-4 border-white/20 shadow-md group-hover:scale-105 transition-transform"
-                            />
-                        </div>
+                    <DocCard
+                        title="Lỗ hổng 9.8 trong React Native CLI cho phép hacker chiếm quyền máy dev chỉ với 1 request."
+                        content="Một lỗ hổng thực thi mã từ xa nghiêm trọng vừa được phát hiện trong React Native CLI với mã CVE-2025-11953. Theo nhóm bảo mật JFrog, kẻ tấn công có thể thực thi lệnh hệ điều hành trên máy phát triển thông qua server dev, gây rủi ro cao với các dự án Re..."
+                        author={{ name: "Security Team", avatar: "/dump_avt.jpg", time: "2 hours ago" }}
+                        likes={128}
+                        comments={32}
+                    />
 
-                        {/* Content */}
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
-                                Lỗ hổng 9.8 trong React Native CLI cho phép hacker chiếm quyền máy dev chỉ với 1 request.
-                            </h2>
-                            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
-                                Một lỗ hổng thực thi mã từ xa nghiêm trọng vừa được phát hiện trong React Native CLI với mã CVE-2025-11953. Theo nhóm bảo mật JFrog, kẻ tấn công có thể thực thi lệnh hệ điều hành trên máy phát triển thông qua server dev, gây rủi ro cao với các dự án Re...
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Duplicate Card for Demo */}
-                    <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-3xl p-6 flex flex-col sm:flex-row gap-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer group">
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
-                            <img
-                                src="/dump_avt.jpg"
-                                alt="User"
-                                className="w-16 h-16 rounded-full object-cover border-4 border-white/20 shadow-md group-hover:scale-105 transition-transform"
-                            />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1">
-                            <h2 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
-                                Another Security Vulnerability Found
-                            </h2>
-                            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
-                                This is a placeholder for another community post. It follows the same design pattern as the one above, ensuring consistency across the feed.
-                            </p>
-                        </div>
-                    </div>
+                    <DocCard
+                        title="Another Security Vulnerability Found"
+                        content="This is a placeholder for another community post. It follows the same design pattern as the one above, ensuring consistency across the feed."
+                        author={{ name: "Dev Community", avatar: "/dump_avt.jpg", time: "5 hours ago" }}
+                        likes={85}
+                        comments={12}
+                    />
                 </div>
             </main>
         </div>
