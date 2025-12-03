@@ -19,3 +19,6 @@ backend/.mvn
 .vscode/
 .DS_Store
 Thumbs.db
+
+# IntelliJ
+.idea

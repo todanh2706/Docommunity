@@ -460,6 +460,157 @@ thêm 1 route AI: suggestion (text completion, tag suggestion, refine), chatbot,
 
 ------------------------------------------------------------------------------------------
 
+## Community
+### View Public Documents
+<details>
+    <summary><code>GET</code> <code><b>/view-all-docs?tagid={tagid}&page={page}</b></code> <code>(View public documents)</code></summary>
+
+##### Parameters
+
+> | name | type  | data type | description            |
+> |------|-------|-----------|------------------------|
+> | `tagid`  | query | string    | Tag ID                 |
+> | `page`  | query | string    | Page number            |
+
+##### Response
+
+> | http code | content-type            | response                                                             |
+> |-----------|-------------------------|----------------------------------------------------------------------|
+> | `200`     | `application/json`      | `[{"id":"note_1","title":"Keyword Match", "snipet_content": "This is the content...","owner":{"name":"User"}}]`  |
+> | `403`     | `application/json`      | `{ "error": "Forbidden" }` |
+</details>
+
+------------------------------------------------------------------------------------------
+
+### View Document
+<details>
+    <summary><code>GET</code> <code><b>/view-doc?docid={docid}</b></code> <code>(View specific document)</code></summary>
+
+##### Parameters
+
+> | name | type  | data type | description            |
+> |------|-------|-----------|------------------------|
+> | `docid`  | query | string    | Document ID            |
+
+##### Response
+
+> | http code | content-type            | response                                                             |
+> |-----------|-------------------------|----------------------------------------------------------------------|
+> | `200`     | `application/json`      | `{ "id":"note_1","title":"Keyword Match", "content": "This is the full content.","owner":{"name":"User"}}`  |
+> | `403`     | `application/json`      | `{ "error": "Forbidden" }` |
+> | `404`     | `application/json`      | `{ "error": "Not Found" }` |
+
+------------------------------------------------------------------------------------------
+
+### Like Document
+<details>
+    <summary><code>POST</code> <code><b>/documents/{id}/like</b></code>🔒<code>(Like a document)</code></summary>
+
+##### Parameters
+
+> | name | type | data type | description |
+> |---|---|---|---|
+> | `Authorization` | required | `Bearer <access_token>` | |
+> | `id` | path | string | Document ID |
+
+##### Response
+
+> | http code | content-type | response |
+> |---|---|---|
+> | `200` | `application/json` | `{ "message": "Liked", "likesCount": 129 }` |
+> | `401` | `application/json` | `{ "error": "Unauthorized" }` |
+> | `404` | `application/json` | `{ "error": "Not Found" }` |
+</details>
+
+------------------------------------------------------------------------------------------
+
+### Unlike Document
+<details>
+    <summary><code>DELETE</code> <code><b>/documents/{id}/like</b></code>🔒<code>(Unlike a document)</code></summary>
+
+##### Parameters
+
+> | name | type | data type | description |
+> |---|---|---|---|
+> | `Authorization` | required | `Bearer <access_token>` | |
+> | `id` | path | string | Document ID |
+
+##### Response
+
+> | http code | content-type | response |
+> |---|---|---|
+> | `200` | `application/json` | `{ "message": "Unliked", "likesCount": 128 }` |
+> | `401` | `application/json` | `{ "error": "Unauthorized" }` |
+> | `404` | `application/json` | `{ "error": "Not Found" }` |
+</details>
+
+------------------------------------------------------------------------------------------
+
+### Add Comment
+<details>
+    <summary><code>POST</code> <code><b>/documents/{id}/comments</b></code>🔒<code>(Add a comment)</code></summary>
+
+##### Parameters
+
+> | name | type | data type | description |
+> |---|---|---|---|
+> | `Authorization` | required | `Bearer <access_token>` | |
+> | `id` | path | string | Document ID |
+> | `content` | body | string | Comment content |
+
+##### Response
+
+> | http code | content-type | response |
+> |---|---|---|
+> | `201` | `application/json` | `{ "id": "c1", "content": "Great post!", "author": {"id": "u1", "name": "User"}, "created_at": "2023-10-27T10:00:00Z" }` |
+> | `401` | `application/json` | `{ "error": "Unauthorized" }` |
+> | `404` | `application/json` | `{ "error": "Not Found" }` |
+</details>
+
+------------------------------------------------------------------------------------------
+
+### Get Comments
+<details>
+    <summary><code>GET</code> <code><b>/documents/{id}/comments</b></code> <code>(Get document comments)</code></summary>
+
+##### Parameters
+
+> | name | type | data type | description |
+> |---|---|---|---|
+> | `id` | path | string | Document ID |
+> | `page` | query | integer | Page number (optional) |
+
+##### Response
+
+> | http code | content-type | response |
+> |---|---|---|
+> | `200` | `application/json` | `[{"id": "c1", "content": "Great post!", "author": {"id": "u1", "name": "User"}, "created_at": "2023-10-27T10:00:00Z"}]` |
+> | `404` | `application/json` | `{ "error": "Not Found" }` |
+</details>
+
+### Reply to Comment
+<details>
+    <summary><code>POST</code> <code><b>/comments/{id}/replies</b></code>🔒<code>(Reply to a comment)</code></summary>
+
+##### Parameters
+
+> | name | type | data type | description |
+> |---|---|---|---|
+> | `Authorization` | required | `Bearer <access_token>` | |
+> | `id` | path | string | Parent Comment ID |
+> | `content` | body | string | Reply content |
+
+##### Response
+
+> | http code | content-type | response |
+> |---|---|---|
+> | `201` | `application/json` | `{ "id": "r1", "content": "I agree!", "author": {"name": "User2"}, "created_at": "2023-10-27T10:05:00Z" }` |
+> | `401` | `application/json` | `{ "error": "Unauthorized" }` |
+> | `404` | `application/json` | `{ "error": "Not Found" }` |
+</details>
+
+------------------------------------------------------------------------------------------
+
 ## 👥 Team & Sharing
 
 ### Create Team
