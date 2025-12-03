@@ -1,14 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SortAsc, Search, X } from 'lucide-react';
 import Sidebar from '../../components/Layout/Sidebar';
 import DocCard from '../../components/Community/DocCard';
 import { useUIContext } from '../../context/useUIContext';
+import { useCommunity } from '../../hooks/useCommunity';
 
 export default function Community() {
     const { showSidebar } = useUIContext();
     const [value, setValue] = useState("");
+    const [documents, setDocuments] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { viewAllDocs } = useCommunity();
+
+    useEffect(() => {
+        const fetchDocs = async () => {
+            try {
+                const response = await viewAllDocs();
+                setDocuments(response.data);
+            } catch (error) {
+                console.error("Failed to fetch documents:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDocs();
+    }, []);
 
     const handleCardClick = (id) => {
         navigate(`/home/community/doc/${id}`);
@@ -20,7 +38,7 @@ export default function Community() {
 
             <main
                 className={`transition-all duration-300 ease-in-out min-h-screen p-8
-                ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}
+                ${showSidebar ? 'ml-0 md:ml-64 w-[calc(100%-16rem)]' : 'ml-0 w-full'}`}
             >
                 {/* Header
                 <h1 className="text-3xl font-black tracking-wider mb-8 text-white uppercase font-mono">
@@ -44,7 +62,7 @@ export default function Community() {
                             </button>
 
                             {/* SEARCH BAR */}
-                            <div className="flex items-center bg-gray-700 rounded-full px-3 py-1 w-full md:w-auto md:max-w-sm">
+                            <div className="flex items-center bg-gray-700 rounded-full px-3 py-1 w-full md:w-64">
                                 <Search size={14} className="text-gray-400 mr-2" />
                                 <input
                                     type="text"
@@ -65,23 +83,23 @@ export default function Community() {
 
                 {/* Feed Content */}
                 <div className="space-y-6">
-                    <DocCard
-                        title="Lỗ hổng 9.8 trong React Native CLI cho phép hacker chiếm quyền máy dev chỉ với 1 request."
-                        content="Một lỗ hổng thực thi mã từ xa nghiêm trọng vừa được phát hiện trong React Native CLI với mã CVE-2025-11953. Theo nhóm bảo mật JFrog, kẻ tấn công có thể thực thi lệnh hệ điều hành trên máy phát triển thông qua server dev, gây rủi ro cao với các dự án Re..."
-                        author={{ name: "Security Team", avatar: "/dump_avt.jpg", time: "2 hours ago" }}
-                        likes={128}
-                        comments={32}
-                        onClick={() => handleCardClick(1)}
-                    />
-
-                    <DocCard
-                        title="Another Security Vulnerability Found"
-                        content="This is a placeholder for another community post. It follows the same design pattern as the one above, ensuring consistency across the feed."
-                        author={{ name: "Dev Community", avatar: "/dump_avt.jpg", time: "5 hours ago" }}
-                        likes={85}
-                        comments={12}
-                        onClick={() => handleCardClick(2)}
-                    />
+                    {loading ? (
+                        <div className="text-white text-center py-10">Loading community feed...</div>
+                    ) : documents.length > 0 ? (
+                        documents.map((doc) => (
+                            <DocCard
+                                key={doc.id}
+                                title={doc.title}
+                                content={doc.snipet_content || doc.content} // Fallback if snipet not provided
+                                author={doc.owner} // Assuming owner object matches DocCard expectation or needs mapping
+                                likes={doc.likesCount || 0}
+                                comments={doc.commentsCount || 0}
+                                onClick={() => handleCardClick(doc.id)}
+                            />
+                        ))
+                    ) : (
+                        <div className="text-gray-400 text-center py-10">No documents found.</div>
+                    )}
                 </div>
             </main>
         </div>

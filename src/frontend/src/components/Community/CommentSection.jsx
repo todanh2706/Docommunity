@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageSquare, Reply, MoreHorizontal, Send } from 'lucide-react';
+import { useCommunity } from '../../hooks/useCommunity';
 
-const CommentItem = ({ comment, isReply = false }) => {
+const CommentItem = ({ comment, isReply = false, onReply }) => {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
+
+    const handleSendReply = () => {
+        if (replyContent.trim()) {
+            onReply(comment.id, replyContent);
+            setReplyContent("");
+            setIsReplying(false);
+        }
+    };
 
     return (
         <div className={`flex gap-3 ${isReply ? 'ml-12 mt-3' : 'mt-6'}`}>
@@ -43,7 +52,10 @@ const CommentItem = ({ comment, isReply = false }) => {
                             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors"
                             autoFocus
                         />
-                        <button className="p-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-colors">
+                        <button
+                            onClick={handleSendReply}
+                            className="p-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-colors"
+                        >
                             <Send size={14} />
                         </button>
                     </div>
@@ -53,7 +65,7 @@ const CommentItem = ({ comment, isReply = false }) => {
                 {comment.replies && comment.replies.length > 0 && (
                     <div className="mt-2">
                         {comment.replies.map(reply => (
-                            <CommentItem key={reply.id} comment={reply} isReply={true} />
+                            <CommentItem key={reply.id} comment={reply} isReply={true} onReply={onReply} />
                         ))}
                     </div>
                 )}
@@ -62,36 +74,48 @@ const CommentItem = ({ comment, isReply = false }) => {
     );
 };
 
-const CommentSection = () => {
+const CommentSection = ({ docId }) => {
     const [newComment, setNewComment] = useState("");
+    const [comments, setComments] = useState([]);
+    const { getComments, addComment, replyComment } = useCommunity();
 
-    // Mock Data
-    const comments = [
-        {
-            id: 1,
-            author: { name: "Sarah Chen", avatar: "/dump_avt.jpg" },
-            content: "This is a really insightful analysis of the vulnerability. I especially appreciated the breakdown of the CVE details.",
-            time: "2 hours ago",
-            likes: 24,
-            replies: [
-                {
-                    id: 2,
-                    author: { name: "Mike Ross", avatar: "/dump_avt.jpg" },
-                    content: "Totally agree! The mitigation steps were also very clear.",
-                    time: "1 hour ago",
-                    likes: 5
-                }
-            ]
-        },
-        {
-            id: 3,
-            author: { name: "Alex Wong", avatar: "/dump_avt.jpg" },
-            content: "Has anyone tested if this affects older versions of the CLI as well?",
-            time: "3 hours ago",
-            likes: 12,
-            replies: []
+    useEffect(() => {
+        const fetchComments = async () => {
+            if (!docId) return;
+            try {
+                const response = await getComments(docId);
+                setComments(response.data);
+            } catch (error) {
+                console.error("Failed to fetch comments:", error);
+            }
+        };
+        fetchComments();
+    }, [docId]);
+
+    const handleAddComment = async () => {
+        if (!newComment.trim()) return;
+        try {
+            const response = await addComment(docId, newComment);
+            setComments(prev => [response.data, ...prev]);
+            setNewComment("");
+        } catch (error) {
+            console.error("Failed to add comment:", error);
         }
-    ];
+    };
+
+    const handleReply = async (commentId, content) => {
+        try {
+            const response = await replyComment(commentId, content);
+            // Optimistically update UI or re-fetch (simplified here)
+            // Ideally, we'd find the comment and append the reply
+            console.log("Reply added:", response.data);
+            // Re-fetch for simplicity in this step
+            const refresh = await getComments(docId);
+            setComments(refresh.data);
+        } catch (error) {
+            console.error("Failed to reply:", error);
+        }
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -102,7 +126,7 @@ const CommentSection = () => {
             {/* Comment List - Scrollable */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2">
                 {comments.map(comment => (
-                    <CommentItem key={comment.id} comment={comment} />
+                    <CommentItem key={comment.id} comment={comment} onReply={handleReply} />
                 ))}
             </div>
 
@@ -121,7 +145,10 @@ const CommentSection = () => {
                             placeholder="Add to the discussion..."
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none h-24"
                         />
-                        <button className="absolute bottom-3 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg">
+                        <button
+                            onClick={handleAddComment}
+                            className="absolute bottom-3 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg"
+                        >
                             <Send size={16} />
                         </button>
                     </div>

@@ -4,58 +4,45 @@ import { ArrowLeft, Share2, Heart, MoreVertical, Clock, Calendar } from 'lucide-
 import Sidebar from '../../components/Layout/Sidebar';
 import CommentSection from '../../components/Community/CommentSection';
 import { useUIContext } from '../../context/useUIContext';
+import { useCommunity } from '../../hooks/useCommunity';
 
 export default function ViewDocument() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSidebar } = useUIContext();
     const [document, setDocument] = useState(null);
+    const { viewDoc, likeDocument, unlikeDocument } = useCommunity();
+    const [isLiked, setIsLiked] = useState(false);
 
-    // Mock Data Fetching
     useEffect(() => {
-        // Simulate API call
-        setDocument({
-            id: id,
-            title: "Lỗ hổng 9.8 trong React Native CLI cho phép hacker chiếm quyền máy dev chỉ với 1 request.",
-            content: `
-# Critical Vulnerability in React Native CLI
-
-Một lỗ hổng thực thi mã từ xa nghiêm trọng vừa được phát hiện trong React Native CLI với mã CVE-2025-11953. Theo nhóm bảo mật JFrog, kẻ tấn công có thể thực thi lệnh hệ điều hành trên máy phát triển thông qua server dev, gây rủi ro cao với các dự án React Native.
-
-## Chi tiết kỹ thuật
-
-Lỗ hổng nằm trong cơ chế xử lý request của server dev. Khi một request đặc biệt được gửi đến, server sẽ không kiểm tra kỹ lưỡng input, dẫn đến việc thực thi mã tùy ý.
-
-\`\`\`javascript
-// Vulnerable code snippet example
-const handleRequest = (req, res) => {
-  const cmd = req.query.cmd;
-  exec(cmd); // DANGEROUS!
-}
-\`\`\`
-
-## Cách khắc phục
-
-Người dùng được khuyến cáo cập nhật ngay lên phiên bản mới nhất của React Native CLI.
-
-\`npm install -g react-native-cli@latest\`
-
-Ngoài ra, hãy đảm bảo rằng server dev không được expose ra public internet.
-            `,
-            author: {
-                name: "Security Team",
-                avatar: "/dump_avt.jpg",
-                role: "Admin"
-            },
-            stats: {
-                likes: 128,
-                views: 1205,
-                shares: 45
-            },
-            createdAt: "2025-12-03",
-            readTime: "5 min read"
-        });
+        const fetchDoc = async () => {
+            try {
+                const response = await viewDoc(id);
+                setDocument(response.data);
+                // Assuming backend returns if current user liked it, or we manage it locally
+                // setIsLiked(response.data.isLiked); 
+            } catch (error) {
+                console.error("Failed to fetch document:", error);
+            }
+        };
+        if (id) fetchDoc();
     }, [id]);
+
+    const handleLike = async () => {
+        try {
+            if (isLiked) {
+                await unlikeDocument(id);
+                setDocument(prev => ({ ...prev, stats: { ...prev.stats, likes: prev.stats.likes - 1 } }));
+                setIsLiked(false);
+            } else {
+                await likeDocument(id);
+                setDocument(prev => ({ ...prev, stats: { ...prev.stats, likes: prev.stats.likes + 1 } }));
+                setIsLiked(true);
+            }
+        } catch (error) {
+            console.error("Failed to toggle like:", error);
+        }
+    };
 
     if (!document) return <div className="text-white p-10">Loading...</div>;
 
@@ -131,16 +118,20 @@ Ngoài ra, hãy đảm bảo rằng server dev không được expose ra public 
 
                     {/* Floating Like Button */}
                     <div className="sticky bottom-6 flex justify-center mt-10 pointer-events-none">
-                        <button className="pointer-events-auto flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-full shadow-xl hover:bg-white/20 hover:scale-105 transition-all group">
-                            <Heart size={24} className="text-red-400 group-hover:fill-red-400 transition-colors" />
-                            <span className="font-bold text-white">{document.stats.likes}</span>
+                        <button
+                            onClick={handleLike}
+                            className={`pointer-events-auto flex items-center gap-3 backdrop-blur-md border px-6 py-3 rounded-full shadow-xl hover:scale-105 transition-all group
+                            ${isLiked ? 'bg-red-500/20 border-red-500/50' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
+                        >
+                            <Heart size={24} className={`${isLiked ? 'fill-red-500 text-red-500' : 'text-red-400 group-hover:fill-red-400'} transition-colors`} />
+                            <span className="font-bold text-white">{document.stats?.likes || 0}</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Right Panel - Comments */}
                 <div className="w-96 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hidden xl:flex flex-col">
-                    <CommentSection />
+                    <CommentSection docId={id} />
                 </div>
             </main>
         </div>
