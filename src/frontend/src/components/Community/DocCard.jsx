@@ -1,9 +1,13 @@
+
 import React from 'react';
 import { Heart, MessageSquare, Share2 } from 'lucide-react';
 
-const DocCard = ({ title, content, author, likes = 0, comments = 0 }) => {
+const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) => {
     return (
-        <div className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden">
+        <div
+            onClick={onClick}
+            className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
             {/* Glow effect */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-400/30 transition-all duration-500"></div>
 

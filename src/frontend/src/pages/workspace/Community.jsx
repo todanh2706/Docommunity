@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SortAsc, Search, X } from 'lucide-react';
 import Sidebar from '../../components/Layout/Sidebar';
 import DocCard from '../../components/Community/DocCard';
@@ -7,6 +8,11 @@ import { useUIContext } from '../../context/useUIContext';
 export default function Community() {
     const { showSidebar } = useUIContext();
     const [value, setValue] = useState("");
+    const navigate = useNavigate();
+
+    const handleCardClick = (id) => {
+        navigate(`/home/community/doc/${id}`);
+    };
 
     return (
         <div className="flex flex-row items-left justify-between h-screen bg-gray-900 text-gray-100">
@@ -65,6 +71,7 @@ export default function Community() {
                         author={{ name: "Security Team", avatar: "/dump_avt.jpg", time: "2 hours ago" }}
                         likes={128}
                         comments={32}
+                        onClick={() => handleCardClick(1)}
                     />
 
                     <DocCard
@@ -73,6 +80,7 @@ export default function Community() {
                         author={{ name: "Dev Community", avatar: "/dump_avt.jpg", time: "5 hours ago" }}
                         likes={85}
                         comments={12}
+                        onClick={() => handleCardClick(2)}
                     />
                 </div>
             </main>
