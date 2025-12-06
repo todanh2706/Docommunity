@@ -12,10 +12,13 @@ import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> {
     Optional<DocumentEntity> findDocumentByUser(UserEntity user);
+
     List<DocumentEntity> findByUserIdAndIsPublicTrue(Long userId);
+
     List<DocumentEntity> findByUserId(Long userId);
     Page<DocumentEntity> findByIsPublicTrueAndStatus(String status, Pageable pageable);
     Page<DocumentEntity> findByIsPublicTrueAndStatusAndTags_Id(String status, Long tagId, Pageable pageable);
     void deleteById(Long id);
 
+    Page<DocumentEntity> findByIsPublicTrue(Pageable pageable);
 }

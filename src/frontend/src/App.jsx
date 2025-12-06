@@ -16,6 +16,7 @@ import Mytrash from './pages/workspace/Mytrash';
 import SettingsPage from './pages/Setting';
 import EditorPage from './pages/EditorPage';
 import Community from './pages/workspace/Community'
+import ViewDocument from './pages/workspace/ViewDocument';
 import Chatbot from './components/Chatbot/Chatbot';
 
 
@@ -35,6 +36,7 @@ function AppRoutes() {
       <Route path='/home/bookmark' element={<Bookmark />} />
       <Route path='/home/tagslist' element={<Tagslist />} />
       <Route path='/home/community' element={<Community />} />
+      <Route path='/home/community/doc/:id' element={<ViewDocument />} />
       <Route path='/home/myworkspace' element={<Myworkspace />} />
 
       <Route path='/home/mytrash' element={<Mytrash />} />

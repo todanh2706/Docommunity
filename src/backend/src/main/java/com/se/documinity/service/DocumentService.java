@@ -20,6 +20,7 @@ import com.se.documinity.repository.TagRepository;
 import com.se.documinity.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.se.documinity.entity.TagEntity;
@@ -171,6 +172,12 @@ public class DocumentService {
                 .build();
     }
 
+    // public Page<DocumentResponse> getAllPublicDocuments(int page, int size) {
+    //     Pageable pageable = PageRequest.of(page, size);
+    //     Page<DocumentEntity> docPage = documentRepository.findByIsPublicTrue(pageable);
+    //     return docPage.map(this::mapToDocumentResponse);
+    // }
+
     public DocumentResponse updateDocument(Long id, UpdateDocumentRequest request) {
         // 1. Find the document
         DocumentEntity doc = documentRepository.findById(id)
@@ -249,8 +256,7 @@ public class DocumentService {
                 doc.getLastModified(),
                 doc.getIsPublic(),
                 tagNames,
-                doc.getUser().getFullname()
-        );
+                doc.getUser().getFullname());
     }
 
     public int likeDocument(Long documentId) {

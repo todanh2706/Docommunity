@@ -10,17 +10,35 @@ import {
     LuTrash2,
     LuChevronRight
 } from 'react-icons/lu';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BsPersonWorkspace } from 'react-icons/bs';
 import { useUIContext } from '../../context/useUIContext';
 import { CreateDocumentModal } from './Modal';
+import { useUser } from '../../hooks/useUser';
 
 export default function Sidebar({ onDocumentCreated }) {
     const { showSidebar, setShowSidebar } = useUIContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { getUserProfile } = useUser();
+    const [userData, setUserData] = useState({
+        fullname: "User",
+        bio: "Member"
+    });
 
-
-
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const data = await getUserProfile();
+                setUserData({
+                    fullname: data.fullname || data.username || "User",
+                    bio: data.bio || "Member"
+                });
+            } catch (error) {
+                console.error("Failed to fetch user for sidebar", error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     const baseClasses = "flex items-center gap-3 rounded-lg px-3 py-2 transition-all";
     const activeClasses = "bg-blue-800 text-white";
@@ -144,9 +162,9 @@ export default function Sidebar({ onDocumentCreated }) {
                                 alt='User Avatar'
                                 className='w-10 h-10 rounded-full'
                             />
-                            <div>
-                                <p className='font-semibold text-white font-mono'>Danh</p> {/* Username */}
-                                <p className='text-sm text-gray-400 font-mono'>Flag owner</p> {/*some descriptions*/}
+                            <div className='overflow-hidden'>
+                                <p className='font-semibold text-white font-mono truncate'>{userData.fullname}</p>
+                                <p className='text-sm text-gray-400 font-mono truncate'>{userData.bio}</p>
                             </div>
                         </div>
                     </Link>

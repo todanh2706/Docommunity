@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.se.documinity.dto.ResponseDTO;
+import org.springframework.data.domain.Page;
 
 import javax.print.Doc;
 import java.util.List;
@@ -44,6 +45,13 @@ public class DocumentController {
         responseDTO.setDetail("Documents retrieved successfully");
         return ResponseEntity.ok(responseDTO);
     }
+
+    // @GetMapping("/public")
+    // public ResponseEntity<Page<DocumentResponse>> getPublicDocuments(
+    //         @RequestParam(defaultValue = "0") int page,
+    //         @RequestParam(defaultValue = "10") int size) {
+    //     return ResponseEntity.ok(documentService.getAllPublicDocuments(page, size));
+    // }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO> getDocument(@PathVariable Long id) {
