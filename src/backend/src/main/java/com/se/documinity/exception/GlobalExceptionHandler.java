@@ -6,65 +6,89 @@ import com.se.documinity.dto.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import com.se.documinity.dto.ResponseDTO;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult()
                 .getAllErrors()
                 .getFirst()
                 .getDefaultMessage();
 
         ErrorResponse errorResponse = new ErrorResponse(errorMessage);
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUserExists(UserAlreadyExistsException ex) {
+    public ResponseEntity<ResponseDTO> handleUserExists(UserAlreadyExistsException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(TagNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleTagNotFound(TagNotFoundException ex) {
+    public ResponseEntity<ResponseDTO> handleTagNotFound(TagNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
+    public ResponseEntity<ResponseDTO> handleUserNotFound(UserNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(NotAuthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleNotAuthorized(NotAuthorizedException ex) {
+    public ResponseEntity<ResponseDTO> handleNotAuthorized(NotAuthorizedException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(DocumentNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleDocumentNotFound(DocumentNotFoundException ex) {
+    public ResponseEntity<ResponseDTO> handleDocumentNotFound(DocumentNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(NoContentToRefineException.class)
-    public ResponseEntity<ErrorResponse> handleNoContentToRefine(NoContentToRefineException ex) {
+    public ResponseEntity<ResponseDTO> handleNoContentToRefine(NoContentToRefineException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-        return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+    public ResponseEntity<ResponseDTO> handleGenericException(Exception ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        responseDTO.setDetail("A generic error occurred");
+        return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
     }
+
 }

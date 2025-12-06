@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -32,4 +35,29 @@ public class UserEntity {
 
     @Column(columnDefinition = "TEXT")
     private String bio;
+
+    @ManyToMany(mappedBy = "likedByUsers")
+    private Set<DocumentEntity> likedDocuments = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CommentEntity> comments = new HashSet<>();
+
+    @ManyToMany(mappedBy = "markedByUsers")
+    private Set<DocumentEntity> markedDocuments = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserEntity that = (UserEntity) o;
+        // nếu id null (chưa persist) thì coi như khác
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        // pattern an toàn cho entity JPA
+        return getClass().hashCode();
+    }
+
 }

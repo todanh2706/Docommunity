@@ -11,11 +11,16 @@ import com.se.documinity.entity.UserEntity;
 import com.se.documinity.exception.UserAlreadyExistsException;
 import com.se.documinity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.se.documinity.dto.auth.ChangePasswordRequest;
+import com.se.documinity.dto.auth.ForgotPasswordRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -113,5 +118,38 @@ public class AuthService {
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
+    }
+
+    public void changePassword(ChangePasswordRequest request) {
+        // 1. Get current authenticated user
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2. Check if old password matches
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
+
+        // 3. Update to new password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+        // 1. Find user by email
+        UserEntity user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User with given email not found"));
+
+        // 2. Generate a temporary password (in a real app, use a more secure method)
+        String tempPassword = "Temp@1234"; // This should be randomly generated
+
+        // 3. Update user's password
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        userRepository.save(user);
+
+        // 4. Send the temporary password via email (omitted here)
+        // In a real application, integrate with an email service to send the temp password
     }
 }
