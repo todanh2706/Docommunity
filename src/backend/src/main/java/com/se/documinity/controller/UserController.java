@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/users")
@@ -29,26 +30,30 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<PublicUserResponse> getPublicUserProfile(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getPublicUserProfile(id));
+    }
+
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
-        return ResponseEntity.ok(updatedUser); 
+        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/me")
     public ResponseEntity<UserResponse> deleteUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
-        return ResponseEntity.ok(updatedUser); 
+        return ResponseEntity.ok(updatedUser);
     }
 
     public ResponseEntity<?> deleteAccount(@Valid @RequestBody DeleteUserRequest request) {
         try {
             userService.deleteAccount(request);
-            
+
             return ResponseEntity.ok(Map.of(
-                "message", "Account deactivated successfully."
-            ));
-            
+                    "message", "Account deactivated successfully."));
+
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Incorrect password")) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

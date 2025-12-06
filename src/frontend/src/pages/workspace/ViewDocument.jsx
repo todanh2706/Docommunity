@@ -72,7 +72,7 @@ export default function ViewDocument() {
                 {/* Left Panel - Document Content */}
                 <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl overflow-y-auto custom-scrollbar relative">
                     {/* Navigation & Actions */}
-                    <div className="flex items-center justify-between mb-8 sticky top-0 z-10 py-2 -mt-2">
+                    <div className="flex items-center justify-between mb-8 sticky top-4 z-10 py-2 px-4 bg-gray-900/60 backdrop-blur-xl border border-white/5 rounded-xl shadow-lg">
                         <button
                             onClick={() => navigate(-1)}
                             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -132,10 +132,10 @@ export default function ViewDocument() {
                     </article>
 
                     {/* Floating Like Button */}
-                    <div className="sticky bottom-6 flex justify-center mt-10 pointer-events-none">
+                    <div className="sticky bottom-6 flex justify-center mt-10 pointer-events-none z-10">
                         <button
                             onClick={handleLike}
-                            className={`pointer-events-auto flex items-center gap-3 backdrop-blur-md border px-6 py-3 rounded-full shadow-xl hover:scale-105 transition-all group
+                            className={`pointer-events-auto flex items-center gap-3 backdrop-blur-xl border px-6 py-3 rounded-full shadow-xl hover:scale-105 transition-all group
                             ${isLiked ? 'bg-red-500/20 border-red-500/50' : 'bg-white/10 border-white/20 hover:bg-white/20'}`}
                         >
                             <Heart size={24} className={`${isLiked ? 'fill-red-500 text-red-500' : 'text-red-400 group-hover:fill-red-400'} transition-colors`} />

@@ -1,12 +1,16 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Heart, MessageSquare, Share2 } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
 const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) => {
     return (
         <div
-            onClick={onClick}
-            className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 cursor-pointer overflow-hidden"
+            className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 overflow-hidden"
         >
             {/* Glow effect */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-400/30 transition-all duration-500"></div>
@@ -20,7 +24,13 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) =
                         className="w-10 h-10 rounded-full object-cover border-2 border-white/20"
                     />
                     <div>
-                        <p className="text-sm font-semibold text-white">{author.name}</p>
+                        <Link
+                            to={`/home/profile/${author.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm font-semibold text-white hover:text-blue-400 hover:underline transition-colors"
+                        >
+                            {author.name}
+                        </Link>
                         <p className="text-xs text-gray-400">{author.time || 'Just now'}</p>
                     </div>
                 </div>
@@ -28,12 +38,15 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) =
 
             {/* Content */}
             <div className="z-10 space-y-2">
-                <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2">
+                <h3
+                    onClick={onClick}
+                    className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 cursor-pointer hover:underline"
+                >
                     {title}
                 </h3>
-                <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
-                    {content}
-                </p>
+                <div className="text-gray-300 text-sm leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none">
+                    <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</Markdown>
+                </div>
             </div>
 
             {/* Footer / Actions */}

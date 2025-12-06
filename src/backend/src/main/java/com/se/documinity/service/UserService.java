@@ -29,8 +29,7 @@ public class UserService {
                 user.getEmail(),
                 user.getFullname(),
                 user.getPhoneNumber(),
-                user.getBio()
-        );
+                user.getBio());
     }
 
     public UserResponse updateUser(UpdateUserRequest request) {
@@ -62,8 +61,7 @@ public class UserService {
                 updatedUser.getEmail(),
                 updatedUser.getFullname(),
                 updatedUser.getPhoneNumber(),
-                updatedUser.getBio()
-        );
+                updatedUser.getBio());
     }
 
     public void deleteAccount(DeleteUserRequest request) {
@@ -79,5 +77,16 @@ public class UserService {
 
         user.setStatus(false);
         userRepository.save(user);
+    }
+
+    public PublicUserResponse getPublicUserProfile(Long id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new PublicUserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullname(),
+                user.getBio());
     }
 }

@@ -45,9 +45,26 @@ export const useUser = () => {
         }
     };
 
+    const getPublicProfile = async (id) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.get(`/users/${id}`);
+            setIsLoading(false);
+            return response.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.error || "Failed to fetch public profile";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
     return {
         getUserProfile,
         updateUserProfile,
+        getPublicProfile,
         isLoading,
         error
     };

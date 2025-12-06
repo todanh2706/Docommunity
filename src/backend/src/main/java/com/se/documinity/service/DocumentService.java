@@ -171,6 +171,7 @@ public class DocumentService {
                 doc.getLastModified(),
                 doc.getIsPublic(),
                 tagNames,
-                doc.getUser().getFullname());
+                doc.getUser().getFullname(),
+                doc.getUser().getId());
     }
 }
