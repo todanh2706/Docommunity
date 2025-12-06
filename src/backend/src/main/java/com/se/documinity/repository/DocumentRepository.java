@@ -2,6 +2,8 @@ package com.se.documinity.repository;
 
 import com.se.documinity.entity.DocumentEntity;
 import com.se.documinity.entity.UserEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.w3c.dom.stylesheets.LinkStyle;
 
@@ -12,5 +14,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
     Optional<DocumentEntity> findDocumentByUser(UserEntity user);
     List<DocumentEntity> findByUserIdAndIsPublicTrue(Long userId);
     List<DocumentEntity> findByUserId(Long userId);
+    Page<DocumentEntity> findByIsPublicTrueAndStatus(String status, Pageable pageable);
+    Page<DocumentEntity> findByIsPublicTrueAndStatusAndTags_Id(String status, Long tagId, Pageable pageable);
+    void deleteById(Long id);
 
 }

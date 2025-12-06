@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import com.se.documinity.dto.ResponseDTO;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -22,32 +22,67 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    public ResponseEntity<ResponseDTO> register(@Valid @RequestBody RegisterRequest request) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(authService.register(request));
+        responseDTO.setMessage("success");
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<ResponseDTO> login(@Valid @RequestBody LoginRequest request) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(authService.login(request));
+        responseDTO.setMessage("success");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<LogoutResponse> logout(@Valid @RequestBody LogoutRequest request) {
+    public ResponseEntity<ResponseDTO> logout(@Valid @RequestBody LogoutRequest request) {
         try {
             authService.logout(request);
-            return ResponseEntity.ok(new LogoutResponse("Logged out"));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setData(new LogoutResponse("Logged out"));
+            responseDTO.setMessage("success");
+            return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LogoutResponse("Unauthorized or invalid token"));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setData(new LogoutResponse("Unauthorized or invalid token"));
+            responseDTO.setMessage("error");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDTO);
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
+    public ResponseEntity<ResponseDTO> refresh(@RequestBody RefreshRequest request) {
         try {
-            return ResponseEntity.ok(authService.refreshToken(request));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setData(authService.refreshToken(request));
+            responseDTO.setMessage("success");
+            return ResponseEntity.ok(responseDTO);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid or expired refresh token"));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setData(Map.of("error", "Invalid or expired refresh token"));
+            responseDTO.setMessage("error");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDTO);
         }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ResponseDTO> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Password changed successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ResponseDTO> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("If the email exists, a reset link has been sent");
+        return ResponseEntity.ok(responseDTO);
     }
 }

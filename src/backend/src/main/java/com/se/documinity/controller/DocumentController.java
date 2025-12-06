@@ -4,13 +4,18 @@ import com.se.documinity.dto.document.*;
 import com.se.documinity.exception.NoContentToRefineException;
 import com.se.documinity.service.AIService;
 import com.se.documinity.service.DocumentService;
+
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.se.documinity.dto.ResponseDTO;
 
 import javax.print.Doc;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/documents")
@@ -21,32 +26,56 @@ public class DocumentController {
     private final AIService aiService;
 
     @PostMapping
-    public ResponseEntity<DocumentResponse> createDocument(@Valid @RequestBody CreateDocumentRequest request) {
-        return ResponseEntity.ok(documentService.createDocument(request));
+    public ResponseEntity<ResponseDTO> createDocument(@Valid @RequestBody CreateDocumentRequest request) {
+        DocumentResponse documentResponse = documentService.createDocument(request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documentResponse);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document created successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @GetMapping
-    public ResponseEntity<List<DocumentResponse>> getMyDocuments() {
-        return ResponseEntity.ok(documentService.getMyDocuments());
+    public ResponseEntity<ResponseDTO> getMyDocuments() {
+        List<DocumentResponse> documents = documentService.getMyDocuments();
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documents);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Documents retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentResponse> getDocument(@PathVariable Long id) {
-        return ResponseEntity.ok(documentService.getDocument(id));
+    public ResponseEntity<ResponseDTO> getDocument(@PathVariable Long id) {
+        DocumentResponse documentResponse = documentService.getDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documentResponse);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DocumentResponse> updateDocument(@PathVariable Long id, @RequestBody UpdateDocumentRequest request) {
-        return ResponseEntity.ok(documentService.updateDocument(id, request));
+    public ResponseEntity<ResponseDTO> updateDocument(@PathVariable Long id, @RequestBody UpdateDocumentRequest request) {
+        DocumentResponse documentResponse = documentService.updateDocument(id, request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documentResponse);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document updated successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDocument(@PathVariable Long id) {
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ResponseDTO> deleteDocument(@PathVariable Long id) {
+        documentService.deleteDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document deleted successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PostMapping("/{id}/refine")
-    public ResponseEntity<RefineDocumentResponse> refineDocument(
+    public ResponseEntity<ResponseDTO> refineDocument(
             @PathVariable Long id,
             @RequestBody RefineDocumentRequest request) {
 
@@ -65,6 +94,68 @@ public class DocumentController {
         // 3. Call AI
         String result = aiService.refineText(textToRefine, request.getAction());
 
-        return ResponseEntity.ok(new RefineDocumentResponse(result));
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(new RefineDocumentResponse(result));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document refined successfully");
+        return ResponseEntity.ok(responseDTO);
     }
+    @PostMapping("/{id}/like")
+    public ResponseEntity<ResponseDTO> addLike(@PathVariable Long id) {
+        int likesCount = documentService.likeDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(Map.of(
+                "message", "Liked",
+                "likesCount", likesCount
+        ));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Like added successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<ResponseDTO> deleteLike(@PathVariable Long id) {
+        int likesCount = documentService.deleteLikeDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(Map.of(
+                "message", "UnLiked",
+                "likesCount", likesCount
+        ));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Like removed successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<ResponseDTO> addComment(
+            @PathVariable Long id,
+            @Valid @RequestBody AddCommentRequest request) {
+
+        CommentResponse response = documentService.addComment(id, request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Comment added successfully");
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<ResponseDTO> getComments(@PathVariable Long id) {
+        List<CommentResponse> comments = documentService.getCommentsOfDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(comments);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Comments retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/{id}/mark")
+    public ResponseEntity<ResponseDTO> markDocument(@PathVariable Long id) {
+        documentService.markDocument(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Document marked successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
 }

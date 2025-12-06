@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.se.documinity.dto.ResponseDTO;
 
 @RestController
 @RequestMapping("/users")
@@ -25,36 +26,54 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentProfile() {
-        return ResponseEntity.ok(userService.getCurrentUser());
+    public ResponseEntity<ResponseDTO> getCurrentProfile() {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(userService.getCurrentUser());
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Current user profile retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PutMapping("/me")
-    public ResponseEntity<UserResponse> updateUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
+    public ResponseEntity<ResponseDTO> updateUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
-        return ResponseEntity.ok(updatedUser); 
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(updatedUser);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("User updated successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<UserResponse> deleteUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
+    public ResponseEntity<ResponseDTO> deleteUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
-        return ResponseEntity.ok(updatedUser); 
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(updatedUser);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("User deleted successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
-    public ResponseEntity<?> deleteAccount(@Valid @RequestBody DeleteUserRequest request) {
+    public ResponseEntity<ResponseDTO> deleteAccount(@Valid @RequestBody DeleteUserRequest request) {
         try {
             userService.deleteAccount(request);
             
-            return ResponseEntity.ok(Map.of(
-                "message", "Account deactivated successfully."
-            ));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setMessage("success");
+            responseDTO.setDetail("Account deleted successfully");
+            return ResponseEntity.ok(responseDTO);
             
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Incorrect password")) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Incorrect password"));
+                ResponseDTO responseDTO = new ResponseDTO();
+                responseDTO.setMessage("error");
+                responseDTO.setDetail("Incorrect password");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDTO);
             }
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            ResponseDTO responseDTO = new ResponseDTO();
+            responseDTO.setMessage("error");
+            responseDTO.setDetail("An error occurred while deleting the account");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
         }
     }
 }

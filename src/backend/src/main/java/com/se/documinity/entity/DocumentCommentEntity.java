@@ -25,4 +25,19 @@ public class DocumentCommentEntity {
 
     @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true; // cùng object
+        if (o == null || getClass() != o.getClass()) return false; // khác class
+        DocumentCommentEntity that = (DocumentCommentEntity) o;
+        // nếu chưa có id (chưa persist) thì coi như khác
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        // pattern hay dùng cho entity JPA
+        return getClass().hashCode();
+    }
 }

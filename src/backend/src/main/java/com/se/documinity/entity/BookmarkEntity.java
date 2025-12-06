@@ -22,4 +22,19 @@ public class BookmarkEntity {
     @ManyToOne
     @JoinColumn(name = "document_id")
     private DocumentEntity document;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;                       // cùng object
+        if (o == null || getClass() != o.getClass()) return false; // khác class
+        BookmarkEntity that = (BookmarkEntity) o;
+        // nếu chưa có id (chưa persist) thì coi như khác
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        // pattern hay dùng cho entity JPA
+        return getClass().hashCode();
+    }
 }
