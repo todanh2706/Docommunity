@@ -36,8 +36,12 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PublicUserResponse> getPublicUserProfile(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getPublicUserProfile(id));
+    public ResponseEntity<ResponseDTO> getPublicUserProfile(@PathVariable Long id) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(userService.getPublicUserProfile(id));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Public user profile retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PutMapping("/me")

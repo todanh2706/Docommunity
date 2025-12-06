@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PublicDocumentOwnerResponse {
+    private Long id;
     private String name;
 }

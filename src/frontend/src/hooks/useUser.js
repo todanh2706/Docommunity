@@ -12,7 +12,7 @@ export const useUser = () => {
         try {
             const response = await api.get('/users/me');
             setIsLoading(false);
-            return response.data;
+            return response.data.data;
         } catch (err) {
             setIsLoading(false);
             const errMessage = err.response?.data?.error || "Failed to fetch user profile";
@@ -35,7 +35,7 @@ export const useUser = () => {
             };
             const response = await api.put('/users/me', payload);
             setIsLoading(false);
-            return response.data;
+            return response.data.data;
         } catch (err) {
             setIsLoading(false);
             const errMessage = err.response?.data?.error || "Failed to update profile";
@@ -51,7 +51,7 @@ export const useUser = () => {
         try {
             const response = await api.get(`/users/${id}`);
             setIsLoading(false);
-            return response.data;
+            return response.data.data;
         } catch (err) {
             setIsLoading(false);
             const errMessage = err.response?.data?.error || "Failed to fetch public profile";

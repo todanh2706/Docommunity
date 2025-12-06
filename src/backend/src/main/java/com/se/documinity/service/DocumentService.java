@@ -113,7 +113,8 @@ public class DocumentService {
     }
 
     public List<PublicDocumentResponse> getPublicDocuments(Long tagId, int page) {
-        if (page < 1) page = 1;
+        if (page < 1)
+            page = 1;
 
         var pageable = PageRequest.of(page - 1, PAGE_SIZE);
 
@@ -141,15 +142,21 @@ public class DocumentService {
                 .title(doc.getTitle())
                 .snipetContent(snippet)
                 .owner(PublicDocumentOwnerResponse.builder()
+                        .id(doc.getUser() != null ? doc.getUser().getId() : null)
                         .name(doc.getUser() != null ? doc.getUser().getFullname() : "Unknown")
                         .build())
+                .lastModified(doc.getLastModified() != null ? doc.getLastModified() : doc.getCreatedDate())
+                .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
+                .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
                 .build();
     }
 
     private String buildSnippet(String content) {
-        if (content == null) return "";
+        if (content == null)
+            return "";
         int max = 100;
-        if (content.length() <= max) return content;
+        if (content.length() <= max)
+            return content;
         return content.substring(0, max) + "...";
     }
 
@@ -173,9 +180,10 @@ public class DocumentService {
     }
 
     // public Page<DocumentResponse> getAllPublicDocuments(int page, int size) {
-    //     Pageable pageable = PageRequest.of(page, size);
-    //     Page<DocumentEntity> docPage = documentRepository.findByIsPublicTrue(pageable);
-    //     return docPage.map(this::mapToDocumentResponse);
+    // Pageable pageable = PageRequest.of(page, size);
+    // Page<DocumentEntity> docPage =
+    // documentRepository.findByIsPublicTrue(pageable);
+    // return docPage.map(this::mapToDocumentResponse);
     // }
 
     public DocumentResponse updateDocument(Long id, UpdateDocumentRequest request) {
@@ -221,27 +229,26 @@ public class DocumentService {
     }
 
     public void deleteDocument(Long id) {
-    DocumentEntity doc = documentRepository.findById(id)
-            .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
-    System.out.println("Fetched document for deletion: " + doc.getTitle());
-    String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-    System.out.println("Current username: " + currentUsername);
-    if (!doc.getUser().getUsername().equals(currentUsername)) {
-        throw new NotAuthorizedException("Not owner of document");
-    }
-    System.out.println("Authorization check passed for user: " + currentUsername);
+        DocumentEntity doc = documentRepository.findById(id)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        System.out.println("Fetched document for deletion: " + doc.getTitle());
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        System.out.println("Current username: " + currentUsername);
+        if (!doc.getUser().getUsername().equals(currentUsername)) {
+            throw new NotAuthorizedException("Not owner of document");
+        }
+        System.out.println("Authorization check passed for user: " + currentUsername);
 
-    try {
-        documentRepository.delete(doc);
-        System.out.println("Document deleted successfully: " + doc.getTitle());
-    } catch (Exception e) {
-        System.out.println("🔥 Error when deleting document: " + e.getClass().getName()
-                + " - " + e.getMessage());
-        e.printStackTrace(); // In stack trace ra console
-        throw e; // cho GlobalExceptionHandler xử lý tiếp
+        try {
+            documentRepository.delete(doc);
+            System.out.println("Document deleted successfully: " + doc.getTitle());
+        } catch (Exception e) {
+            System.out.println("🔥 Error when deleting document: " + e.getClass().getName()
+                    + " - " + e.getMessage());
+            e.printStackTrace(); // In stack trace ra console
+            throw e; // cho GlobalExceptionHandler xử lý tiếp
+        }
     }
-}
-
 
     private DocumentResponse mapToDocumentResponse(DocumentEntity doc) {
         List<String> tagNames = doc.getTags().stream()
@@ -265,7 +272,8 @@ public class DocumentService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        DocumentEntity doc = documentRepository.findById(documentId).orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
 
         doc.getLikedByUsers().add(user);
 
@@ -280,7 +288,8 @@ public class DocumentService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
         System.out.println("Fetched user: " + user.getUsername()); // Debugging line
-        DocumentEntity doc = documentRepository.findById(documentId).orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
         if (doc.getLikedByUsers() == null || !doc.getLikedByUsers().contains(user)) {
             throw new RuntimeException("You have not liked this document");
         }
@@ -332,8 +341,7 @@ public class DocumentService {
         documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException("Not Found"));
 
-        List<CommentEntity> comments =
-                commentRepository.findByDocument_IdOrderByCreatedAtAsc(documentId);
+        List<CommentEntity> comments = commentRepository.findByDocument_IdOrderByCreatedAtAsc(documentId);
 
         return comments.stream()
                 .map(this::mapToCommentResponse)
@@ -353,7 +361,7 @@ public class DocumentService {
         // 3. Tạo reply
         CommentEntity reply = new CommentEntity();
         reply.setContent(request.getContent());
-        reply.setDocument(parent.getDocument());   // cùng document với comment cha
+        reply.setDocument(parent.getDocument()); // cùng document với comment cha
         reply.setUser(currentUser);
         reply.setParentComment(parent);
         reply.setCreatedAt(Instant.now());
@@ -368,7 +376,8 @@ public class DocumentService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        DocumentEntity doc = documentRepository.findById(documentId).orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
 
         doc.getMarkedByUsers().add(user);
 
