@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import javax.print.Doc;
 import java.util.List;
@@ -30,13 +31,21 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.getMyDocuments());
     }
 
+    @GetMapping("/public")
+    public ResponseEntity<Page<DocumentResponse>> getPublicDocuments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(documentService.getAllPublicDocuments(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<DocumentResponse> getDocument(@PathVariable Long id) {
         return ResponseEntity.ok(documentService.getDocument(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DocumentResponse> updateDocument(@PathVariable Long id, @RequestBody UpdateDocumentRequest request) {
+    public ResponseEntity<DocumentResponse> updateDocument(@PathVariable Long id,
+            @RequestBody UpdateDocumentRequest request) {
         return ResponseEntity.ok(documentService.updateDocument(id, request));
     }
 

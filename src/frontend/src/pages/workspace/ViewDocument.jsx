@@ -5,6 +5,10 @@ import Sidebar from '../../components/Layout/Sidebar';
 import CommentSection from '../../components/Community/CommentSection';
 import { useUIContext } from '../../context/useUIContext';
 import { useCommunity } from '../../hooks/useCommunity';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
 export default function ViewDocument() {
     const { id } = useParams();
@@ -18,7 +22,18 @@ export default function ViewDocument() {
         const fetchDoc = async () => {
             try {
                 const response = await viewDoc(id);
-                setDocument(response.data);
+                const data = response.data;
+                // Map backend response to UI structure
+                setDocument({
+                    ...data,
+                    author: {
+                        name: data.authorName,
+                        avatar: "/dump_avt.jpg", // Placeholder as backend doesn't send avatar yet
+                        role: "Member" // Placeholder
+                    },
+                    readTime: "5 min read", // Placeholder
+                    createdAt: data.createdDate
+                });
                 // Assuming backend returns if current user liked it, or we manage it locally
                 // setIsLiked(response.data.isLiked); 
             } catch (error) {
@@ -57,7 +72,7 @@ export default function ViewDocument() {
                 {/* Left Panel - Document Content */}
                 <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl overflow-y-auto custom-scrollbar relative">
                     {/* Navigation & Actions */}
-                    <div className="flex items-center justify-between mb-8 sticky top-0 bg-gray-900/0 backdrop-blur-md z-10 py-2 -mt-2">
+                    <div className="flex items-center justify-between mb-8 sticky top-0 z-10 py-2 -mt-2">
                         <button
                             onClick={() => navigate(-1)}
                             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -112,7 +127,7 @@ export default function ViewDocument() {
                     <article className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-p:text-gray-300 prose-a:text-blue-400 prose-code:text-blue-300 prose-pre:bg-gray-800/50 prose-pre:border prose-pre:border-white/10">
                         {/* Simple rendering for now, ideally use a Markdown renderer */}
                         <div className="whitespace-pre-wrap font-sans leading-relaxed">
-                            {document.content}
+                            <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{document.content}</Markdown>
                         </div>
                     </article>
 

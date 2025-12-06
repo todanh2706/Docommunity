@@ -5,25 +5,25 @@ export const useCommunity = () => {
 
     /**
      * View public documents
-     * GET /view-all-docs?tagid={tagid}&page={page}
+     * GET /documents/public?page={page}&size={size}
      */
-    const viewAllDocs = async (tagid = '', page = 1) => {
+    const viewAllDocs = async (page = 0, size = 10) => {
         const params = new URLSearchParams();
-        if (tagid) params.append('tagid', tagid);
-        if (page) params.append('page', page);
+        params.append('page', page);
+        params.append('size', size);
 
         const queryString = params.toString();
-        const url = `/view-all-docs${queryString ? `?${queryString}` : ''}`;
+        const url = `/documents/public?${queryString}`;
 
         return await get(url);
     };
 
     /**
      * View specific document
-     * GET /view-doc?docid={docid}
+     * GET /documents/{docid}
      */
     const viewDoc = async (docid) => {
-        return await get(`/view-doc?docid=${docid}`);
+        return await get(`/documents/${docid}`);
     };
 
     /**

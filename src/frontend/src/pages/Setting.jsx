@@ -1,61 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUIContext } from '../context/useUIContext';
+import { useUser } from '../hooks/useUser';
 import Sidebar from "../components/Layout/Sidebar";
 import { ConfirmDialog } from '../components/Layout/Dialog';
-
-import {
-    Settings, Edit2, Trash2, Camera, Shield, User, Mail, Save, Phone, BadgeInfo, Lock, Users
-} from 'lucide-react';
-import { IoRadioButtonOff } from 'react-icons/io5';
-
-const PrivacyToggle = ({ isPrivate, togglePrivacy }) => {
-    return (
-        <div
-            onClick={togglePrivacy}
-            className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 ${isPrivate ? 'bg-red-900/20 hover:bg-red-900/30 border border-red-800' : 'bg-green-900/20 hover:bg-green-900/30 border border-green-800'
-                }`}
-        >
-            <div className={`relative w-12 h-6 rounded-full transition-all duration-300 ${isPrivate ? 'bg-red-600' : 'bg-green-600'}`}>
-                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 flex items-center justify-center ${isPrivate ? 'translate-x-0.5' : 'translate-x-6'
-                    }`}>
-                    {isPrivate ? <Lock size={14} className="text-red-600" /> : <Users size={14} className="text-green-600" />}
-                </div>
-            </div>
-
-            <div className="ml-4 flex flex-col">
-                <p className="font-semibold text-sm">
-                    {isPrivate ? "Private Account" : "Public Account"}
-                </p>
-                <p className="text-xs text-gray-400">
-                    {isPrivate ? "Only team members can view notes." : "Anyone can view shared notes."}
-                </p>
-            </div>
-        </div>
-    );
-};
-// --- 2. COMPONENT: Input Field ---
-const InputField = ({ label, name, value, onChange, type = "text", disabled, icon: Icon }) => {
-    return (
-        <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">{label}</label>
-            <div className={`relative group transition-all duration-200 ${!disabled ? 'opacity-100' : 'opacity-70'}`}>
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors">
-                    {Icon && <Icon size={18} />}
-                </div>
-                <input
-                    name={name}
-                    type={type}
-                    value={value}
-                    onChange={onChange}
-                    disabled={disabled}
-                    className={`w-full bg-[#0F1623] border 
-                        ${disabled ? 'border-gray-700 text-gray-400 cursor-not-allowed' : 'border-gray-600 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500'} 
-                        rounded-lg py-2.5 pl-10 pr-4 outline-none transition-all placeholder:text-gray-600`}
-                />
-            </div>
-        </div>
-    );
-};
+import { Settings, Edit2, Save } from 'lucide-react';
+import ProfileSection from '../components/Settings/ProfileSection';
+import SecuritySection from '../components/Settings/SecuritySection';
+import DangerZoneSection from '../components/Settings/DangerZoneSection';
 
 // --- 3. MAIN PAGE ---
 export default function SettingsPage() {
@@ -70,6 +21,7 @@ export default function SettingsPage() {
     const { showSidebar } = useUIContext();
     const [isEditing, setIsEditing] = useState(false);
     const [backupData, setBackupData] = useState(null);
+    const { getUserProfile, updateUserProfile } = useUser();
 
     // --- STATE QUẢN LÝ DIALOG DUY NHẤT ---
     const [dialogConfig, setDialogConfig] = useState({
@@ -85,6 +37,26 @@ export default function SettingsPage() {
 
     // / --- STATE QUẢN LÝ PRIVACY ---
     const [isPrivate, setIsPrivate] = useState(true);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const userData = await getUserProfile();
+                setFormData(prev => ({
+                    ...prev,
+                    username: userData.username || "",
+                    fullname: userData.fullname || "",
+                    email: userData.email || "",
+                    phone: userData.phone || "",
+                    bio: userData.bio || ""
+                }));
+            } catch (error) {
+                // Error is already logged in the hook
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
     const togglePrivacy = () => {
         setIsPrivate((prev) => !prev);
@@ -126,10 +98,16 @@ export default function SettingsPage() {
         }
     };
 
-    const saveData = () => {
-        console.log("Saving data to API:", formData);
-        setIsEditing(false);
-        setBackupData(null);
+    const saveData = async () => {
+        try {
+            await updateUserProfile(formData);
+            console.log("Data saved successfully");
+            setIsEditing(false);
+            setBackupData(null);
+        } catch (error) {
+            console.error("Failed to save data", error);
+            // Optionally show an error toast here
+        }
     };
 
     const discardChanges = () => {
@@ -224,88 +202,28 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Profile Section */}
-                    <div ref={formContainerRef} className={`bg-[#0B1221] border transition-colors rounded-2xl p-6 md:p-8 mb-8 shadow-sm ${isEditing ? 'border-blue-500/30' : 'border-gray-800'}`}>
-                        <div className="flex flex-col md:flex-row gap-8">
-                            {/* Avatar */}
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                                    <div className={`w-32 h-32 rounded-full overflow-hidden border-4 p-1 transition-colors ${isEditing ? 'border-blue-500/50 hover:border-blue-500' : 'border-gray-800'}`}>
-                                        <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-                                    </div>
-                                    {isEditing && (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Camera className="text-white w-8 h-8" />
-                                        </div>
-                                    )}
-                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                                </div>
-                                {isEditing && <span className="text-xs text-blue-400">Click image to change</span>}
-                            </div>
-
-                            {/* Inputs */}
-                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="md:col-span-2">
-                                    <InputField label="Full Name" name="fullname" icon={User} value={formData.fullname} onChange={handleInputChange} disabled={!isEditing} />
-                                </div>
-                                <div className="md:col-span-2 ">
-                                    <InputField label="Bio" name="bio" icon={BadgeInfo} value={formData.bio} onChange={handleInputChange} disabled={!isEditing} />
-                                </div>
-                                <InputField label="Username" name="username" value={formData.username} onChange={handleInputChange} disabled={!isEditing} />
-                                <InputField label="Email Address" name="email" type="email" icon={Mail} value={formData.email} onChange={handleInputChange} disabled={!isEditing} />
-                                <InputField label="Phone number" name="phone" type="phone" icon={Phone} value={formData.phone} onChange={handleInputChange} disabled={!isEditing} />
-                            </div>
-                        </div>
-                    </div>
+                    <ProfileSection
+                        formData={formData}
+                        isEditing={isEditing}
+                        handleInputChange={handleInputChange}
+                        handleAvatarClick={handleAvatarClick}
+                        handleFileChange={handleFileChange}
+                        fileInputRef={fileInputRef}
+                        formContainerRef={formContainerRef}
+                    />
 
                     {/* Team & Danger Zone */}
-                    <div className="grid grid-cols-1 gap-8 mb-8 w-[100%] w-full md:max-w-lg lg:max-w-xl xl:max-w-2xl md:mx-auto md:ml-0 ">
-                        {/* Security Actions (Chiếm 1 phần) */}
-                        <div className="flex flex-col  gap-6">
-                            <div>
-                                <h2 className="text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">Security & Privacy</h2>
-                                <div className="bg-[#0B1221] border border-gray-800 rounded-xl p-5 space-y-5">
+                    <div className="grid grid-cols-1 gap-8 mb-8 w-full">
+                        {/* Security Actions */}
+                        <SecuritySection
+                            isPrivate={isPrivate}
+                            togglePrivacy={togglePrivacy}
+                        />
 
-                                    {/* THAY THẾ/THÊM TÙY CHỌN PRIVACY */}
-                                    <div className='flex items-center'>
-                                        <PrivacyToggle
-                                            isPrivate={isPrivate}
-                                            togglePrivacy={togglePrivacy}
-
-                                        />
-
-                                    </div>
-
-                                    <div className="h-px bg-gray-700 mx-[-5px]"></div> {/* Đường phân cách */}
-
-                                    {/* PHẦN CHANGE PASSWORD GIỮ NGUYÊN (HOẶC THAY ĐỔI ĐỂ KHỚP VỚI UI) */}
-                                    <div className='pt-2'>
-                                        <p className="text-sm text-gray-400 mb-4">Protect your account with a strong password.</p>
-                                        <button className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg border border-gray-700 transition-colors">
-                                            Change Password
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        <div className="flex flex-col gap-6">
-                            <div>
-                                <h2 className="text-sm font-bold text-red-500/80 mb-3 uppercase tracking-wider">Danger Zone</h2>
-                                <div className="bg-red-900/25 border border-red-900/20 rounded-xl p-5">
-                                    <p className="text-sm text-red-200/60 mb-4">Once you delete your account, there is no going back.</p>
-                                    <button
-                                        onClick={confirmDeleteAccount}
-                                        className="w-full py-2 bg-transparent hover:bg-red-900/20 text-red-500 text-sm font-medium rounded-lg border border-red-900/30 hover:border-red-500/50 transition-all"
-                                    >
-                                        Delete Account
-                                    </button>
-                                </div>
-                            </div>
-
-                            <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="text-white bg-brand box-border border border-transparent hover:bg-brand-strong focus:ring-4 focus:ring-brand-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none">Read more</a>
-
-                        </div>
+                        {/* Danger Zone */}
+                        <DangerZoneSection
+                            onDelete={confirmDeleteAccount}
+                        />
                     </div>
                 </div>
             </main>
