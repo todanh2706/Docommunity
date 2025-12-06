@@ -18,4 +18,5 @@ public class DocumentResponse {
     private Boolean isPublic;
     private List<String> tags;
     private String authorName;
+    private Long authorId;
 }

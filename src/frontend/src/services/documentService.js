@@ -1,7 +1,7 @@
 import axiosInstance from '../hooks/useApi';
 
-const BACKEND_ROOT = '/documents'; 
-const USE_MOCK_DATA = false; 
+const BACKEND_ROOT = '/documents';
+const USE_MOCK_DATA = false;
 
 // --- MOCK DATA ---
 const mockCards = [
@@ -23,11 +23,11 @@ const mockDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
 // 1. LIST OWN DOCUMENTS (GET /documents)
 // ============================================================
 export const getAllDocument = async (filters = {}) => {
- 
+
     if (USE_MOCK_DATA) {
         await mockDelay();
         let results = [...localDocuments];
-        
+
         // Giả lập lọc theo query params
         if (filters.q) {
             results = results.filter(d => d.title.toLowerCase().includes(filters.q.toLowerCase()));
@@ -41,7 +41,7 @@ export const getAllDocument = async (filters = {}) => {
     // Call API thật
     try {
         const response = await axiosInstance.get(`${BACKEND_ROOT}`, { params: filters });
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw error;
     }
@@ -60,7 +60,7 @@ export const getDocumentById = async (id) => {
 
     try {
         const response = await axiosInstance.get(`${BACKEND_ROOT}/${id}`);
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw error;
     }
@@ -87,7 +87,7 @@ export const createDocument = async (docData) => {
     try {
         const response = await axiosInstance.post(`${BACKEND_ROOT}`, docData);
         console.log(response)
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw error;
     }
@@ -101,7 +101,7 @@ export const updateDocument = async (id, docData) => {
         await mockDelay();
         const index = localDocuments.findIndex(d => d.id === id);
         if (index === -1) throw new Error("Document not found (Mock 404)");
-        
+
         // Update local data
         localDocuments[index] = { ...localDocuments[index], ...docData };
         return { message: "Document updated (Mock Success)" };
@@ -109,7 +109,7 @@ export const updateDocument = async (id, docData) => {
 
     try {
         const response = await axiosInstance.put(`${BACKEND_ROOT}/${id}`, docData);
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw error;
     }
@@ -125,7 +125,7 @@ export const deleteDocument = async (id) => {
         localDocuments = localDocuments.filter(d => d.id !== id);
         console.log(id)
         if (localDocuments.length === initialLength) {
-             throw new Error("Document not found or forbidden (Mock Error)");
+            throw new Error("Document not found or forbidden (Mock Error)");
         }
         return true; // 204 No Content
     }
@@ -149,7 +149,7 @@ export const getPublicDocuments = async () => {
 
     try {
         const response = await axiosInstance.get(`${BACKEND_ROOT}/public`);
-        return response.data;
+        return response.data.data;
     } catch (error) {
         throw error;
     }

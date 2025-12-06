@@ -1,6 +1,7 @@
 package com.se.documinity.controller;
 
 import com.se.documinity.dto.document.*;
+import com.se.documinity.dto.comunity.PublicDocumentResponse;
 import com.se.documinity.exception.NoContentToRefineException;
 import com.se.documinity.service.AIService;
 import com.se.documinity.service.DocumentService;
@@ -43,12 +44,17 @@ public class DocumentController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    // @GetMapping("/public")
-    // public ResponseEntity<Page<DocumentResponse>> getPublicDocuments(
-    //         @RequestParam(defaultValue = "0") int page,
-    //         @RequestParam(defaultValue = "10") int size) {
-    //     return ResponseEntity.ok(documentService.getAllPublicDocuments(page, size));
-    // }
+    @GetMapping("/public")
+    public ResponseEntity<ResponseDTO> getPublicDocuments(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<PublicDocumentResponse> documents = documentService.getPublicDocuments(null, page);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documents);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Public documents retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO> getDocument(@PathVariable Long id) {
@@ -61,7 +67,8 @@ public class DocumentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseDTO> updateDocument(@PathVariable Long id, @RequestBody UpdateDocumentRequest request) {
+    public ResponseEntity<ResponseDTO> updateDocument(@PathVariable Long id,
+            @RequestBody UpdateDocumentRequest request) {
         DocumentResponse documentResponse = documentService.updateDocument(id, request);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documentResponse);
@@ -105,14 +112,14 @@ public class DocumentController {
         responseDTO.setDetail("Document refined successfully");
         return ResponseEntity.ok(responseDTO);
     }
+
     @PostMapping("/{id}/like")
     public ResponseEntity<ResponseDTO> addLike(@PathVariable Long id) {
         int likesCount = documentService.likeDocument(id);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(Map.of(
                 "message", "Liked",
-                "likesCount", likesCount
-        ));
+                "likesCount", likesCount));
         responseDTO.setMessage("success");
         responseDTO.setDetail("Like added successfully");
         return ResponseEntity.ok(responseDTO);
@@ -124,8 +131,7 @@ public class DocumentController {
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(Map.of(
                 "message", "UnLiked",
-                "likesCount", likesCount
-        ));
+                "likesCount", likesCount));
         responseDTO.setMessage("success");
         responseDTO.setDetail("Like removed successfully");
         return ResponseEntity.ok(responseDTO);

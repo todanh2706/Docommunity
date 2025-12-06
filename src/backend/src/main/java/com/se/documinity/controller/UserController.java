@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.se.documinity.service.FileStorageService;
 
+import org.springframework.web.bind.annotation.PathVariable;
 import com.se.documinity.dto.ResponseDTO;
 
 @RestController
@@ -45,9 +46,19 @@ public class UserController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ResponseDTO> getPublicUserProfile(@PathVariable Long id) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(userService.getPublicUserProfile(id));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Public user profile retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @PutMapping("/me")
     public ResponseEntity<ResponseDTO> updateUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
+
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(updatedUser);
         responseDTO.setMessage("success");
@@ -58,22 +69,22 @@ public class UserController {
     @DeleteMapping("/me")
     public ResponseEntity<ResponseDTO> deleteUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
         UserResponse updatedUser = userService.updateUser(updateRequest);
+
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(updatedUser);
         responseDTO.setMessage("success");
         responseDTO.setDetail("User deleted successfully");
         return ResponseEntity.ok(responseDTO);
+
     }
 
     public ResponseEntity<ResponseDTO> deleteAccount(@Valid @RequestBody DeleteUserRequest request) {
         try {
             userService.deleteAccount(request);
-            
             ResponseDTO responseDTO = new ResponseDTO();
             responseDTO.setMessage("success");
             responseDTO.setDetail("Account deleted successfully");
             return ResponseEntity.ok(responseDTO);
-            
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Incorrect password")) {
                 ResponseDTO responseDTO = new ResponseDTO();

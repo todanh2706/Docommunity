@@ -1,15 +1,15 @@
-package com.se.documinity.dto.comunity;
+package com.se.documinity.dto.user;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublicDocumentOwnerResponse {
+public class PublicUserResponse {
     private Long id;
-    private String name;
+    private String username;
+    private String fullname;
+    private String bio;
 }

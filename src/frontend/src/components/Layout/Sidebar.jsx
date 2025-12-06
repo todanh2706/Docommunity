@@ -142,6 +142,16 @@ export default function Sidebar({ onDocumentCreated }) {
                             Community
                         </NavLink>
 
+                        <NavLink
+                            to='/home/find-people'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuUsers className='w-5 h-5' />
+                            Find everyone
+                        </NavLink>
+
                         <hr className='my-3 border-gray-700' />
 
                         <NavLink

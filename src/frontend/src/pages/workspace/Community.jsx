@@ -18,7 +18,7 @@ export default function Community() {
         const fetchDocs = async () => {
             try {
                 const response = await viewAllDocs();
-                setDocuments(response.data.content || []);
+                setDocuments(response.data || []);
             } catch (error) {
                 console.error("Failed to fetch documents:", error);
             } finally {
@@ -59,7 +59,19 @@ export default function Community() {
                                 key={doc.id}
                                 title={doc.title}
                                 content={doc.snipet_content || doc.content} // Fallback if snipet not provided
-                                author={doc.owner} // Assuming owner object matches DocCard expectation or needs mapping
+                                author={{
+                                    id: doc.owner?.id,
+                                    name: doc.owner?.name,
+                                    avatar: "/dump_avt.jpg",
+                                    time: new Date(doc.lastModified).toLocaleString('en-US', {
+                                        timeZone: 'Asia/Bangkok',
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })
+                                }}
                                 likes={doc.likesCount || 0}
                                 comments={doc.commentsCount || 0}
                                 onClick={() => handleCardClick(doc.id)}

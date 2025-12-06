@@ -17,6 +17,8 @@ import SettingsPage from './pages/Setting';
 import EditorPage from './pages/EditorPage';
 import Community from './pages/workspace/Community'
 import ViewDocument from './pages/workspace/ViewDocument';
+import FindPeople from './pages/FindPeople';
+import UserProfile from './pages/UserProfile';
 import Chatbot from './components/Chatbot/Chatbot';
 
 
@@ -37,6 +39,8 @@ function AppRoutes() {
       <Route path='/home/tagslist' element={<Tagslist />} />
       <Route path='/home/community' element={<Community />} />
       <Route path='/home/community/doc/:id' element={<ViewDocument />} />
+      <Route path='/home/find-people' element={<FindPeople />} />
+      <Route path='/home/profile/:id' element={<UserProfile />} />
       <Route path='/home/myworkspace' element={<Myworkspace />} />
 
       <Route path='/home/mytrash' element={<Mytrash />} />
