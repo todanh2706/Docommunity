@@ -19,4 +19,6 @@ public class UserResponse {
     private String phone;
 
     private String bio;
+    @JsonProperty("avatar_url")
+    private String avatarUrl;
 }

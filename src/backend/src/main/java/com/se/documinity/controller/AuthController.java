@@ -68,21 +68,27 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/change-password")
-    public ResponseEntity<ResponseDTO> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        authService.changePassword(request);
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setMessage("success");
-        responseDTO.setDetail("Password changed successfully");
-        return ResponseEntity.ok(responseDTO);
-    }
-
     @PostMapping("/forgot-password")
     public ResponseEntity<ResponseDTO> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setMessage("success");
-        responseDTO.setDetail("If the email exists, a reset link has been sent");
-        return ResponseEntity.ok(responseDTO);
+
+        ResponseDTO res = new ResponseDTO();
+        res.setMessage("success");
+        res.setDetail("Reset password link has been sent to your email");
+        res.setData(null);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResponseDTO> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+
+        ResponseDTO res = new ResponseDTO();
+        res.setMessage("success");
+        res.setDetail("Password has been reset successfully");
+        res.setData(null);
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
     }
 }

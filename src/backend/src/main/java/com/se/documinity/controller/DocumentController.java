@@ -5,16 +5,13 @@ import com.se.documinity.exception.NoContentToRefineException;
 import com.se.documinity.service.AIService;
 import com.se.documinity.service.DocumentService;
 
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.se.documinity.dto.ResponseDTO;
-import org.springframework.data.domain.Page;
 
-import javax.print.Doc;
 import java.util.List;
 import java.util.Map;
 

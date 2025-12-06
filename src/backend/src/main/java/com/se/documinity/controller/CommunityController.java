@@ -3,8 +3,6 @@ package com.se.documinity.controller;
 
 import com.se.documinity.dto.comunity.PublicDocumentResponse;
 import com.se.documinity.dto.comunity.ViewDocumentResponse;
-import com.se.documinity.dto.document.CommentResponse;
-import com.se.documinity.dto.document.DocumentResponse;
 import com.se.documinity.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -7,12 +7,17 @@ import com.se.documinity.dto.auth.RefreshRequest;
 import com.se.documinity.dto.auth.RefreshResponse;
 import com.se.documinity.dto.auth.RegisterRequest;
 import com.se.documinity.dto.auth.RegisterResponse;
+import com.se.documinity.dto.auth.ResetPasswordRequest;
+import com.se.documinity.entity.PasswordResetTokenEntity;
 import com.se.documinity.entity.UserEntity;
 import com.se.documinity.exception.UserAlreadyExistsException;
+import com.se.documinity.repository.PasswordResetTokenRepository;
 import com.se.documinity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +26,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.se.documinity.dto.auth.ChangePasswordRequest;
 import com.se.documinity.dto.auth.ForgotPasswordRequest;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +39,11 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     public RegisterResponse register(RegisterRequest request) {
         // 1. Check for existing username
@@ -120,36 +133,69 @@ public class AuthService {
         }
     }
 
-    public void changePassword(ChangePasswordRequest request) {
-        // 1. Get current authenticated user
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // 2. Check if old password matches
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new RuntimeException("Old password is incorrect");
-        }
-
-        // 3. Update to new password
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-    }
 
     public void forgotPassword(ForgotPasswordRequest request) {
         // 1. Find user by email
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User with given email not found"));
 
-        // 2. Generate a temporary password (in a real app, use a more secure method)
-        String tempPassword = "Temp@1234"; // This should be randomly generated
+        // 2. Generate random token
+        String token = UUID.randomUUID().toString();
 
-        // 3. Update user's password
-        user.setPassword(passwordEncoder.encode(tempPassword));
+        // 3. Create token entity (ví dụ: hết hạn sau 30 phút)
+        PasswordResetTokenEntity resetToken = new PasswordResetTokenEntity();
+        resetToken.setToken(token);
+        resetToken.setUser(user);
+        resetToken.setExpiresAt(Instant.now().plus(30, ChronoUnit.MINUTES));
+        resetToken.setUsed(false);
+
+        passwordResetTokenRepository.save(resetToken);
+
+        // 4. Build reset link cho FE
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+        // 5. Gửi email
+        String subject = "Reset your Documinity password";
+        String body = """
+                Xin chào %s,
+
+                Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Documinity của mình.
+
+                Vui lòng click vào link sau để đặt lại mật khẩu (hết hạn sau 30 phút):
+                %s
+
+                Nếu bạn không yêu cầu, hãy bỏ qua email này.
+
+                Trân trọng,
+                Documinity Team
+                """.formatted(user.getFullname(), resetLink);
+
+        emailService.sendSimpleMessage(user.getEmail(), subject, body);
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+        String token = request.getToken();
+
+        PasswordResetTokenEntity resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid reset token"));
+
+        // 1. Check used
+        if (Boolean.TRUE.equals(resetToken.getUsed())) {
+            throw new RuntimeException("Reset token already used");
+        }
+
+        // 2. Check expired
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new RuntimeException("Reset token expired");
+        }
+
+        // 3. Update user password
+        UserEntity user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        // 4. Send the temporary password via email (omitted here)
-        // In a real application, integrate with an email service to send the temp password
+        // 4. Mark token used (hoặc delete luôn cũng được)
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
     }
 }
