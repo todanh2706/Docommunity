@@ -17,15 +17,14 @@ export default function useAuth() {
             const res = await api.post(`/auth/login`, { username, password });
             setIsLoading(false);
 
-            const { accessToken, refreshToken } = res.data;
-            console.log(res.data);
+            const { accessToken, refreshToken } = res.data.data;
             if (accessToken) {
                 localStorage.setItem('accessToken', accessToken);
             }
             if (refreshToken) {
                 localStorage.setItem('refreshToken', refreshToken);
             }
-            return res.data;
+            return res.data.data;
         } catch (err) {
             setIsLoading(false);
 
