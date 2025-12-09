@@ -29,7 +29,9 @@ public class UserService {
                 user.getEmail(),
                 user.getFullname(),
                 user.getPhoneNumber(),
-                user.getBio());
+                user.getBio(),
+                user.getAvatarUrl()
+        );
     }
 
     public UserResponse updateUser(UpdateUserRequest request) {
@@ -61,7 +63,9 @@ public class UserService {
                 updatedUser.getEmail(),
                 updatedUser.getFullname(),
                 updatedUser.getPhoneNumber(),
-                updatedUser.getBio());
+                updatedUser.getBio(),
+                updatedUser.getAvatarUrl()
+        );
     }
 
     public void deleteAccount(DeleteUserRequest request) {

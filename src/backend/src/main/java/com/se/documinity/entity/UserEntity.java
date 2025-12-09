@@ -29,8 +29,13 @@ public class UserEntity {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "email", unique = true)
     private String email;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+    
+    @Column(name = "status")
     private Boolean status;
 
     @Column(columnDefinition = "TEXT")
