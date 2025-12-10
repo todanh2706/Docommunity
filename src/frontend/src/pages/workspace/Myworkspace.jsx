@@ -108,8 +108,22 @@ const DocumentCard = ({ card, isExpanded }) => {
     };
 
     const handleBookmark = () => {
-        setIsBookmarked(!isBookmarked);
+        const newIsBookmarked = !isBookmarked;
+        setIsBookmarked(newIsBookmarked);
         setShowMenu(false);
+
+        // Update tags
+        let newTags;
+        if (newIsBookmarked) {
+            newTags = [...activeTags, 'bookmarked'];
+        } else {
+            newTags = activeTags.filter(t => t !== 'bookmarked');
+        }
+        // Deduplicate just in case
+        newTags = [...new Set(newTags)];
+
+        setActiveTags(newTags);
+        handleDocumentUpdate(card.id, { tags: newTags });
     };
 
     // --- MỚI: Hàm xử lý mở modal Edit Tag ---
@@ -134,7 +148,7 @@ const DocumentCard = ({ card, isExpanded }) => {
             return;
         }
 
-     
+
 
         // Cập nhật State UI ngay lập tức
         setTitle(newTitle);
