@@ -1,7 +1,7 @@
 import axiosInstance from '../hooks/useApi';
 
 const BACKEND_ROOT = '/ai';
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const mockDelay = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -14,7 +14,7 @@ export const getAiChat = async (message) => {
         };
     }
     try {
-        const response = await axiosInstance.post(`${BACKEND_ROOT}/chat`, {'message': message});
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/chat`, { 'message': message });
         return response.data;
     } catch (error) {
         console.error('Error fetching documents:', error);
@@ -31,7 +31,7 @@ export const generateContent = async (type, prompt) => {
     }
     try {
         const response = await axiosInstance.post(`${BACKEND_ROOT}/generate`, { type, prompt });
-        
+
         return response.data;
     } catch (error) {
         console.error('Error generating content:', error);
@@ -39,7 +39,7 @@ export const generateContent = async (type, prompt) => {
     }
 }
 
-export const refineContent = async (text, instruction) => {
+export const refineContent = async (docId, text, instruction) => {
     if (USE_MOCK_DATA) {
         await mockDelay(2000);
         return {
@@ -47,8 +47,36 @@ export const refineContent = async (text, instruction) => {
         };
     }
     try {
-        const response = await axiosInstance.post(`${BACKEND_ROOT}/refine`, { text, instruction });
-        return response.data;
+        // Use the document-specific endpoint if docId is provided
+        const url = docId ? `/documents/${docId}/refine` : `${BACKEND_ROOT}/refine`;
+
+        // Backend expects different payloads for DocumentController vs AIController (if implemented)
+        let payload;
+        if (docId) {
+            // DocumentController uses RefineDocumentRequest: { action, content }
+            payload = {
+                action: instruction,
+                content: text
+            };
+        } else {
+            // AIController (generic) would use RefineTextRequest: { instruction, text }
+            payload = {
+                instruction: instruction,
+                text: text
+            };
+        }
+
+        const response = await axiosInstance.post(url, payload);
+
+        // Backend returns ResponseDTO { data: { refineContent: "..." } }
+        const result = response.data.data || response.data;
+
+        // Normalize: Helper for consistent UI usage (EditorPage expects 'content')
+        if (result && result.refineContent) {
+            result.content = result.refineContent;
+        }
+
+        return result;
     } catch (error) {
         console.error('Error refining content:', error);
         throw error;

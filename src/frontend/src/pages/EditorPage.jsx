@@ -279,7 +279,9 @@ export default function EditorPage({ initialContent = '' }) {
         try {
             let data;
             if (aiMode === 'refine' && selectedTextForAI) {
-                data = await refineContent(selectedTextForAI, prompt);
+                // Pass document.id if available
+                const docId = document?.id || null;
+                data = await refineContent(docId, selectedTextForAI, prompt);
             } else {
                 data = await generateContent(type, prompt);
             }
