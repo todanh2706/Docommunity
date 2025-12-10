@@ -41,7 +41,15 @@ export const getAllDocument = async (filters = {}) => {
     // Call API thật
     try {
         const response = await axiosInstance.get(`${BACKEND_ROOT}`, { params: filters });
-        return response.data.data;
+        // Backend returns { data: [...], message: "...", detail: "..." }
+        const allDocs = Array.isArray(response.data) ? response.data : (response.data.data || []);
+
+        // Filter out deleted documents (status="deleted") AND "TRASHED" tag
+        const activeDocs = allDocs.filter(doc =>
+            doc.status !== 'deleted' &&
+            !(doc.tags && doc.tags.includes('TRASHED'))
+        );
+        return activeDocs;
     } catch (error) {
         throw error;
     }
@@ -78,7 +86,8 @@ export const createDocument = async (docData) => {
             content: docData.content || '',
             tags: docData.tags || [],
             isPublic: docData.isPublic || false,
-            date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+            date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+            status: 'active'
         };
         localDocuments.unshift(newDoc); // Thêm vào đầu danh sách
         return newDoc;
@@ -118,6 +127,8 @@ export const updateDocument = async (id, docData) => {
 // ============================================================
 // 5. DELETE DOCUMENT (DELETE /documents/:id)
 // ============================================================
+// 5. DELETE DOCUMENT (Soft Delete - set status to "deleted")
+// ============================================================
 export const deleteDocument = async (id) => {
     if (USE_MOCK_DATA) {
         await mockDelay();
@@ -131,8 +142,17 @@ export const deleteDocument = async (id) => {
     }
 
     try {
-        await axiosInstance.delete(`${BACKEND_ROOT}/${id}`);
-        return true;
+        // Soft delete implementation: Add "TRASHED" tag
+        // 1. Get current document to preserve existing tags
+        const currentDoc = await getDocumentById(id);
+        const currentTags = currentDoc.tags || [];
+
+        // 2. Add TRASHED tag if not exists
+        if (!currentTags.includes('TRASHED')) {
+            const newTags = [...currentTags, 'TRASHED'];
+            return await updateDocument(id, { tags: newTags });
+        }
+        return currentDoc;
     } catch (error) {
         throw error;
     }
@@ -149,7 +169,70 @@ export const getPublicDocuments = async () => {
 
     try {
         const response = await axiosInstance.get(`${BACKEND_ROOT}/public`);
-        return response.data.data;
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 7. GET TRASHED DOCUMENTS (Filter by status="deleted")
+// ============================================================
+export const getTrashedDocuments = async () => {
+    try {
+        // Get all documents and filter deleted ones on client side
+        // Backend could add ?status=deleted query param in future
+        const response = await axiosInstance.get(`${BACKEND_ROOT}`);
+        // Backend returns { data: [...], message: "...", detail: "..." }
+        const allDocs = Array.isArray(response.data) ? response.data : (response.data.data || []);
+
+        // Filter documents with status "deleted" OR tag "TRASHED"
+        const trashedDocs = allDocs.filter(doc =>
+            doc.status === 'deleted' ||
+            (doc.tags && doc.tags.includes('TRASHED'))
+        );
+        return trashedDocs;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 8. RESTORE DOCUMENT FROM TRASH (Update status to active)
+// ============================================================
+export const restoreDocument = async (id) => {
+    try {
+        try {
+            // Restore by removing TRASHED tag
+            const currentDoc = await getDocumentById(id);
+            const currentTags = currentDoc.tags || [];
+
+            if (currentTags.includes('TRASHED')) {
+                const newTags = currentTags.filter(t => t !== 'TRASHED');
+                return await updateDocument(id, { tags: newTags });
+            }
+
+            // Backward compatibility: also try to set status active if backend allows
+            await axiosInstance.put(`${BACKEND_ROOT}/${id}`, {
+                status: 'active'
+            });
+            return currentDoc;
+        } catch (error) {
+            throw error;
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 9. PERMANENT DELETE DOCUMENT (Actually delete from DB)
+// ============================================================
+export const permanentDeleteDocument = async (id) => {
+    try {
+        // Use the existing DELETE endpoint for permanent deletion
+        await axiosInstance.delete(`${BACKEND_ROOT}/${id}`);
+        return true;
     } catch (error) {
         throw error;
     }

@@ -1,46 +1,45 @@
 import Sidebar from "../../components/Layout/Sidebar";
 import { ConfirmDialog } from "../../components/Layout/Dialog";
-import { CreateDocumentModal } from '../../components/Layout/Modal';
-import { TagDropMenu, SortDropMenu } from "../../components/Layout/DropMenu";
-
-import { useState } from 'react';
+import { SortDropMenu } from "../../components/Layout/DropMenu";
+import { useDocument } from '../../context/DocumentContext';
+import { useState, useEffect } from 'react';
 import { useUIContext } from "../../context/useUIContext";
 import { Link } from "react-router";
 
 
 import {
-    Edit, SortAsc, Tag, Search, X, Grid, List, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, Check, ArrowDownAZ, ArrowUpZA, Calendar, Clock
+    Edit, SortAsc, Search, X, Grid, List, MoreVertical, EllipsisVertical, RotateCcw, Trash2, Bookmark, AlertTriangle
 } from 'lucide-react';
 
-const mockCards = [
-    { id: '1', title: 'aproject 02', date: '23/06/1782', tags: [], members: 2, note: 'Nội dung tóm tắt...' },
-    { id: '2', title: 'bMML - note', date: '21/05/1782', tags: [], members: 0, note: '' },
-    { id: '3', title: 'cproject 01', date: '23/04/1782', tags: ['security', 'mailflood'], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '4', title: 'dWriteup CTF', date: '23/03/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '6', title: 'eWriteup CTF', date: '21/02/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-    { id: '7', title: 'fMML - note', date: '21/08/1782', tags: [], members: 0, note: '' },
-    { id: '8', title: 'gproject 02', date: '21/09/1782', tags: ['security', 'mailflood'], members: 3, note: 'Nội dung tóm tắt...' },
-    { id: '9', title: 'zproject 01', date: '20/10/1782', tags: [], members: 0, note: 'Nội dung tóm tắt...' },
-]
-
-const DocumentCard = ({ card, isExpanded }) => {
+const DocumentCard = ({ card, isExpanded, onRestore, onPermanentDelete }) => {
     const [showMenu, setShowMenu] = useState(false);
-    const [isBookmarked, setIsBookmarked] = useState(card.tags.includes('bookmarked'));
+    const [menuPositionClass, setMenuPositionClass] = useState("left-0 top-full mt-2");
 
-    // --- MỚI: State quản lý tags và Modal ---
-    const [activeTags, setActiveTags] = useState(card.tags);
-    const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
+    const toggleMenu = (e) => {
+        if (!showMenu) {
+            const buttonRect = e.currentTarget.getBoundingClientRect();
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
 
+            const menuWidth = 200;
+            const menuHeight = 200;
 
+            let xClass = "left-0";
+            if (buttonRect.left + menuWidth > screenWidth) {
+                xClass = "right-0";
+            }
 
+            let yClass = "top-full mt-2";
+            if (buttonRect.bottom + menuHeight > screenHeight) {
+                yClass = "bottom-full mb-2";
+            }
 
+            setMenuPositionClass(`${xClass} ${yClass}`);
+        }
 
-    const isBlank = !card.note && card.members === 0 && activeTags.length === 0; // Lưu ý dùng activeTags thay vì card.tags để check blank
-
-
-    const toggleMenu = () => {
         setShowMenu(!showMenu);
     };
+
     const [dialogConfig, setDialogConfig] = useState({
         isOpen: false,
         title: "",
@@ -51,109 +50,114 @@ const DocumentCard = ({ card, isExpanded }) => {
         onConfirm: () => { },
         onCancel: () => { }
     });
+
     const openDialog = (config) => {
         setDialogConfig({ ...config, isOpen: true });
     };
 
-    const confirmDeleteNote = () => {
-        openDialog({
-            title: "Delete note",
-            msg: "Are you sure you want to delete your note? Your note will be moved to My trash",
-            confirmText: "Yes, Delete It",
-            cancelText: "Cancel",
-            isDanger: true, // Bật màu đỏ
-            onConfirm: () => {
-                console.log("Note Deleted!");
-                // Logic logout/redirect...
-            }
-        });
-    };
     const closeDialog = () => {
         setDialogConfig((prev) => ({ ...prev, isOpen: false }));
     };
 
-    const handleBookmark = () => {
-        setIsBookmarked(!isBookmarked);
+    const confirmRestore = () => {
         setShowMenu(false);
+        openDialog({
+            title: "Restore document",
+            msg: "Are you sure you want to restore this document? It will be moved back to your workspace.",
+            confirmText: "Yes, Restore It",
+            cancelText: "Cancel",
+            isDanger: false,
+            onConfirm: async () => {
+                try {
+                    await onRestore(card.id);
+                    console.log("Restored:", card.title);
+                    closeDialog();
+                } catch (error) {
+                    console.error("Failed to restore", error);
+                    alert("Cannot restore document: " + error.message);
+                }
+            }
+        });
     };
 
-    // --- MỚI: Hàm xử lý mở modal Edit Tag ---
-    const handleOpenTagEditor = () => {
-        setShowMenu(false); // Đóng menu 3 chấm
-        setIsTagEditorOpen(true); // Mở modal
+    const confirmPermanentDelete = () => {
+        setShowMenu(false);
+        openDialog({
+            title: "Permanently Delete",
+            msg: "⚠️ This action CANNOT be undone! This document will be deleted forever.",
+            confirmText: "Yes, Delete Forever",
+            cancelText: "Cancel",
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    await onPermanentDelete(card.id);
+                    console.log("Permanently deleted:", card.title);
+                    closeDialog();
+                } catch (error) {
+                    console.error("Failed to delete permanently", error);
+                    alert("Cannot delete document: " + error.message);
+                }
+            }
+        });
     };
 
-    // --- MỚI: Hàm lưu tags từ modal ---
-    const handleSaveTags = (newTags) => {
-        setActiveTags(newTags); // Cập nhật UI
-        // Ở đây bạn sẽ gọi API để lưu vào DB: updateDocTags(card.id, newTags)
-        console.log(`Saved tags for ${card.title}:`, newTags);
-        setIsTagEditorOpen(false); // Đóng modal
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown date';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
     };
 
-    // LOGIC XỬ LÝ HIỂN THỊ TAG
-    const tags = activeTags; // hoặc card.tags tùy code hiện tại của bạn
-    const shouldCollapse = tags.length > 2; // Chỉ gom gọn nếu > 3 tags
-
-    // Nếu gom gọn: lấy 2 tag đầu. Nếu không: lấy tất cả.
-    const visibleTags = shouldCollapse ? tags.slice(0, 2) : tags;
-    const remainingCount = tags.length - 2; // Số lượng tag bị ẩn
+    const isBlank = !card.content;
 
     return (
         <>
-            {/* Component Card chính */}
+            <div className="bg-gray-800 rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-red-500 transition duration-200 relative opacity-75 hover:opacity-100">
+                {/* Card Body - Disabled link in trash */}
+                <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
+                    {isBlank && isExpanded ? (
+                        <div className="flex-grow flex items-center justify-center text-gray-500">
+                            <Trash2 size={32} className="text-red-400" />
+                        </div>
+                    ) : (
+                        <>
+                            {isExpanded && (
+                                <div className="flex items-center justify-center">
+                                    <AlertTriangle size={48} className="text-yellow-500 opacity-50" />
+                                </div>
+                            )}
 
-            <div className="bg-gray-800 rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
-                {/* Phần Body giữ nguyên, CHỈ sửa card.tags thành activeTags */}
-                <Link to="/home/editor">
-                    <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
-                        {isBlank && isExpanded ? (
-                            <div className="flex-grow flex items-center justify-center text-gray-500 ">
-                                <Edit size={32} />
-                            </div>
-                        ) : (
-                            <>
-                                {isExpanded ? (<img src='logo.png' className="w-32 h-auto" alt="logo" />) : null}
-
-                                <div className={`flex justify-between items-center ${isExpanded ? 'mt-4' : ''}`}>
-                                    <div className="flex -space-x-2 overflow-hidden">
-                                        <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
-                                            <span role="img" aria-label="user">🙂</span>
-                                        </div>
-                                        {card.members > 0 && (
-                                            <div className="w-6 h-6 bg-red-500 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
-                                                +{card.members}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex space-x-1 items-center">
-                                        {isBookmarked && <Bookmark size={14} className="text-yellow-400 fill-current" />}
-
-                                        {/* 1. Hiển thị các tag được phép hiện */}
-                                        {visibleTags.map(tag => (
-                                            <span key={tag} className="text-xs px-2 py-0.5 bg-gray-600 rounded-full text-blue-300">
-                                                {tag}
-                                            </span>
-                                        ))}
-
-                                        {/* 2. Hiển thị số lượng tag còn lại (nếu có) */}
-                                        {shouldCollapse && (
-                                            <span className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-300 font-medium border border-gray-600">
-                                                +{remainingCount}
-                                            </span>
-                                        )}
+                            <div className={`flex justify-between items-center ${isExpanded ? 'mt-4' : ''}`}>
+                                <div className="flex -space-x-2 overflow-hidden">
+                                    <div className="w-6 h-6 bg-gray-600 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
+                                        <Trash2 size={14} />
                                     </div>
                                 </div>
-                            </>
-                        )}
-                    </div>
-                </Link>
+
+                                <div className="flex space-x-1 items-center">
+                                    {card.tags && card.tags.filter(t => t !== 'TRASHED').slice(0, 2).map(tag => (
+                                        <span key={tag} className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-400">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                    {card.tags && card.tags.filter(t => t !== 'TRASHED').length > 2 && (
+                                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-400 font-medium border border-gray-600">
+                                            +{card.tags.filter(t => t !== 'TRASHED').length - 2}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
 
                 {/* Footer */}
-                <div className={`p-3 ${isExpanded ? "border-t border-gray-700" : ""} `}>
+                <div className={`p-3 ${isExpanded ? "border-t border-gray-700" : ""}`}>
                     <div className="flex flex-row justify-between items-center relative">
-                        <p className="text-lg font-semibold truncate">{card.title}</p>
+                        <p className="text-lg font-semibold truncate text-gray-300">{card.title}</p>
 
                         <div className="relative">
                             <button
@@ -165,36 +169,23 @@ const DocumentCard = ({ card, isExpanded }) => {
 
                             {/* Menu Popup */}
                             {showMenu && (
-                                <div className="absolute left-2 bottom-end mb-2 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                                    <Link to="/home/editor" >
-                                        <button className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition">
-                                            <Eye size={16} />
-                                            <span>View mode</span>
-                                        </button>
-                                    </Link>
-
-                                    {/* --- MỚI: Gắn sự kiện mở Modal --- */}
+                                <div className={`absolute ${menuPositionClass} w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100`}>
                                     <button
-                                        onClick={handleOpenTagEditor}
-                                        className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition"
+                                        onClick={confirmRestore}
+                                        className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-green-400 transition"
                                     >
-                                        <Tag size={16} />
-                                        <span>Edit tags</span>
-                                    </button>
-
-                                    <button
-                                        onClick={handleBookmark}
-                                        className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition"
-                                    >
-                                        <Bookmark size={16} className={isBookmarked ? "fill-yellow-400 text-yellow-400" : ""} />
-                                        <span>{isBookmarked ? "Remove bookmark" : "Add bookmark"}</span>
+                                        <RotateCcw size={16} />
+                                        <span>Restore</span>
                                     </button>
 
                                     <div className="h-px bg-gray-700 mx-2"></div>
 
-                                    <button onClick={confirmDeleteNote} className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition">
+                                    <button
+                                        onClick={confirmPermanentDelete}
+                                        className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition"
+                                    >
                                         <Trash2 size={16} />
-                                        <span>Delete note</span>
+                                        <span>Delete Forever</span>
                                     </button>
                                 </div>
                             )}
@@ -204,105 +195,88 @@ const DocumentCard = ({ card, isExpanded }) => {
                             )}
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{card.date}</p>
+                    <p className="text-xs text-gray-500 mt-1">Deleted: {formatDate(card.updatedAt || card.createdAt)}</p>
                 </div>
             </div>
 
-            {/* --- MỚI: Nhúng Component TagEditorModal --- */}
-            {/* Modal nằm ngoài cấu trúc DOM của Card để tránh bị overflow:hidden nếu có, nhưng ở đây đặt cạnh Card vẫn ổn vì dùng position fixed */}
-            <TagEditorModal
-                isOpen={isTagEditorOpen}
-                onClose={() => setIsTagEditorOpen(false)}
-                currentTags={activeTags}
-                onSave={handleSaveTags}
-            />
             <ConfirmDialog
                 isOpen={dialogConfig.isOpen}
                 onClose={closeDialog}
-                {...dialogConfig} // Truyền toàn bộ config (title, msg, onConfirm...) vào
+                {...dialogConfig}
             />
-
-
         </>
     );
 };
 
 
-export default function Myworkspace() {
+export default function Mytrash() {
     const [isExpanded, setIsExpanded] = useState(true);
     const [value, setValue] = useState("");
     const { showSidebar } = useUIContext();
-    const [documents] = useState(mockCards);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { trashedList, restoreDocument, permanentDeleteDocument, fetchTrashedDocuments } = useDocument();
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState({
         title: '',
         date: ''
     });
-    const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
-    const [filterTags, setFilterTags] = useState([]); // Mảng chứa các tag đang lọc
 
+    // Fetch trashed documents when component mounts
+    useEffect(() => {
+        fetchTrashedDocuments();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleToggleFilterTag = (tag) => {
-        setFilterTags(prev => {
-            if (prev.includes(tag)) {
-                return prev.filter(t => t !== tag); // Bỏ chọn
-            } else {
-                return [...prev, tag]; // Chọn thêm
-            }
-        });
+    // Filter only trashed documents (if backend doesn't filter)
+    const trashedDocuments = trashedList || [];
+
+    const handleRestore = async (id) => {
+        await restoreDocument(id);
+    };
+
+    const handlePermanentDelete = async (id) => {
+        await permanentDeleteDocument(id);
     };
 
     const handleCloseSort = () => {
         setIsSortOpen(false);
     };
 
-    // Hàm Xóa Cấu Hình (Truyền vào Menu)
     const handleClearSort = () => {
         setSortConfig({ title: null, date: null });
         setIsSortOpen(false);
     };
 
-
-    // ---  State cho Sort Filter ---
     const toggleSort = () => {
-        setIsSortOpen(!isSortOpen)
-
-    }
+        setIsSortOpen(!isSortOpen);
+    };
 
     const handleSortSelection = (type, value) => {
         setSortConfig(prev => {
             return {
                 ...prev,
-                [type]: value // type là 'title' hoặc 'date'
+                [type]: value
             };
         });
     };
 
     const toggleList = () => {
-        setIsExpanded(!isExpanded)
-        console.log(isExpanded)
+        setIsExpanded(!isExpanded);
     };
 
     const parseDate = (dateStr) => {
-
         if (!dateStr) return new Date(0);
-        const [day, month, year] = dateStr.split('/');
+        return new Date(dateStr);
+    };
 
-        return new Date(`${year}-${month}-${day}`);
-    }
-
-
-    // ---  Hàm cho Sort và Tag filter ---
-    const filteredAndSortedDocuments = [...documents]
+    // Filter and sort documents
+    const filteredAndSortedDocuments = [...trashedDocuments]
         .filter(doc => {
-            if (filterTags.length === 0) return true;
-            return filterTags.some(filterTag => doc.tags.includes(filterTag));
+            if (!value) return true;
+            return doc.title.toLowerCase().includes(value.toLowerCase());
         })
         .sort((a, b) => {
             if (sortConfig.date) {
-                const dateA = parseDate(a.date);
-                const dateB = parseDate(b.date);
+                const dateA = parseDate(a.updatedAt || a.createdAt);
+                const dateB = parseDate(b.updatedAt || b.createdAt);
                 if (dateA.getTime() !== dateB.getTime()) {
                     return sortConfig.date === 'latest' ? dateB - dateA : dateA - dateB;
                 }
@@ -322,6 +296,15 @@ export default function Myworkspace() {
 
                 <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}>
 
+                    {/* Header */}
+                    <div className="mb-6">
+                        <h1 className="text-3xl font-bold text-red-400 flex items-center gap-2">
+                            <Trash2 size={32} />
+                            Trash
+                        </h1>
+                        <p className="text-gray-400 mt-2">Deleted documents can be restored or permanently deleted</p>
+                    </div>
+
                     {/* Toolbar */}
                     <div className="w-full p-3 mb-6 bg-gray-800 rounded-xl shadow-lg" >
                         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -335,19 +318,6 @@ export default function Myworkspace() {
                                     <span className="hidden md:block font-medium">Sort</span>
                                 </button>
 
-
-
-
-                                {/* Tags */}
-                                <button
-                                    onClick={() => setIsTagMenuOpen(!isTagMenuOpen)}
-                                    className={`flex items-center px-2 py-1 rounded-lg transition flex-shrink-0 
-                                            ${isTagMenuOpen || filterTags.length > 0 ? 'bg-gray-700 text-white' : 'hover:bg-gray-700'}
-                                        `}
-                                >
-                                    <span className="hidden md:block font-medium">Tags</span>
-                                </button>
-
                                 {/* SEARCH BAR */}
                                 <div className="flex items-center bg-gray-700 rounded-full px-3 py-1 
                             w-full md:w-auto md:max-w-sm">
@@ -355,7 +325,7 @@ export default function Myworkspace() {
 
                                     <input
                                         type="text"
-                                        placeholder="Value"
+                                        placeholder="Search in trash..."
                                         className="bg-transparent text-gray-100 placeholder-gray-400 
                                focus:outline-none w-full"
                                         value={value}
@@ -373,37 +343,39 @@ export default function Myworkspace() {
 
                             {/* RIGHT AREA */}
                             <div className="flex items-center gap-3 flex-shrink-0">
-
                                 <button onClick={toggleList}
-                                    className="p-2 rounded-lg bg-blue-600 text-white flex-shrink-0">
+                                    className="p-2 rounded-lg bg-red-600 text-white flex-shrink-0">
                                     {isExpanded ? <Grid size={20} /> : <List size={20} />}
                                 </button>
-
-                                <button onClick={() => setIsModalOpen(true)}
-                                    className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
-                                    <Plus size={20} />
-                                </button>
-
-                                <button className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
-                                    <MoreVertical size={20} />
-                                </button>
-
                             </div>
                         </div>
                     </div>
 
-                    {/* Document Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-
-                        {filteredAndSortedDocuments.map(doc => (
-                            <DocumentCard key={doc.id} card={doc} isExpanded={isExpanded} />
-                        ))}
-                    </div>
+                    {/* Empty State or Document Grid */}
+                    {console.log(filteredAndSortedDocuments.length)}
+                    {filteredAndSortedDocuments.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                            <Trash2 size={64} className="mb-4 opacity-50" />
+                            <p className="text-xl font-semibold">Trash is empty</p>
+                            <p className="text-sm mt-2">Deleted documents will appear here</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {filteredAndSortedDocuments.map(doc => (
+                                <DocumentCard
+                                    key={doc.id}
+                                    card={doc}
+                                    isExpanded={isExpanded}
+                                    onRestore={handleRestore}
+                                    onPermanentDelete={handlePermanentDelete}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                 </div>
 
             </div>
-
 
             <SortDropMenu
                 isOpen={isSortOpen}
@@ -412,19 +384,6 @@ export default function Myworkspace() {
                 onSelect={handleSortSelection}
                 onClear={handleClearSort}
             />
-
-            <CreateDocumentModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-            />
-
-            <TagDropMenu
-                isOpen={isTagMenuOpen}
-                onClose={() => setIsTagMenuOpen(false)}
-                selectedTags={filterTags}
-                onToggleTag={handleToggleFilterTag}
-            />
-
 
         </>
     );

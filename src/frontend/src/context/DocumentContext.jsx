@@ -4,14 +4,18 @@ import {
     getDocumentById,
     updateDocument,
     deleteDocument as deleteDocumentAPI,
-    getAllDocument
-} from '../services/documentService'; 
+    getAllDocument,
+    getTrashedDocuments,
+    restoreDocument as restoreDocumentAPI,
+    permanentDeleteDocument as permanentDeleteDocumentAPI
+} from '../services/documentService';
 
 const DocumentContext = createContext();
 
 export const DocumentProvider = ({ children }) => {
     const [currentDocument, setCurrentDocument] = useState(null);
     const [listDocuments, setListDocuments] = useState([]);
+    const [trashedList, setTrashedList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -41,7 +45,7 @@ export const DocumentProvider = ({ children }) => {
             return data;
         } catch (err) {
             setError(err.message || 'Lỗi tải chi tiết tài liệu');
-            throw err; 
+            throw err;
         } finally {
             setLoading(false);
         }
@@ -55,11 +59,11 @@ export const DocumentProvider = ({ children }) => {
         }
 
         try {
-           
+
             const response = await updateDocument(id, newData);
             console.log("Document saved successfully:", response);
 
-         
+
             setCurrentDocument(prev => {
                 if (!prev) return null;
 
@@ -70,17 +74,17 @@ export const DocumentProvider = ({ children }) => {
                 };
             });
 
-        
+
             return response;
 
         } catch (error) {
-       
+
             console.error("Failed to save document:", error);
-          
+
             throw error;
         }
 
-    }, [setCurrentDocument]); 
+    }, [setCurrentDocument]);
 
     // 4. Lưu tài liệu vào DB
     const saveDocument = async (docId, updateData) => {
@@ -89,7 +93,7 @@ export const DocumentProvider = ({ children }) => {
         } catch (err) {
             setError('Lỗi lưu tài liệu');
             console.log(err)
-          
+
         }
     };
 
@@ -109,7 +113,7 @@ export const DocumentProvider = ({ children }) => {
         }
     }
 
-    //6. Xoá tài liệu
+    //6. Xoá tài liệu (soft delete - move to trash)
     const deleteDocument = async (documentId) => {
         await deleteDocumentAPI(documentId);
         setListDocuments(prevList => {
@@ -117,8 +121,49 @@ export const DocumentProvider = ({ children }) => {
         });
 
         setCurrentDocument(prevDoc => (prevDoc && prevDoc.id === documentId ? null : prevDoc));
+    };
 
-    }
+    //7. Lấy danh sách tài liệu đã xóa (trash)
+    const fetchTrashedDocuments = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getTrashedDocuments();
+            setTrashedList(data);
+        } catch (err) {
+            setError(err.message || 'Failed to load trashed documents');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    //8. Khôi phục tài liệu từ trash
+    const restoreDocument = async (documentId) => {
+        try {
+            await restoreDocumentAPI(documentId);
+            // Remove from current list (trash view)
+            setTrashedList(prevList => {
+                return prevList.filter(doc => doc.id !== documentId);
+            });
+        } catch (err) {
+            setError(err.message || 'Failed to restore document');
+            throw err;
+        }
+    };
+
+    //9. Xóa vĩnh viễn tài liệu
+    const permanentDeleteDocument = async (documentId) => {
+        try {
+            await permanentDeleteDocumentAPI(documentId);
+            // Remove from current list
+            setTrashedList(prevList => {
+                return prevList.filter(doc => doc.id !== documentId);
+            });
+        } catch (err) {
+            setError(err.message || 'Failed to permanently delete document');
+            throw err;
+        }
+    };
 
 
 
@@ -127,6 +172,8 @@ export const DocumentProvider = ({ children }) => {
             value={{
                 currentDocument,
                 listDocuments,
+                trashedList,
+                documents: listDocuments,
                 loading,
                 error,
                 fetchListDocuments,
@@ -134,7 +181,10 @@ export const DocumentProvider = ({ children }) => {
                 handleDocumentUpdate,
                 createDocument,
                 saveDocument,
-                deleteDocument
+                deleteDocument,
+                fetchTrashedDocuments,
+                restoreDocument,
+                permanentDeleteDocument
             }}
         >
             {children}
