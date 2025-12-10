@@ -87,15 +87,12 @@ export default function Sidebar({ onDocumentCreated }) {
                     </Link>
 
                     {/* Action Buttons */}
-                    <div className='flex flex-col gap-2 mb-6'>
+                    <div className='flex flex-col gap-2 mb-20'>
                         <button onClick={() => setIsModalOpen(true)} className='flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 font-mono'>
                             <LuPlus className='w-5 h-5' />
                             Add note
                         </button>
-                        <button className='flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 font-mono'>
-                            <LuFolderPlus className='w-5 h-5' />
-                            Create folder
-                        </button>
+                       
                     </div>
 
                     {/* Nav Links */}
@@ -110,15 +107,7 @@ export default function Sidebar({ onDocumentCreated }) {
                             Bookmark
                         </NavLink>
 
-                        <NavLink
-                            to='/home/tagslist'
-                            className={({ isActive }) =>
-                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
-                            }
-                        >
-                            <LuTag className='w-5 h-5' />
-                            Tags list
-                        </NavLink>
+                   
 
                         <hr className='my-3 border-gray-700' />
 
