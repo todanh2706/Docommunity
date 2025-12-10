@@ -2,21 +2,43 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useToast } from "../context/ToastContext";
 import { TagEditorModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
+import { AIModal } from '../components/Layout/AIModal'
 import { Link, useLocation } from "react-router-dom";
 import { useDocument } from "../context/DocumentContext";
+import { generateContent, refineContent } from '../services/AIService';
 
 import Markdown from 'react-markdown';
 
 
 import remarkGfm from 'remark-gfm';
+import remarkDirective from "remark-directive";
 import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
 import 'highlight.js/styles/github-dark.css';
+import { visit } from 'unist-util-visit';
+
+function remarkHighlightPlugin() {
+    return (tree) => {
+        visit(tree, (node) => {
+            if (
+                node.type === 'containerDirective' ||
+                node.type === 'leafDirective' ||
+                node.type === 'textDirective'
+            ) {
+                if (node.name === 'mark') {
+                    const data = node.data || (node.data = {});
+                    data.hName = 'mark';
+                }
+            }
+        });
+    };
+}
 
 import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
     List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck, Eye, Pencil,
-    GripVertical, X, User // Đảm bảo đã import User và X
+    GripVertical, X, User, Sparkles // Đảm bảo đã import User và X
 } from "lucide-react";
 
 
@@ -88,6 +110,10 @@ export default function EditorPage({ initialContent = '' }) {
 
 
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+    const [aiMode, setAiMode] = useState('generate'); // 'generate' | 'refine'
+    const [selectedTextForAI, setSelectedTextForAI] = useState('');
+    const [selectionRange, setSelectionRange] = useState(null);
 
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
@@ -226,6 +252,63 @@ export default function EditorPage({ initialContent = '' }) {
         });
 
         setIsTagEditorOpen(false); // Đóng modal sau khi lưu
+    };
+
+    const handleOpenAIModal = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value.substring(start, end);
+
+            if (text.trim()) {
+                setAiMode('refine');
+                setSelectedTextForAI(text);
+                setSelectionRange({ start, end });
+            } else {
+                setAiMode('generate');
+                setSelectedTextForAI('');
+                setSelectionRange(null);
+            }
+        }
+        setIsAIModalOpen(true);
+    };
+
+    const handleAIGenerate = async (type, prompt) => {
+        console.log("handleAIGenerate called with:", type, prompt);
+        try {
+            let data;
+            if (aiMode === 'refine' && selectedTextForAI) {
+                data = await refineContent(selectedTextForAI, prompt);
+            } else {
+                data = await generateContent(type, prompt);
+            }
+            
+            console.log("AI Generated Data:", data);
+            
+            if (data && data.content) {
+                let newText = markdown;
+                
+                if (aiMode === 'refine' && selectionRange) {
+                     const before = markdown.substring(0, selectionRange.start);
+                     const after = markdown.substring(selectionRange.end);
+                     newText = before + `\n:::mark\n${data.content}\n:::\n` + after;
+                } else {
+                    // Generate mode: Append to end
+                    newText = markdown + '\n\n' + data.content;
+                }
+
+                setMarkdown(newText);
+                setHistory(prev => [...prev, newText]);
+                setFuture([]);
+                success("Content generated successfully!");
+            } else {
+                console.warn("No content in response data");
+            }
+        } catch (error) {
+            console.error("handleAIGenerate error:", error);
+            // Error handling is done in AIModal or Service
+        }
     };
 
 
@@ -477,6 +560,54 @@ export default function EditorPage({ initialContent = '' }) {
         }, 0);
     };
 
+
+    const handleEditorClick = (e) => {
+        const textarea = e.target;
+        const cursor = textarea.selectionStart;
+        const text = textarea.value;
+
+        // Find all highlight matches using directive syntax
+        // Matches :::mark [content] :::
+        const regex = /:::mark\s+([\s\S]*?)\s+:::/g;
+        let match;
+        
+        while ((match = regex.exec(text)) !== null) {
+            const start = match.index;
+            const end = start + match[0].length;
+            
+            // Check if cursor is inside the block
+            if (cursor >= start && cursor <= end) {
+                // Remove the markers
+                const content = match[1];
+                const newText = text.substring(0, start) + content + text.substring(end);
+                
+                setMarkdown(newText);
+                
+                // Adjust cursor
+                // We removed ":::mark\n" (approx 8 chars) from the start
+                // But we need to be precise.
+                // The regex match[0] is the whole block.
+                // match[1] is the content.
+                // The start marker length is (start of content) - (start of match)
+                const startMarkerLength = text.indexOf(content, start) - start;
+                
+                let newCursor = cursor;
+                if (cursor > start + startMarkerLength) {
+                    newCursor -= startMarkerLength;
+                } else if (cursor > start) {
+                    newCursor = start;
+                }
+                
+                // We need to set selection range after render
+                setTimeout(() => {
+                    textarea.setSelectionRange(newCursor, newCursor);
+                    textarea.focus();
+                }, 0);
+                
+                return; // Handle one click at a time
+            }
+        }
+    };
 
     const handleFormat = (type) => {
         const textarea = textareaRef.current;
@@ -786,14 +917,19 @@ export default function EditorPage({ initialContent = '' }) {
                             {renderToolbarBtn(LinkIcon, 'link', () => handleFormat('link'))}
                             {renderToolbarBtn(TableIcon, 'table', insertTable)}
                         </div>
+                        <Divider />
+                        <div className="flex items-center gap-0.5">
+                            <ToolbarBtn icon={Sparkles} onClick={handleOpenAIModal} />
+                        </div>
                     </div>
                     <div className="flex bg-[#121315] flex-1 relative">
                         <textarea
                             ref={textareaRef}
-                            className="flex-1 w-full h-full bg-transparent p-6 text-gray-300 resize-none focus:outline-none font-mono text-sm leading-relaxed custom-scrollbar"
+                            className="flex-1 w-full h-full  bg-transparent p-6 text-gray-300 resize-none focus:outline-none font-mono text-sm leading-relaxed custom-scrollbar"
                             placeholder="# Start writing..." value={markdown}
                             onChange={(e) => handleContentChange(e.target.value)}
-                            onKeyDown={handleKeyDown} />
+                            onKeyDown={handleKeyDown}
+                            onClick={handleEditorClick} />
                     </div>
                 </div>
 
@@ -816,7 +952,7 @@ export default function EditorPage({ initialContent = '' }) {
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Preview</span>
                     </div>
                     <div className="flex-1 p-8 overflow-y-auto prose prose-invert max-w-none bg-[#0f1011] custom-scrollbar">
-                        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{markdown}</Markdown>
+                        <Markdown remarkPlugins={[remarkDirective, remarkGfm, remarkHighlightPlugin]} rehypePlugins={[rehypeRaw, rehypeHighlight]}>{markdown}</Markdown>
                     </div>
                 </div>
 
@@ -912,6 +1048,14 @@ export default function EditorPage({ initialContent = '' }) {
                     onClose={() => setIsTagEditorOpen(false)}
                     currentTags={activeTags}
                     onSave={handleSaveTags} // Hàm này sẽ cập nhật activeTags
+                    documentContent={markdown}
+                />
+                <AIModal
+                    isOpen={isAIModalOpen}
+                    onClose={() => setIsAIModalOpen(false)}
+                    onGenerate={handleAIGenerate}
+                    mode={aiMode}
+                    selectedText={selectedTextForAI}
                 />
                 {isResizing && <div className="fixed inset-0 z-[9999] cursor-col-resize bg-transparent" />}
             </div>

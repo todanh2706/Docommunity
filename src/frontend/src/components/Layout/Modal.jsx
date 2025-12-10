@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, ChevronDown, LinkIcon } from 'lucide-react';
+import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, ChevronDown, LinkIcon, Sparkles } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useDocument } from '../../context/DocumentContext'; // 1. Import Context
+import { suggestTags } from '../../services/AIService';
 const AVAILABLE_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
 
 export const CreateDocumentModal = ({ isOpen, onClose }) => {
@@ -158,19 +159,38 @@ export const CreateDocumentModal = ({ isOpen, onClose }) => {
   );
 };
 
-export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
+export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave, documentContent }) => {
   // State lưu các tag đang được chọn trong modal
   const [selectedTags, setSelectedTags] = useState(currentTags);
   // State cho ô tìm kiếm
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // AI Suggestions State
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
   // Reset lại state khi mở modal
   useEffect(() => {
     if (isOpen) {
       setSelectedTags(currentTags);
       setSearchTerm("");
+      
+      // Fetch AI suggestions
+      if (documentContent) {
+        setIsLoadingAI(true);
+        suggestTags(documentContent)
+          .then(data => {
+            // Filter out tags that are already selected
+            const suggestions = (data.tags || []).filter(t => !currentTags.includes(t));
+            setAiSuggestions(suggestions);
+          })
+          .catch(err => console.error("Failed to fetch AI tags:", err))
+          .finally(() => setIsLoadingAI(false));
+      } else {
+        setAiSuggestions([]);
+      }
     }
-  }, [isOpen, currentTags]);
+  }, [isOpen, currentTags, documentContent]);
 
   if (!isOpen) return null;
 
@@ -184,6 +204,8 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
     if (!selectedTags.includes(tag)) {
       setSelectedTags([...selectedTags, tag]);
       setSearchTerm(""); // Reset search sau khi chọn
+      // Remove from AI suggestions if present
+      setAiSuggestions(prev => prev.filter(t => t !== tag));
     }
   };
 
@@ -216,30 +238,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
         {/* Body */}
         <div className="p-6 space-y-6">
 
-          {/* Khu vực 1: Tags đã assign (Có thể xóa) */}
-
-          {/* Ten document */}
-          <div>
-            <label className="text-sm text-gray-400 mb-2 block">Current title</label>
-            <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
-              {selectedTags.length === 0 && <span className="text-gray-500 text-sm italic p-1">No tags assigned...</span>}
-
-              {selectedTags.map(tag => (
-                <span key={tag} className="flex items-center gap-1 px-3 py-1 bg-blue-900/40 text-blue-300 rounded-full text-sm border border-blue-800/50 group">
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-red-400 transition ml-1"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* set privcay */}
-
+          {/* Assigned Tags */}
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Assigned Tags</label>
             <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-gray-800/50 rounded-lg border border-gray-700/50">
@@ -259,8 +258,38 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
             </div>
           </div>
 
+          {/* AI Suggestions */}
+          {(isLoadingAI || aiSuggestions.length > 0) && (
+            <div>
+               <label className="text-sm text-purple-400 mb-2 flex items-center gap-2">
+                 <Sparkles size={14} /> AI Suggestions
+               </label>
+               <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-purple-900/10 rounded-lg border border-purple-500/30 border-dashed">
+                 {isLoadingAI ? (
+                    <span className="text-gray-500 text-sm italic p-1 flex items-center gap-2">
+                      <span className="animate-spin h-3 w-3 border-2 border-purple-500 border-t-transparent rounded-full"></span>
+                      Analyzing content...
+                    </span>
+                 ) : (
+                    aiSuggestions.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => handleAddTag(tag)}
+                        className="flex items-center gap-1 px-3 py-1 bg-purple-900/40 text-purple-300 hover:bg-purple-800/60 hover:text-white rounded-full text-sm border border-purple-500/50 transition-all group"
+                      >
+                        {tag}
+                        <Plus size={14} className="opacity-60 group-hover:opacity-100" />
+                      </button>
+                    ))
+                 )}
+                 {!isLoadingAI && aiSuggestions.length === 0 && (
+                    <span className="text-gray-500 text-sm italic p-1">No suggestions found.</span>
+                 )}
+               </div>
+            </div>
+          )}
 
-          {/* Khu vực 2: Search & Add New */}
+          {/* Search & Add New */}
           <div className="relative">
             <label className="text-sm text-gray-400 mb-2 block">Add / Search Tags</label>
             <div className="relative">
@@ -301,10 +330,6 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave }) => {
             )}
           </div>
         </div>
-
-
-
-
 
         {/* Footer Buttons */}
         <div className="flex justify-end gap-3 px-6 py-4 bg-gray-800/50 border-t border-gray-700">

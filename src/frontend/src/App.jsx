@@ -58,10 +58,8 @@ export default function App() {
         <ToastProvider>
           <DocumentProvider>
             <AxiosInterceptor>
-
               <AppRoutes />
-
-              {/* <Chatbot /> */}
+              <Chatbot />
             </AxiosInterceptor>
           </DocumentProvider>
         </ToastProvider>

@@ -35,3 +35,12 @@
     scrollbar-width: none;  /* Firefox */
   }
 }
+
+@layer base {
+  mark {
+    background-color: rgba(250, 204, 21, 0.3); /* yellow-400 with opacity */
+    color: #fef08a; /* yellow-200 */
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.25rem;
+  }
+}

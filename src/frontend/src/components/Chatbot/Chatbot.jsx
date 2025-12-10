@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { IoChatbubbleEllipsesOutline, IoClose, IoSend } from "react-icons/io5";
 import { TypeAnimation } from 'react-type-animation';
+import { getAiChat } from '../../services/AIService';
 
 export default function Chatbot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +41,7 @@ export default function Chatbot() {
         setIsOpen(!isOpen);
     };
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!inputValue.trim() || isTyping) return;
 
@@ -50,34 +51,42 @@ export default function Chatbot() {
             sender: "user"
         };
 
-        setMessages([...messages, newMessage]);
+        // 1. Add user message immediately
+        setMessages(prev => [...prev, newMessage]);
         setInputValue("");
         setIsTyping(true);
 
-        // Simulate bot response --- CHANGE WHEN HAVE THE BOT SETUP ---
-        setTimeout(() => {
-            const botText = "I'm just a demo bot for now, but I look cool!";
+        try {
+            // 2. Call Real API
+            const data = await getAiChat(newMessage.text);
+            
+            // Backend returns { reply: "..." }
+            const botReply = data.reply || "I didn't get a response.";
+
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
-                text: botText,
+                text: botReply,
                 sender: "bot"
             }]);
 
-            // Calculate typing duration: 50ms per char
-            // We set isTyping to false after the typing animation should be done
-            setTimeout(() => {
-                setIsTyping(false);
-            }, botText.length * 50);
-
-        }, 1000);
+        } catch (error) {
+            console.error("Chat error:", error);
+            setMessages(prev => [...prev, {
+                id: Date.now() + 1,
+                text: "Sorry, I'm having trouble connecting to the server right now.",
+                sender: "bot"
+            }]);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     return (
-        <div className="fixed bottom-0 right-6 z-50 flex flex-col items-end font-sans">
+        <div className="fixed bottom-0 right-6 z-50 flex flex-col items-end font-sans pointer-events-none">
             {/* Chat Panel */}
             <div
                 className={`
-          transition-all duration-300 ease-in-out transform origin-bottom-right
+          transition-all duration-300 ease-in-out transform origin-bottom-right pointer-events-auto
           ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4 pointer-events-none'}
           w-80 sm:w-96 h-[500px] mb-4
           bg-slate-900/80 backdrop-blur-md border border-white/10
@@ -162,7 +171,7 @@ export default function Chatbot() {
           bg-gradient-to-br from-cyan-600 to-blue-700
           text-white shadow-lg shadow-cyan-900/40
           hover:shadow-cyan-500/40 hover:scale-110 transition-all duration-300
-          border border-white/10
+          border border-white/10 pointer-events-auto
           ${isOpen ? 'rotate-90 opacity-0 pointer-events-none absolute' : 'rotate-0 opacity-100'}
         `}
             >
@@ -189,7 +198,7 @@ export default function Chatbot() {
           bg-slate-800
           text-white shadow-lg
           hover:bg-slate-700 transition-all duration-300
-          border border-white/10
+          border border-white/10 pointer-events-auto
           ${isOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90 pointer-events-none absolute'}
         `}
             >
