@@ -38,8 +38,7 @@ export default function ViewDocument() {
                     readTime: "5 min read", // Placeholder
                     createdAt: data.createdDate
                 });
-                // Assuming backend returns if current user liked it, or we manage it locally
-                // setIsLiked(response.data.isLiked); 
+                setIsLiked(data.isLiked);
             } catch (error) {
                 console.error("Failed to fetch document:", error);
             }
