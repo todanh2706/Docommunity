@@ -21,4 +21,5 @@ public class DocumentResponse {
     private Long authorId;
     private int likesCount;
     private int commentsCount;
+    private Boolean isLiked;
 }

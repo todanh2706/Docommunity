@@ -1,0 +1,14 @@
+# Development Dockerfile
+FROM node:21-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5173
+
+# Host 0.0.0.0 is required for Docker containers
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

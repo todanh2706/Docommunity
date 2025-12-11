@@ -10,7 +10,6 @@ import com.se.documinity.exception.NotAuthorizedException;
 import com.se.documinity.repository.CommentRepository;
 
 import jakarta.transaction.Transactional;
-import jakarta.validation.constraints.Future;
 import lombok.RequiredArgsConstructor;
 
 import com.se.documinity.dto.document.*;
@@ -18,9 +17,7 @@ import com.se.documinity.entity.UserEntity;
 import com.se.documinity.repository.DocumentRepository;
 import com.se.documinity.repository.TagRepository;
 import com.se.documinity.repository.UserRepository;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.se.documinity.entity.TagEntity;
@@ -169,6 +166,13 @@ public class DocumentService {
             throw new NotAuthorizedException("Forbidden");
         }
 
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isLiked = false;
+        if (currentUsername != null && !currentUsername.equals("anonymousUser")) {
+            isLiked = doc.getLikedByUsers().stream()
+                    .anyMatch(u -> u.getUsername().equals(currentUsername));
+        }
+
         return ViewDocumentResponse.builder()
                 .id(String.valueOf(doc.getId()))
                 .title(doc.getTitle())
@@ -179,6 +183,7 @@ public class DocumentService {
                 .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
                 .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
                 .createdDate(doc.getCreatedDate().toString())
+                .isLiked(isLiked)
                 .build();
     }
 
@@ -258,6 +263,13 @@ public class DocumentService {
                 .map(TagEntity::getName)
                 .collect(Collectors.toList());
 
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isLiked = false;
+        if (currentUsername != null && !currentUsername.equals("anonymousUser")) {
+            isLiked = doc.getLikedByUsers().stream()
+                    .anyMatch(u -> u.getUsername().equals(currentUsername));
+        }
+
         return new DocumentResponse(
                 doc.getId(),
                 doc.getTitle(),
@@ -269,7 +281,8 @@ public class DocumentService {
                 doc.getUser().getFullname(),
                 doc.getUser().getId(),
                 doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0,
-                doc.getComments() != null ? doc.getComments().size() : 0);
+                doc.getComments() != null ? doc.getComments().size() : 0,
+                isLiked);
     }
 
     public int likeDocument(Long documentId) {
