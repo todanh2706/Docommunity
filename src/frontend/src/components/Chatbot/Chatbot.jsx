@@ -59,7 +59,7 @@ export default function Chatbot() {
         try {
             // 2. Call Real API
             const data = await getAiChat(newMessage.text);
-            
+
             // Backend returns { reply: "..." }
             const botReply = data.reply || "I didn't get a response.";
 
@@ -82,7 +82,7 @@ export default function Chatbot() {
     };
 
     return (
-        <div className="fixed bottom-0 right-6 z-50 flex flex-col items-end font-sans pointer-events-none">
+        <div className="fixed bottom-8 right-6 z-50 flex flex-col items-end font-sans pointer-events-none">
             {/* Chat Panel */}
             <div
                 className={`
@@ -179,31 +179,6 @@ export default function Chatbot() {
                 <IoChatbubbleEllipsesOutline size={28} className="relative z-10" />
             </button>
 
-            {/* Close Toggle Button (visible when open, replaces the open button to allow closing from same spot if desired, 
-           but usually the panel close button is enough. 
-           However, user asked for "2 state... close (just show an icon to open it)".
-           Let's keep the main toggle button as the opener. 
-           When open, the panel is there. The user might want to close it by clicking the floating button again?
-           Common pattern is the floating button transforms into a close button or disappears.
-           My implementation hides the floating button when open, and the panel has a close button.
-           Let's adjust to keep the floating button visible but maybe changed icon or just rely on panel close.
-           The requirement says "2 state... open (show panel) and close (just show an icon)".
-           So when open, the icon might not need to be there, or it can be a close icon.
-           Let's make the floating button toggle between Open Icon and Close Icon for better UX.
-        */}
-            <button
-                onClick={toggleChat}
-                className={`
-          group relative flex items-center justify-center w-12 h-12 rounded-full
-          bg-slate-800
-          text-white shadow-lg
-          hover:bg-slate-700 transition-all duration-300
-          border border-white/10 pointer-events-auto
-          ${isOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90 pointer-events-none absolute'}
-        `}
-            >
-                <IoClose size={28} />
-            </button>
         </div>
     );
 };

@@ -27,9 +27,13 @@ export default function ViewDocument() {
                 setDocument({
                     ...data,
                     author: {
-                        name: data.authorName,
+                        name: data.authorName || "Unknown",
                         avatar: "/dump_avt.jpg", // Placeholder as backend doesn't send avatar yet
                         role: "Member" // Placeholder
+                    },
+                    stats: {
+                        likes: data.likesCount || 0,
+                        comments: data.commentsCount || 0
                     },
                     readTime: "5 min read", // Placeholder
                     createdAt: data.createdDate

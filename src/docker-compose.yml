@@ -1,4 +1,3 @@
-
 services:
   # 1. Database Service
   postgres:
@@ -9,7 +8,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=docommunity
     ports:
-      - "5432:5432" # Allows you to connect via IntelliJ/pgAdmin from outside
+      - "5433:5432" # Allows you to connect via IntelliJ/pgAdmin from outside
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

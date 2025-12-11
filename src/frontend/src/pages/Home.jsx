@@ -1,86 +1,10 @@
-import { Header } from '../components/Layout/Header';
-import { Link } from 'react-router'
-import { useState, useEffect } from 'react';
-import './Home.css'
+import { Header } from '@/components/Layout/Header';
+import { Link } from 'react-router-dom';
+import { TypeWriter } from '@/components/UI/TypeWriter';
+import { FeatureCard } from '@/components/Community/FeatureCard';
+import styles from './Home.module.css';
 
 const bg_logo = "./homepage.png"
-
-
-export const TypeWriter = ({ words }) => {
-  const [index, setIndex] = useState(0); // Vị trí của từ hiện tại trong mảng
-  const [subIndex, setSubIndex] = useState(0); // Vị trí ký tự đang gõ
-  const [reverse, setReverse] = useState(false); // Trạng thái: false = đang gõ, true = đang xóa
-  const [blink, setBlink] = useState(true); // Trạng thái con trỏ
-
-  // Logic gõ chữ
-  useEffect(() => {
-    if (index === words.length) return; // Phòng hờ
-
-    if ( subIndex === words[index].length + 1 && !reverse ) {
-        // Đã gõ xong từ hiện tại, chờ một chút rồi xóa
-        setReverse(true);
-        return;
-    }
-
-    if (subIndex === 0 && reverse) {
-        // Đã xóa xong, chuyển sang từ tiếp theo
-        setReverse(false);
-        setIndex((prev) => (prev + 1) % words.length); // Loop lại từ đầu
-        return;
-    }
-
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (reverse ? -1 : 1));
-    }, reverse ? 75 : 150); // Tốc độ: Xóa nhanh (75ms), Gõ bình thường (150ms)
-
-    // Logic chờ khi gõ xong 1 từ
-    if (subIndex === words[index].length && !reverse) {
-        // Dừng lại lâu hơn một chút khi gõ xong để người dùng đọc
-        return () => clearTimeout(timeout); 
-    }
-
-    return () => clearTimeout(timeout);
-  }, [subIndex, index, reverse, words]);
-
-  // Logic cho con trỏ nhấp nháy
-  useEffect(() => {
-    const timeout2 = setTimeout(() => {
-      setBlink((prev) => !prev);
-    }, 500);
-    return () => clearTimeout(timeout2);
-  }, [blink]);
-
-  return (
-    <span className="font-mono text-lg md:text-xl lg:text-2xl font-bold">
-      {`${words[index].substring(0, subIndex)}`}
-      <span className={`cursor-blink ${blink ? 'opacity-100' : 'opacity-0'}`}>&nbsp;</span>
-    </span>
-  );
-};
-
-
-
-// 1. Tách Box nhỏ thành Component tái sử dụng để code gọn hơn
-const FeatureCard = ({ title, description }) => (
-
-    <div className='flex flex-col items-center justify-center z-12
-                  w-full h-full p-10
-                  rounded-[30px]
-                  bg-white/[0.15]  
-                  backdrop-blur-[7px]
-                  border border-white/20                   // Viền mỏng tinh tế
-                  shadow-lg hover:shadow-blue-500/20       // Shadow màu xanh nhẹ khi hover
-                  transition-all duration-300 hover:-translate-y-2' // Hiệu ứng nổi lên khi hover
-    >
-        <img src='logo.png' alt="Logo" className="h-30 w-auto" />
-
-        <h3 className="text-2xl font-bold text-white mb-4">{title}</h3>
-        <p className="text-blue-100 text-center">{description}</p>
-
-
-    </div>
-);
-
 
 export default function HomePage() {
     return (
@@ -91,7 +15,7 @@ export default function HomePage() {
                 <div
                     className='absolute inset-0 bg-cover bg-center bg-no-repeat'
                     // Thử dòng này để kiểm tra đường dẫn trực tiếp
-                      style={{ backgroundImage: `url(${bg_logo})` }}
+                    style={{ backgroundImage: `url(${bg_logo})` }}
                 />
                 {/* Lớp phủ màu tối nhẹ để làm nổi bật nội dung trắng/sáng */}
                 <div className="absolute inset-0 bg-[#062452]/20"></div>
@@ -107,9 +31,9 @@ export default function HomePage() {
 
 
                 {/* 🌟 CÁC BUBBLE CHUYỂN ĐỘNG Ở PHÍA SAU 🌟 */}
-                <div className='absolute top-[10%] left-[10%] w-60 h-60  bg-[#325C9E] opacity-15 filter blur-xl z-0 bubble-1'></div>
-                <div className='absolute bottom-[5%] right-[20%] w-96 h-96  bg-[#325C9E] opacity-20 filter blur-xl z-0 bubble-2'></div>
-                <div className='absolute bottom-[30%] left-[35%] w-48 h-48  bg-[#325C9E] opacity-15 filter blur-xl z-0 bubble-3'></div>
+                <div className={`absolute top-[10%] left-[10%] w-60 h-60  bg-[#325C9E] opacity-15 filter blur-xl z-0 ${styles.bubble1}`}></div>
+                <div className={`absolute bottom-[5%] right-[20%] w-96 h-96  bg-[#325C9E] opacity-20 filter blur-xl z-0 ${styles.bubble2}`}></div>
+                <div className={`absolute bottom-[30%] left-[35%] w-48 h-48  bg-[#325C9E] opacity-15 filter blur-xl z-0 ${styles.bubble3}`}></div>
                 {/*  */}
 
                 {/* === HERO SECTION === */}

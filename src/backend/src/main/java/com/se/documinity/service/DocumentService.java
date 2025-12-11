@@ -176,6 +176,9 @@ public class DocumentService {
                 .owner(PublicDocumentOwnerResponse.builder()
                         .name(doc.getUser() != null ? doc.getUser().getFullname() : "Unknown")
                         .build())
+                .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
+                .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
+                .createdDate(doc.getCreatedDate().toString())
                 .build();
     }
 
@@ -264,7 +267,9 @@ public class DocumentService {
                 doc.getIsPublic(),
                 tagNames,
                 doc.getUser().getFullname(),
-                doc.getUser().getId());
+                doc.getUser().getId(),
+                doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0,
+                doc.getComments() != null ? doc.getComments().size() : 0);
     }
 
     public int likeDocument(Long documentId) {

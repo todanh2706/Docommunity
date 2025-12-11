@@ -1,0 +1,32 @@
+/* Keyframes for bubble float animation */
+@keyframes floatBackground {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(20vw, 15vh) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-10vw, 5vh) scale(0.95);
+    }
+
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+.bubble1 {
+    animation: floatBackground 15s ease-in-out infinite alternate;
+}
+
+.bubble2 {
+    animation: floatBackground 20s ease-in-out infinite alternate;
+    animation-delay: -5s;
+}
+
+.bubble3 {
+    animation: floatBackground 18s ease-in-out infinite alternate;
+    animation-delay: -10s;
+}

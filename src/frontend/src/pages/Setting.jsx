@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUIContext } from '../context/useUIContext';
+import useAuth from '../hooks/useAuth';
 import { useUser } from '../hooks/useUser';
 import Sidebar from "../components/Layout/Sidebar";
 import { ConfirmDialog } from '../components/Layout/Dialog';
-import { Settings, Edit2, Save } from 'lucide-react';
+import { Settings, Edit2, Save, LogOut } from 'lucide-react';
 import ProfileSection from '../components/Settings/ProfileSection';
 import SecuritySection from '../components/Settings/SecuritySection';
 import DangerZoneSection from '../components/Settings/DangerZoneSection';
@@ -22,6 +23,7 @@ export default function SettingsPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [backupData, setBackupData] = useState(null);
     const { getUserProfile, updateUserProfile } = useUser();
+    const { logout } = useAuth();
 
     // --- STATE QUẢN LÝ DIALOG DUY NHẤT ---
     const [dialogConfig, setDialogConfig] = useState({
@@ -186,19 +188,30 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        {/* Nút Edit/Save */}
-                        <button
-                            ref={toggleButtonRef}
-                            onClick={handleEditToggle}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg
+                        {/* Nút Edit/Save & Sign Out */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={logout}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg 
+                                bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20"
+                            >
+                                <LogOut size={16} />
+                                <span>Sign Out</span>
+                            </button>
+
+                            <button
+                                ref={toggleButtonRef}
+                                onClick={handleEditToggle}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg
                                 ${isEditing
-                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
-                                    : 'bg-[#1F2937] hover:bg-[#374151] text-gray-200 border border-gray-700'
-                                }`}
-                        >
-                            {isEditing ? <Save size={16} /> : <Edit2 size={16} />}
-                            <span>{isEditing ? 'Save Changes' : 'Edit Profile'}</span>
-                        </button>
+                                        ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20'
+                                        : 'bg-[#1F2937] hover:bg-[#374151] text-gray-200 border border-gray-700'
+                                    }`}
+                            >
+                                {isEditing ? <Save size={16} /> : <Edit2 size={16} />}
+                                <span>{isEditing ? 'Save Changes' : 'Edit Profile'}</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Profile Section */}

@@ -19,4 +19,6 @@ public class DocumentResponse {
     private List<String> tags;
     private String authorName;
     private Long authorId;
+    private int likesCount;
+    private int commentsCount;
 }

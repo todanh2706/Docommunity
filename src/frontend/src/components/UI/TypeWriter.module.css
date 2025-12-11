@@ -1,0 +1,10 @@
+.cursorBlink {
+  border-right: 3px solid rgba(255, 255, 255, 0.75);
+  animation: blink-caret 0.75s step-end infinite;
+  margin-left: 4px;
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: rgba(255, 255, 255, 0.75); }
+}

@@ -15,4 +15,7 @@ public class ViewDocumentResponse {
     private String content;
 
     private PublicDocumentOwnerResponse owner;
+    private int likesCount;
+    private int commentsCount;
+    private String createdDate;
 }
