@@ -148,6 +148,12 @@ public class DocumentService {
                 .build();
     }
 
+    public List<PublicDocumentResponse> getPopularDocuments(int limit) {
+        PageRequest pageable = PageRequest.of(0, limit);
+        List<DocumentEntity> popularDocs = documentRepository.findMostPopularDocuments(pageable);
+        return popularDocs.stream().map(this::toPublicDocumentResponse).toList();
+    }
+
     private String buildSnippet(String content) {
         if (content == null)
             return "";

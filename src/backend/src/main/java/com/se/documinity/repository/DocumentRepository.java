@@ -16,9 +16,15 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
     List<DocumentEntity> findByUserIdAndIsPublicTrue(Long userId);
 
     List<DocumentEntity> findByUserId(Long userId);
+
     Page<DocumentEntity> findByIsPublicTrueAndStatus(String status, Pageable pageable);
+
     Page<DocumentEntity> findByIsPublicTrueAndStatusAndTags_Id(String status, Long tagId, Pageable pageable);
+
     void deleteById(Long id);
 
     Page<DocumentEntity> findByIsPublicTrue(Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DocumentEntity d LEFT JOIN d.likedByUsers l WHERE d.isPublic = true GROUP BY d ORDER BY COUNT(l) DESC")
+    List<DocumentEntity> findMostPopularDocuments(Pageable pageable);
 }

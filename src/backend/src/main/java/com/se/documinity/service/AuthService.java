@@ -29,7 +29,6 @@ import com.se.documinity.dto.auth.ForgotPasswordRequest;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -71,23 +70,31 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        // 1. Authenticate the user (Checks username & password)
-        // If this fails, it throws an AuthenticationException automatically
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        // 1. Check if user exists first to provide specific error
+        var user = userRepository.findByUsername(request.getUsername());
+        if (user.isEmpty()) {
+            throw new com.se.documinity.exception.UserNotFoundException("User not found");
+        }
 
-        // 2. Load the UserDetails (needed for token generation)
+        // 2. Authenticate the user (Checks password)
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()));
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            // If authentication fails but user exists, it must be the password
+            throw new org.springframework.security.authentication.BadCredentialsException("Incorrect password");
+        }
+
+        // 3. Load the UserDetails (needed for token generation)
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
 
-        // 3. Generate tokens
+        // 4. Generate tokens
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-        // 4. Return response
+        // 5. Return response
         return new LoginResponse(accessToken, refreshToken);
     }
 
@@ -97,13 +104,13 @@ public class AuthService {
         // 1. Check if the token is valid (format and expiration)
         try {
             String username = jwtService.extractUsername(token);
-            
+
             // TODO: In a production app, this is where you would:
             // 1. Check if the token exists in a "refresh_tokens" database table.
             // 2. Delete it or set a 'revoked' flag to true.
-            
+
         } catch (Exception e) {
-            throw new RuntimeException("Unauthorized or invalid token"); 
+            throw new RuntimeException("Unauthorized or invalid token");
         }
     }
 
@@ -111,11 +118,12 @@ public class AuthService {
         String refreshToken = request.getRefreshToken();
         String username;
 
-        // 1. Try to extract username (this will throw an exception if token is invalid/expired)
+        // 1. Try to extract username (this will throw an exception if token is
+        // invalid/expired)
         try {
             username = jwtService.extractUsername(refreshToken);
         } catch (Exception e) {
-            throw new RuntimeException("Invalid refresh token"); 
+            throw new RuntimeException("Invalid refresh token");
         }
 
         // 2. Load the user details
@@ -123,16 +131,15 @@ public class AuthService {
 
         // 3. Validate the token fully (check expiry and signature)
         if (jwtService.validateToken(refreshToken, userDetails)) {
-            
+
             // 4. Generate a NEW access token
             String newAccessToken = jwtService.generateToken(userDetails);
-            
+
             return new RefreshResponse(newAccessToken);
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
     }
-
 
     public void forgotPassword(ForgotPasswordRequest request) {
         // 1. Find user by email

@@ -35,7 +35,10 @@ export default function useAuth() {
                 backendUrl: BACKEND_URL
             });
 
-            const errMessage = err.response?.data?.error || "An error occured!";
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "An error occured!";
             setError(errMessage);
             console.error('Log in failed: ', errMessage);
             throw new Error(errMessage);
@@ -66,7 +69,10 @@ export default function useAuth() {
         } catch (err) {
             setIsLoading(false);
 
-            const errMessage = err.response?.data?.error || "An error occured!";
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "An error occured!";
             setError(errMessage);
             console.error('Registered failed: ', errMessage);
             throw new Error(errMessage);

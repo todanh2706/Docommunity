@@ -39,6 +39,10 @@ export default function UserProfile() {
                 });
                 setIsFollowing(Math.random() > 0.5); // Mock following state
             } catch (err) {
+                if (err.name === 'CanceledError') {
+                    console.log('Request canceled', err.message);
+                    return;
+                }
                 console.error("Failed to fetch user profile", err);
                 setError("Failed to load profile");
             } finally {

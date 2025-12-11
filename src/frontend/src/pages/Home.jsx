@@ -1,12 +1,40 @@
 import { Header } from '@/components/Layout/Header';
-import { Link } from 'react-router-dom';
-import { TypeWriter } from '@/components/UI/TypeWriter';
-import { FeatureCard } from '@/components/Community/FeatureCard';
+import { Link, useNavigate } from 'react-router-dom';
+import { TypeWriter } from '../components/UI/TypeWriter';
 import styles from './Home.module.css';
+// import PopularPostCard from '../components/Community/PopularPostCard'; // REMOVE
+import DocCard from '../components/Community/DocCard'; // ADD
+import { useCommunity } from '../hooks/useCommunity';
+import { useEffect, useState } from 'react';
 
 const bg_logo = "./homepage.png"
 
 export default function HomePage() {
+    const navigate = useNavigate();
+    const { getPopularDocs } = useCommunity();
+    const [popularDocs, setPopularDocs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPopular = async () => {
+            try {
+                const data = await getPopularDocs(4); // Fetch top 4
+                if (data && data.data) {
+                    setPopularDocs(data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch popular docs", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPopular();
+    }, []);
+
+    const handleCardClick = (id) => {
+        navigate(`/home/community/doc/${id}`); // Assuming this is the correct route for viewing docs
+    };
+
     return (
         <div className='flex flex-col min-h-screen font-sans text-slate selection:bg-blue-500/30 bg-[rgb(6,4,36)] text-white'>
 
@@ -104,21 +132,41 @@ export default function HomePage() {
                 </div>
 
 
-                {/* === FEATURES SECTION (2 BOX BÊN DƯỚI) === */}
-                {/* Sử dụng Grid để chia cột đều nhau */}
-                <div className='relative z-20 w-full max-w-6xl px-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                        <FeatureCard
-                            title="AI Integration"
-                            description="Tích hợp trí tuệ nhân tạo giúp bạn viết code nhanh hơn, sửa lỗi thông minh hơn."
-
-                        />
-                        <FeatureCard
-                            title="Open Community"
-                            description="Kết nối với hàng ngàn lập trình viên, chia sẻ kiến thức và cùng nhau phát triển."
-
-                        />
+                {/* === POPULAR POSTS SECTION === */}
+                <div className='relative z-20 w-full max-w-6xl px-4 mt-12'>
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-bold text-white tracking-wide">
+                            Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Popular</span>
+                        </h2>
+                        <button onClick={() => navigate('/community')} className="text-sm text-gray-400 hover:text-white transition-colors">
+                            View All →
+                        </button>
                     </div>
+
+                    {loading ? (
+                        <div className="text-center text-gray-500 py-10">Loading popular posts...</div>
+                    ) : popularDocs.length > 0 ? (
+                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6'>
+                            {popularDocs.map(doc => (
+                                <DocCard
+                                    key={doc.id}
+                                    title={doc.title}
+                                    content={doc.snipetContent} // API returns 'snipetContent'
+                                    author={{
+                                        id: doc.owner?.id,
+                                        name: doc.owner?.name,
+                                        avatar: "/dump_avt.jpg",
+                                        time: new Date(doc.lastModified).toLocaleDateString('en-US')
+                                    }}
+                                    likes={doc.likesCount || 0}
+                                    comments={doc.commentsCount || 0}
+                                    onClick={() => handleCardClick(doc.id)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-gray-500 py-10">No popular posts yet.</div>
+                    )}
                 </div>
 
                 <div className='flex flex-col lg:flex-row items-center justify-between
@@ -129,7 +177,7 @@ export default function HomePage() {
                           backdrop-blur-[15px]             // Blur mạnh hơn cho sang trọng
                           border border-white/20          // Viền kính
                           shadow-2xl shadow-black/5
-                          mt-10 '
+                          mt-20 '
 
 
                 >

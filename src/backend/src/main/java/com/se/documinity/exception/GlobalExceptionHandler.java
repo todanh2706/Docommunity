@@ -60,6 +60,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(responseDTO, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<ResponseDTO> handleBadCredentials(
+            org.springframework.security.authentication.BadCredentialsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(errorResponse);
+        responseDTO.setMessage("error");
+        return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(DocumentNotFoundException.class)
     public ResponseEntity<ResponseDTO> handleDocumentNotFound(DocumentNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());

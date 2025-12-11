@@ -20,6 +20,15 @@ export const useCommunity = () => {
     };
 
     /**
+     * Get popular documents
+     * GET /documents/popular?limit={limit}
+     */
+    const getPopularDocs = async (limit = 4) => {
+        const response = await get(`/documents/popular?limit=${limit}`);
+        return response.data;
+    };
+
+    /**
      * View specific document
      * GET /documents/{docid}
      */
@@ -80,6 +89,7 @@ export const useCommunity = () => {
         unlikeDocument,
         addComment,
         getComments,
-        replyComment
+        replyComment,
+        getPopularDocs
     };
 };

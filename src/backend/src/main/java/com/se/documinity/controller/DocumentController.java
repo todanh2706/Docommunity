@@ -56,6 +56,15 @@ public class DocumentController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping("/popular")
+    public ResponseEntity<ResponseDTO> getPopularDocuments(@RequestParam(defaultValue = "4") int limit) {
+        List<PublicDocumentResponse> documents = documentService.getPopularDocuments(limit);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documents);
+        responseDTO.setMessage("success");
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO> getDocument(@PathVariable Long id) {
         DocumentResponse documentResponse = documentService.getDocument(id);
