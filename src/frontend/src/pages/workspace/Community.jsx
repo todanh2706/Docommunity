@@ -244,8 +244,8 @@ export default function Community() {
             <Sidebar />
 
             <main
-                className={`transition-all duration-300 ease-in-out min-h-screen p-8
-                ${showSidebar ? 'ml-0 md:ml-64 w-[calc(100%-16rem)]' : 'ml-0 w-full'}`}
+                className={`transition-all duration-300 ease-in-out min-h-screen p-8 flex-grow
+                ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}
             >
                 {/* Toolbar */}
                 <FilterToolbar
