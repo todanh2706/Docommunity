@@ -548,7 +548,7 @@ export default function Myworkspace() {
                             ))}
                             {filteredAndSortedDocuments.length === 0 && (
                                 <div className="col-span-full text-center text-gray-500 py-10">
-                                    Không tìm thấy tài liệu nào.
+                                    Cannot find any documents.
                                 </div>
                             )}
                         </div>
