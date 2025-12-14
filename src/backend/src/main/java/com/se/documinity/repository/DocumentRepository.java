@@ -21,6 +21,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 
     Page<DocumentEntity> findByIsPublicTrueAndStatusAndTags_Id(String status, Long tagId, Pageable pageable);
 
+    Page<DocumentEntity> findByIsPublicTrueAndStatusAndTags_Name(String status, String tagName, Pageable pageable);
+
     void deleteById(Long id);
 
     Page<DocumentEntity> findByIsPublicTrue(Pageable pageable);

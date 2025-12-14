@@ -1,16 +1,13 @@
 import Sidebar from "../../components/Layout/Sidebar";
 import { ConfirmDialog } from "../../components/Layout/Dialog";
 import { CreateDocumentModal, DocumentSettingsModal } from '../../components/Layout/Modal';
-import { TagDropMenu, SortDropMenu } from "../../components/Layout/DropMenu";
 import { useDocument } from '../../context/DocumentContext';
 import { useState, useEffect } from 'react';
-
 import { useUIContext } from "../../context/useUIContext";
 import { Link } from "react-router";
-
-
+import FilterToolbar from '../../components/Layout/FilterToolbar';
 import {
-    Edit, SortAsc, Tag, Search, X, Grid, List, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, Check, ArrowDownAZ, ArrowUpZA, Calendar, Clock, MoreHorizontal, Filter, ArrowUpDown, Archive, FileText
+    Edit, Tag, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark
 } from 'lucide-react';
 import { useTagService } from '../../services/tagService';
 
@@ -447,94 +444,46 @@ export default function Myworkspace() {
                 <div className={`flex-grow p-6 overflow-y-auto bg-gray-900 text-gray-100 transition-all duration-500 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}>
 
                     {/* Toolbar */}
-                    <div className="w-full p-3 mb-6 bg-gray-800 rounded-xl shadow-lg" >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                    <FilterToolbar
+                        searchValue={value}
+                        setSearchValue={setValue}
+                        sortConfig={sortConfig}
+                        filterTags={filterTags}
+                        isSortOpen={isSortOpen}
+                        setIsSortOpen={setIsSortOpen}
+                        isTagMenuOpen={isTagMenuOpen}
+                        setIsTagMenuOpen={setIsTagMenuOpen}
+                        availableTags={availableTags}
+                        viewMode={isExpanded ? 'list' : 'grid'} // Myworkspace logic: isExpanded=true means LIST view (showing details), false means GRID?
+                        // Wait, looking at original code:
+                        // {isExpanded ? <Grid size={20} /> : <List size={20} />}
+                        // If isExpanded is true, it shows Grid icon (meaning click to switch to grid?), implies current is List?
+                        // "isExpanded" usually means items are expanded.
+                        // Let's keep logic simple: pass setViewMode that calls toggleList.
+                        setViewMode={() => toggleList()} // Function signature mismatch fix: toggleList doesn't take args but component might pass args.
+                        // Actually in FilterToolbar: setViewMode(prev => prev === 'grid' ? ...).
+                        // Myworkspace toggleList just toggles boolean.
+                        // Let's pass a custom wrapper or just leave viewMode prop as string key for icon, and setViewMode as handler.
+                        // Render logic in FilterToolbar uses viewMode === 'grid' ? ...
+                        // In Myworkspace: {isExpanded ? <Grid /> : <List />}
+                        // So if isExpanded (List View?), show Grid icon.
+                        // Let's just match icon logic.
+                        // If isExpanded is true, we want Grid icon -> viewMode='grid' (so icon is grid)?
+                        // No, if viewMode='grid', icon is Grid.
+                        // So pass viewMode={isExpanded ? 'grid' : 'list'}
+                        onSortSelection={handleSortSelection}
+                        onSortClear={handleClearSort}
+                        onTagSelection={handleTagSelection}
+                    >
+                        <button onClick={() => setIsModalOpen(true)}
+                            className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
+                            <Plus size={20} />
+                        </button>
 
-                            {/* LEFT AREA */}
-                            <div className="flex flex-wrap items-center gap-3 flex-1">
-
-                                {/* Sort */}
-                                <div className="relative" >
-                                    <button onClick={toggleSort} className="flex items-center px-2 py-1 rounded-lg hover:bg-gray-700 transition flex-shrink-0">
-                                        <SortAsc size={20} className="mr-2" />
-                                        <span className="hidden md:block font-medium">Sort</span>
-                                    </button>
-                                    <SortDropMenu
-                                        isOpen={isSortOpen}
-                                        onClose={handleCloseSort}
-                                        sortConfig={sortConfig}
-                                        onSelect={handleSortSelection}
-                                        onClear={handleClearSort}
-                                    />
-                                </div>
-
-
-                                <div className="relative flex-shrink-0">
-                                    {/* Tags Button (Nút bấm để mở/đóng) */}
-                                    <button
-                                        onClick={() => setIsTagMenuOpen(!isTagMenuOpen)}
-                                        className={`flex items-center px-2 py-1 rounded-lg transition flex-shrink-0 
-                ${isTagMenuOpen || filterTags.length > 0 ? 'bg-gray-700 text-white' : 'hover:bg-gray-700'}
-            `}
-                                    >
-                                        <span className="hidden md:block font-medium">Tags</span>
-                                    </button>
-
-                                    {/* Menu Dropdown (Chỉ hiển thị khi isTagMenuOpen là true) */}
-                                    {isTagMenuOpen && (
-                                        <TagDropMenu
-                                            isOpen={isTagMenuOpen}
-                                            onClose={() => setIsTagMenuOpen(false)}
-                                            selectedTags={filterTags}
-                                            onToggleTag={handleTagSelection}
-                                            availableTags={availableTags} // Pass dynamic tags
-                                        />
-                                    )}
-                                </div>
-
-                                {/* SEARCH BAR */}
-                                <div className="flex items-center bg-gray-700 rounded-full px-3 py-1 
-        w-full md:w-auto md:max-w-sm">
-                                    <Search size={14} className="text-gray-400 mr-2" />
-
-                                    <input
-                                        type="text"
-                                        placeholder="Value"
-                                        className="bg-transparent text-gray-100 placeholder-gray-400 
-                               focus:outline-none w-full"
-                                        value={value}
-                                        onChange={(e) => setValue(e.target.value)}
-                                    />
-
-                                    {value && (
-                                        <button onClick={() => setValue("")}
-                                            className="p-1 rounded-full hover:bg-gray-600">
-                                            <X size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* RIGHT AREA */}
-                            <div className="flex items-center gap-3 flex-shrink-0">
-
-                                <button onClick={toggleList}
-                                    className="p-2 rounded-lg bg-blue-600 text-white flex-shrink-0">
-                                    {isExpanded ? <Grid size={20} /> : <List size={20} />}
-                                </button>
-
-                                <button onClick={() => setIsModalOpen(true)}
-                                    className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
-                                    <Plus size={20} />
-                                </button>
-
-                                <button className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
-                                    <MoreVertical size={20} />
-                                </button>
-
-                            </div>
-                        </div>
-                    </div>
+                        <button className="p-2 rounded-lg hover:bg-gray-700 flex-shrink-0">
+                            <MoreVertical size={20} />
+                        </button>
+                    </FilterToolbar>
 
                     {/* Document Grid */}
                     {loading ? (

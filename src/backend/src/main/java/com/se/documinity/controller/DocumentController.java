@@ -47,8 +47,10 @@ public class DocumentController {
     @GetMapping("/public")
     public ResponseEntity<ResponseDTO> getPublicDocuments(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        List<PublicDocumentResponse> documents = documentService.getPublicDocuments(null, page);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String tagName) {
+        com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> documents = documentService
+                .getPublicDocuments(tagName, page);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documents);
         responseDTO.setMessage("success");

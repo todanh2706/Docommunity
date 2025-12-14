@@ -109,26 +109,32 @@ public class DocumentService {
                 .collect(Collectors.toList());
     }
 
-    public List<PublicDocumentResponse> getPublicDocuments(Long tagId, int page) {
+    public com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> getPublicDocuments(String tagName, int page) {
         if (page < 1)
             page = 1;
 
         var pageable = PageRequest.of(page - 1, PAGE_SIZE);
 
-        List<DocumentEntity> docs;
-        if (tagId != null) {
-            docs = documentRepository
-                    .findByIsPublicTrueAndStatusAndTags_Id(ACTIVE_STATUS, tagId, pageable)
-                    .getContent();
+        org.springframework.data.domain.Page<DocumentEntity> pageDocs;
+        if (tagName != null && !tagName.isEmpty()) {
+            pageDocs = documentRepository
+                    .findByIsPublicTrueAndStatusAndTags_Name(ACTIVE_STATUS, tagName, pageable);
         } else {
-            docs = documentRepository
-                    .findByIsPublicTrueAndStatus(ACTIVE_STATUS, pageable)
-                    .getContent();
+            pageDocs = documentRepository
+                    .findByIsPublicTrueAndStatus(ACTIVE_STATUS, pageable);
         }
 
-        return docs.stream()
+        List<PublicDocumentResponse> content = pageDocs.getContent().stream()
                 .map(this::toPublicDocumentResponse)
                 .toList();
+
+        return new com.se.documinity.dto.PagedResponseDTO<>(
+                content,
+                pageDocs.getNumber() + 1,
+                pageDocs.getSize(),
+                pageDocs.getTotalElements(),
+                pageDocs.getTotalPages(),
+                pageDocs.isLast());
     }
 
     private PublicDocumentResponse toPublicDocumentResponse(DocumentEntity doc) {
