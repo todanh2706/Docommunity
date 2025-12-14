@@ -9,21 +9,20 @@ import { useTagService } from '../../services/tagService'; // Import tag service
 import { DocCardSkeleton } from '../../components/UI/Skeleton';
 
 export default function Community() {
-    const { showSidebar } = useUIContext();
-    const [value, setValue] = useState("");
+    // Persistent State
+    const { showSidebar, communityState, setCommunityState } = useUIContext();
+    const { searchValue: value, page, sortConfig, filterTags } = communityState;
+
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const navigate = useNavigate();
     const { viewAllDocs, likeDocument, unlikeDocument } = useCommunity();
     const { getAllTags } = useTagService();
 
-    // Toolbar State
+    // Toolbar State (Local)
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
-    const [sortConfig, setSortConfig] = useState({ title: '', date: '' });
-    const [filterTags, setFilterTags] = useState([]);
     const [availableTags, setAvailableTags] = useState([]);
 
     // Fetch Tags
@@ -74,24 +73,31 @@ export default function Community() {
 
     // Toolbar Handlers
     const handleSortSelection = (type, val) => {
-        setSortConfig(prev => ({ ...prev, [type]: val }));
+        setCommunityState(prev => ({
+            ...prev,
+            sortConfig: { ...prev.sortConfig, [type]: val }
+        }));
     };
 
     const handleClearSort = () => {
-        setSortConfig({ title: null, date: null });
+        setCommunityState(prev => ({
+            ...prev,
+            sortConfig: { title: null, date: null }
+        }));
         setIsSortOpen(false);
     };
 
     const handleTagSelection = (tag) => {
-        // Enforce single tag selection for now since backend supports one
-        setFilterTags(prev => {
-            if (prev.includes(tag)) {
-                return []; // Toggle off
-            } else {
-                return [tag]; // Replace with new tag (single select behavior)
-            }
+        // Enforce single tag selection
+        setCommunityState(prev => {
+            const currentTags = prev.filterTags;
+            const newTags = currentTags.includes(tag) ? [] : [tag];
+            return {
+                ...prev,
+                filterTags: newTags,
+                page: 1 // Reset to page 1
+            };
         });
-        setPage(1); // Reset to page 1 on filter change
     };
 
     // Client-side Search & Sort (Applied to items fetched from server)
@@ -126,7 +132,7 @@ export default function Community() {
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
-            setPage(newPage);
+            setCommunityState(prev => ({ ...prev, page: newPage }));
         }
     };
 
@@ -244,7 +250,7 @@ export default function Community() {
                 {/* Toolbar */}
                 <FilterToolbar
                     searchValue={value}
-                    setSearchValue={setValue}
+                    setSearchValue={(val) => setCommunityState(prev => ({ ...prev, searchValue: val }))}
                     sortConfig={sortConfig}
                     filterTags={filterTags}
                     isSortOpen={isSortOpen}

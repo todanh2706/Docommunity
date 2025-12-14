@@ -309,20 +309,16 @@ const DocumentCard = ({ card, isExpanded }) => {
 
 
 export default function Myworkspace() {
-    const [isExpanded, setIsExpanded] = useState(true);
-    const [value, setValue] = useState("");
-    const { showSidebar } = useUIContext();
+    // Persistent State
+    const { showSidebar, workspaceState, setWorkspaceState } = useUIContext();
+    const { isExpanded, searchValue: value, sortConfig, filterTags } = workspaceState;
+
     const { listDocuments, loading, fetchListDocuments, error } = useDocument();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSortOpen, setIsSortOpen] = useState(false);
-    const [sortConfig, setSortConfig] = useState({
-        title: '',
-        date: ''
-    });
     const [selectedDocs, setSelectedDocs] = useState([]);
     const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
-    const [filterTags, setFilterTags] = useState([]);
     const [availableTags, setAvailableTags] = useState([]);
 
     const { getAllTags } = useTagService();
@@ -344,12 +340,12 @@ export default function Myworkspace() {
     }, [fetchListDocuments]);
 
     const handleTagSelection = (tag) => {
-        setFilterTags(prev => {
-            if (prev.includes(tag)) {
-                return prev.filter(t => t !== tag); // Bỏ chọn
-            } else {
-                return [...prev, tag]; // Chọn thêm
-            }
+        setWorkspaceState(prev => {
+            const currentTags = prev.filterTags;
+            const newTags = currentTags.includes(tag)
+                ? currentTags.filter(t => t !== tag)
+                : [...currentTags, tag];
+            return { ...prev, filterTags: newTags };
         });
     };
 
@@ -359,28 +355,33 @@ export default function Myworkspace() {
 
     // Hàm Xóa Cấu Hình (Truyền vào Menu)
     const handleClearSort = () => {
-        setSortConfig({ title: null, date: null });
+        setWorkspaceState(prev => ({
+            ...prev,
+            sortConfig: { title: null, date: null }
+        }));
         setIsSortOpen(false);
     };
 
     // ---  State cho Sort Filter ---
     const toggleSort = () => {
         setIsSortOpen(!isSortOpen)
-
     }
 
-    const handleSortSelection = (type, value) => {
-        setSortConfig(prev => {
-            return {
-                ...prev,
-                [type]: value // type là 'title' hoặc 'date'
-            };
-        });
+    const handleSortSelection = (type, val) => {
+        setWorkspaceState(prev => ({
+            ...prev,
+            sortConfig: {
+                ...prev.sortConfig,
+                [type]: val
+            }
+        }));
     };
 
     const toggleList = () => {
-        setIsExpanded(!isExpanded)
-        console.log(isExpanded)
+        setWorkspaceState(prev => ({
+            ...prev,
+            isExpanded: !prev.isExpanded
+        }));
     };
 
     const parseDate = (dateStr) => {
@@ -446,7 +447,7 @@ export default function Myworkspace() {
                     {/* Toolbar */}
                     <FilterToolbar
                         searchValue={value}
-                        setSearchValue={setValue}
+                        setSearchValue={(val) => setWorkspaceState(prev => ({ ...prev, searchValue: val }))}
                         sortConfig={sortConfig}
                         filterTags={filterTags}
                         isSortOpen={isSortOpen}
