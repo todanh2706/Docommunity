@@ -3,7 +3,9 @@ import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, C
 import { useToast } from '../../context/ToastContext';
 import { useDocument } from '../../context/DocumentContext'; // 1. Import Context
 import { suggestTags } from '../../services/AIService';
-const AVAILABLE_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
+import { useTagService } from '../../services/tagService'; // Import service
+const HARDCODED_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
+
 
 export const CreateDocumentModal = ({ isOpen, onClose }) => {
   // 2. Lấy hàm createNewDocument từ Context
@@ -164,7 +166,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave, documentC
   const [selectedTags, setSelectedTags] = useState(currentTags);
   // State cho ô tìm kiếm
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // AI Suggestions State
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -174,7 +176,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave, documentC
     if (isOpen) {
       setSelectedTags(currentTags);
       setSearchTerm("");
-      
+
       // Fetch AI suggestions
       if (documentContent) {
         setIsLoadingAI(true);
@@ -261,31 +263,31 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave, documentC
           {/* AI Suggestions */}
           {(isLoadingAI || aiSuggestions.length > 0) && (
             <div>
-               <label className="text-sm text-purple-400 mb-2 flex items-center gap-2">
-                 <Sparkles size={14} /> AI Suggestions
-               </label>
-               <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-purple-900/10 rounded-lg border border-purple-500/30 border-dashed">
-                 {isLoadingAI ? (
-                    <span className="text-gray-500 text-sm italic p-1 flex items-center gap-2">
-                      <span className="animate-spin h-3 w-3 border-2 border-purple-500 border-t-transparent rounded-full"></span>
-                      Analyzing content...
-                    </span>
-                 ) : (
-                    aiSuggestions.map(tag => (
-                      <button
-                        key={tag}
-                        onClick={() => handleAddTag(tag)}
-                        className="flex items-center gap-1 px-3 py-1 bg-purple-900/40 text-purple-300 hover:bg-purple-800/60 hover:text-white rounded-full text-sm border border-purple-500/50 transition-all group"
-                      >
-                        {tag}
-                        <Plus size={14} className="opacity-60 group-hover:opacity-100" />
-                      </button>
-                    ))
-                 )}
-                 {!isLoadingAI && aiSuggestions.length === 0 && (
-                    <span className="text-gray-500 text-sm italic p-1">No suggestions found.</span>
-                 )}
-               </div>
+              <label className="text-sm text-purple-400 mb-2 flex items-center gap-2">
+                <Sparkles size={14} /> AI Suggestions
+              </label>
+              <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-purple-900/10 rounded-lg border border-purple-500/30 border-dashed">
+                {isLoadingAI ? (
+                  <span className="text-gray-500 text-sm italic p-1 flex items-center gap-2">
+                    <span className="animate-spin h-3 w-3 border-2 border-purple-500 border-t-transparent rounded-full"></span>
+                    Analyzing content...
+                  </span>
+                ) : (
+                  aiSuggestions.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => handleAddTag(tag)}
+                      className="flex items-center gap-1 px-3 py-1 bg-purple-900/40 text-purple-300 hover:bg-purple-800/60 hover:text-white rounded-full text-sm border border-purple-500/50 transition-all group"
+                    >
+                      {tag}
+                      <Plus size={14} className="opacity-60 group-hover:opacity-100" />
+                    </button>
+                  ))
+                )}
+                {!isLoadingAI && aiSuggestions.length === 0 && (
+                  <span className="text-gray-500 text-sm italic p-1">No suggestions found.</span>
+                )}
+              </div>
             </div>
           )}
 
@@ -370,6 +372,21 @@ export const DocumentSettingsModal = ({
 
   // Dùng Ref để lưu trữ trạng thái trước khi đóng (Optional, nhưng tốt)
   const initialTagsRef = useRef(currentTags);
+  const { getAllTags } = useTagService();
+  const [availableTags, setAvailableTags] = useState([]);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      const tags = await getAllTags();
+      // Ensure unique tags
+      const uniqueTags = [...new Set([...tags])];
+      setAvailableTags(uniqueTags);
+    }
+    if (isOpen) {
+      fetchTags();
+    }
+  }, [isOpen]);
+
 
   // Reset lại state khi mở modal
   useEffect(() => {
@@ -387,9 +404,9 @@ export const DocumentSettingsModal = ({
 
 
   // Lọc các tag gợi ý: Phải khớp từ khóa search VÀ chưa được chọn
-  const filteredSuggestions = AVAILABLE_TAGS.filter(
-    tag => tag.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedTags.includes(tag)
-  );
+  const filteredSuggestions = availableTags.length > 0
+    ? availableTags.filter(tag => tag && tag.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedTags.includes(tag))
+    : [];
 
   // Xử lý thêm tag (từ gợi ý hoặc tạo mới)
   const handleAddTag = (tag) => {

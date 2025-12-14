@@ -1,0 +1,133 @@
+Function/Feature ID,Case ID,Test case name,Test step,Expected Result (ER),Actual Result,Status,Tester,Tested Date,Remark
+Function 01: Use Case Filtering Documents (by Sort Order & Tags),,,,,,,,,
+UC01,UI01,"Sort by ""Newest"" with Database Verification","1. Navigate to Workspace.
+2. Select Filter > ""Newest"".
+3. Compare UI order with Database created_at timestamps.",The UI displays documents matching the exact descending order of the Database timestamps.,,,Danh,,
+UC01,UI02,"Sort by ""A-Z"" with Special Characters","1. Select Filter > ""A-Z"".
+2. Verify sorting logic for non-alphabetic characters.",System sorts strictly by ASCII/Unicode value ,,,Danh,,
+UC01,UI03,System sorts strictly by ASCII/Unicode value,"1. Click Tags button.
+2. Select ""Tag A"".
+3. Verify result count against Database query for Tag A.","The UI count matches the Database count exactly. Documents with ""Tag B"" or no tags are strictly excluded.",,,Danh,,
+UC01,UI04,Combined Filtering (Sort + Tag),"1. Apply a Tag filter (e.g., ""Work"").
+2. Apply Sort > ""Z-A""","The system maintains the Tag filter (only ""Work"" docs shown) but reorders them Z-A. (Verifies the ""filtered and/or sorted"" condition ).",,,Danh,,
+UC01,UI05,Alternative Flow: No Match Retention,"1. Click Tags.
+2. Select a tag that belongs to zero documents.","The system must not show an empty list. It must revert/keep the current ""Newest"" list view unchanged as per the Alternative Flow.",,,Danh,,
+UC01,UI06,Empty Workspace Handling,"1. Navigate to Workspace.
+2. Attempt to click Filter or Tags buttons.","System handles the empty state gracefully (buttons disabled or showing ""No options"" without crashing).",,,Danh,,
+UC01,UI07,Large Dataset Performance (Load Test),"1. Click Filter > ""Oldest"".
+2. Measure time to render.",The list re-renders within acceptable performance limits (< 2 seconds) without timeout errors.,,,Danh,,
+UC01,UI08,Tag List Synchronization,"1. Refresh Workspace.
+2. Click Tags button.","The deleted tag should not appear in the ""available options"" list.",,,Danh,,
+UC01,UI09,Session Consistency,"1. Navigate to a different page.
+2. Click ""Back"" or return to Workspace.","System retains the user's last selected sort order (""Z-A"") rather than resetting to default (Usability/System State check).",,,Danh,,
+UC01,UI10,UI Responsiveness (Mobile/Desktop),"1. Access Workspace.
+2. Open Filter options.","The ""Newest/Oldest/A-Z"" dropdown renders correctly within the viewport and is clickable (verifies UI implementation of basic flow).",,,Danh,,
+Function 02: Edit Tags to a Document,,,,,,,,,
+UC02,UI01,Open Tag Editor from document menu,1. Log in with a valid user account. 2. Navigate to workspace with at least one document. 3. Click the vertical dots (⋮) of a document. 4. Click “Edit tags” in the dropdown menu.,1. System displays the Tag Editor dialog. 2. Available tags are listed. 3. Tags currently assigned to the document are highlighted.,,,Danh,,
+UC02,UI02,Add a new single tag to a document (no existing tags),1. Open Tag Editor for a document with no tags. 2. Select one tag from the available tags list. 3. Click Save.,1. System associates the selected tag with the document. 2. The selected tag is shown in the document’s metadata area. 3. Tag information is stored in document metadata for later filtering/search.,,,Danh,,
+UC02,UI03,Add multiple tags to a document,1. Open Tag Editor for a document. 2. Select multiple tags (≥ 2) from the list. 3. Click Save.,1. All selected tags are attached to the document. 2. All selected tags appear in the metadata area. 3. Document can later be filtered/search by any of these tags.,,,Danh,,
+UC02,UI04,Remove a single existing tag,1. Open Tag Editor for a document that already has ≥ 1 tag. 2. Deselect one of the currently assigned tags. 3. Keep at least one other tag selected. 4. Click Save.,1. Deselected tag is removed from the document. 2. Remaining tags are still associated and shown in metadata.,,,Danh,,
+UC02,UI05,Remove all tags from a document,1. Open Tag Editor for a document that already has tags. 2. Deselect all currently assigned tags (no tag selected). 3. Click Save.,1. Document has no tags associated. 2. No tags are displayed in document’s metadata area. 3. Document no longer appears when filtering by any of previously removed tags.,,,Danh,,
+UC02,UI06,Cancel tag editing (no change after Cancel),1. Open Tag Editor for a document with existing tags. 2. Change tag selection (add or remove tags). 3. Click Cancel (or Cancel button).,1. Tag Editor dialog is closed. 2. No changes are applied to the document tags. 3. Metadata area still displays the original set of tags.,,,Danh,,
+UC02,UI07,Close Tag Editor via “X” button or ESC key,1. Open Tag Editor for any document. 2. Modify tag selection. 3. Close the dialog using “X” icon or ESC key (depending on UI design).,1. Tag Editor dialog is closed. 2. Changes are not saved. 3. Original tags remain unchanged in the metadata area.,,,Danh,,
+UC02,UI08,User without permission cannot edit tags,1. Log in with a user without permission to edit document tags. 2. Navigate to a workspace document. 3. Click the vertical dots (⋮) of the document.,"1. Edit tags option is not visible OR 2. If clicked, system shows an appropriate error message and disallows tag editing. 3. No changes to document tags are made.",,,Danh,,
+UC02,UI09,Tags updated and usable in filtering/search,1. Open Tag Editor and add at least one new tag to a document. 2. Click Save. 3. Go to the document list view. 4. Use filter/search by the new tag.,1. Document appears in the result list when filtering/searching by the newly added tag. 2. Tag is visible in metadata area.,,,Danh,,
+UC02,UI10,Prevent duplicate tags on the same document,1. Open Tag Editor for a document. 2. Try to select a tag that is already assigned (or select the same tag multiple times if UI allows). 3. Click Save.,"1. System ensures each tag is associated only once per document. 2. In metadata area, each tag is displayed at most one time. 3. No duplicate tag entries are stored in metadata.",,,Danh,,
+Use case: Create document,,,,,,,,,
+UC03,UI01,"Create Valid Document 
+(Public)","1. Enter User Name: ""doc ""
+2.Enter Password: ""abcd""
+3. Choose ""Public"" options
+4. Click ""Create Note"" button","1. Modal closes.
+2. System creates the document.
+3. User is redirected to the Markdown Editor.
+4. Document privacy is set to Public.",,,Danh,,
+UC03,UI02,Create Valid Document (Public),"1. Enter User Name: ""doc ""
+2.Enter Password: ""abcd""
+3. Choose ""Private"" options
+4. Click ""Create Note"" button","1. Modal closes.
+2. System creates the document.
+3. User is redirected to the Markdown Editor.
+4. Document privacy is set to Private.",,,Danh,,
+UC03,UI03,Verify Duplicate Name Validation,"1. Click ""Add Note""
+2. Enter a name that already exists in the current folder.
+3. Choose ""Private/Public"" options
+4. Click ""Create Note"" button","1. System does not create the document.
+2. An error message is displayed (e.g., ""Name already exists"").
+3. User remains on the modal to retry.",,,Danh,,
+UC03,UI04,"Verify Empty Name
+ Validation","1. Click ""Add Note""
+2. Leave the Name field empty.
+3. Choose ""Private/Public"" options
+4. Click ""Create Note"" button",System prevents creation or truncates the name (depending on specific design spec) and shows an error.,,,Danh,,
+UC03,UI05,"Verify Max Character Length 
+for Name","1. Click ""Add Note""
+2. Enter a name with max allowed characters + 1.
+3. Choose ""Private/Public"" options
+4. Click ""Create Note"" button",System prevents creation or truncates the name (depending on specific design spec) and shows an error.,,,Danh,,
+UC03,UI06,"Verify Special Characters
+ in Name","1. Click ""Add Note""
+2. Enter a name containing allowed special characters (e.g., hyphens, underscores).
+3. Choose ""Private/Public"" options
+4. Click ""Create Note"" button",Document is created successfully with the exact name provided.,,,Danh,,
+UC03,UI07,"Verify Space Trimming 
+in Name","1. Click ""Add Note""
+2. Enter a name with leading/trailing spaces.
+3. Choose ""Private/Public"" options
+4. Click ""Create Note"" button",Document is created as Spaced Doc (System trims whitespace automatically).,,,Danh,,
+UC03,UI08,Cancel Document Creation,"1. Click ""Add Note"".
+2. Enter a name, set privacy
+3. Click the ""Cancel"" button (or close icon).","1. Modal closes.
+2. No document is created.
+3. User returns to the Workspace view.",,,Danh,,
+UC03,UI09,"Verify UI of ""Add Note"" trigger","1. Navigate to the Workspace view.
+2. Observe the interface.","The ""Add Note"" button is visible and clickable.",,,Danh,,
+UC03,UI10,Verify Modal Display,"1. Click the ""Add Note"" button.","A modal appears containing:
+- Text field for ""Document Name""
+- Privacy toggle (Public/Private)
+- ""Create Note"" button
+- ""Cancel"" button",,,Danh,,
+Use Case View Bookmark,,,,,,,,,
+UC04,UI01,Verify UI - Bookmark Button Visibility,"1. Log in to the system.
+2. Observe the workspace sidebar.","1. User is logged in successfully.
+2. The Bookmark button is visible and clickable in the sidebar.",,,Danh,,
+UC04,UI02,Verify Basic Flow - View list with existing bookmarks,"1. Ensure the logged-in user has at least one document bookmarked.
+2. Click the Bookmark button from the sidebar.","1. The system retrieves the data.
+2. The system displays a list of bookmarked documents including titles and brief metadata.",,,Danh,,
+UC04,UI03,Verify Alternative Flow - View list with NO bookmarks,"1. Ensure the logged-in user has zero bookmarked documents.
+2. Click the Bookmark button from the sidebar.","1. The system attempts to retrieve data.
+2. The system displays the message: ""No bookmarked documents found."" (or similar).",,,Danh,,
+UC04,UI04,Verify Metadata Display,"1. Click the Bookmark button.
+2. Inspect the details of a specific document in the list.","1. The list is displayed.
+2. The entry clearly shows the Document Title and metadata (e.g., Date, Author, or File Type) as per the requirements.",,,Danh,,
+UC04,UI05,"Verify ""Quick Access"" (Navigation)","1. Open the Bookmark list.
+2. Click on the title of a bookmarked document.","1. The system navigates the user to the document view for that specific file.
+2. The document opens successfully.",,,Danh,,
+UC04,UI06,Verify Data Integrity (Newly Added),"1. Navigate to a document that is NOT bookmarked.
+2. Add it to bookmarks.
+3. Click the Bookmark button in the sidebar.",1. The newly added document appears at the top (or in the correct sort order) of the bookmark list immediately.,,,Danh,,
+UC04,UI07,Verify Data Integrity (After Removal),"1. Open the Bookmark list.
+2. Remove a bookmark (via context menu or document view).
+3. Close and re-open the Bookmark list (or refresh).",1. The removed document is no longer visible in the Bookmark list.,,,Danh,,
+UC04,UI08,Verify Persistence after Logout,"1. View Bookmark list to confirm items exist.
+2. Log out of the system.
+3. Log back in.
+4. Click the Bookmark button.",1. The list displays the exact same documents as before the logout. Data is persistent.,,,Danh,,
+UC04,UI09,Verify User Isolation (Privacy),"1. Log in as User A and bookmark ""Document X"".
+2. Log out and log in as User B.
+3. Click the Bookmark button.","1. User B does NOT see ""Document X"" in their list (unless User B explicitly bookmarked it themselves). The list is unique to the user.",,,Danh,,
+UC04,UI10,Verify Large List Handling (UI Stability),"1. Ensure the user has a large number of bookmarks (e.g., 20+).
+2. Click the Bookmark button.
+3. Scroll through the list.","1. The list loads within a reasonable time.
+2. A scrollbar appears, and the layout does not break. All items are accessible.",,,Danh,,
+Function 05: Use Case Filtering Documents (By search bar),,,,,,,,,
+UC05,UI01,UI01 – Search with a keyword that has matching documents,1. Ensure the user is logged in and is on the Markdown editor screen with a list of documents.2. Enter a keyword such as “design” (or any keyword that is known to appear in the title/content of at least one document).3. Press Enter or click the Search icon.,"1. The system queries document titles and content using the keyword.2. A list of matching documents is displayed (at least one document), clearly showing the title (and content snippet if available).3. Documents that do not match the keyword are not shown in the list.",,,Danh,,
+UC05,UI02,UI02 – Search with a keyword that has no matching documents,1. Ensure the user is logged in and is on the Markdown editor screen.2. Enter a keyword that does not exist in any document title/content (for example: “xyz123@@@”).3. Press Enter or click the Search icon.,1. The system queries document titles and content using the keyword.2. No documents are displayed in the list.3. The message “No results found.” is clearly displayed to the user.,,,Danh,,
+UC05,UI03,UI03 – Search with empty keyword,1. Ensure the user is logged in and is on the Markdown editor screen.2. Leave the search box empty (do not type any character).3. Press Enter or click the Search icon.,"1. The system does not execute a search with an empty keyword.2. The application remains stable and does not crash.3. An error or warning message is shown asking the user to enter a search term (e.g., “Please enter a search term.”), or the current document list remains unchanged.",,,Danh,,
+UC05,UI04,UI04 – Search should match in both title and content,1. Ensure the user is logged in and is on the Markdown editor screen.2. Identify a document where the keyword appears only in the content and not in the title.3. Enter that keyword in the search box.4. Press Enter or click the Search icon.,1. The system queries both document titles and document content.2. The document that contains the keyword only in its content is still displayed in the result list.3. Documents that do not contain the keyword in either title or content are not shown.,,,Danh,,
+UC05,UI05,UI05 – Search is case-insensitive,"1. Ensure the user is logged in and is on the Markdown editor screen.2. Identify a document containing the keyword “Design” (e.g., “System Design”) in its title or content.3. Enter the keyword using different letter cases, for example “design” and “DESIGN”.4. Press Enter or click the Search icon for each variant.","1. The system treats the search as case-insensitive.2. Documents containing “Design”, “design”, “DESIGN”, etc. are all returned in the same way.3. The search result does not change only because of different letter casing.",,,Danh,,
+UC05,UI06,UI06 – Search with leading and trailing spaces,"1. Ensure the user is logged in and is on the Markdown editor screen.2. Enter a keyword that exists, but with spaces around it, e.g., “ design ”.3. Press Enter or click the Search icon.",1. The system trims leading and trailing spaces from the search keyword.2. The result list is the same as when searching for “design” without spaces.3. No error or unexpected behavior occurs because of the extra spaces.,,,Danh,,
+UC05,UI07,UI07 – Search with multiple-word phrase,1. Ensure the user is logged in and is on the Markdown editor screen.2. Identify a document whose title or content contains the phrase “system design”.3. Enter “system design” into the search box.4. Press Enter or click the Search icon.,1. The system treats the whole input as a search phrase.2. Documents that contain the phrase “system design” in their title or content are displayed in the result list.3. Documents that do not contain the full phrase are not shown.,,,Danh,,
+UC05,UI08,UI08 – Search with special characters,"1. Ensure the user is logged in and is on the Markdown editor screen.2. Identify a document whose title or content contains a term with special characters, e.g., “C++” or “Node.js”.3. Enter “C++” (or the chosen term) into the search box.4. Press Enter or click the Search icon.","1. The system correctly handles special characters in the search keyword.2. Documents containing the term with special characters (e.g., “C++”) are returned in the result list.3. No error, crash, or invalid query message occurs because of the special characters.",,,Danh,,
+UC05,UI09,UI09 – Search with Unicode / accented characters,"1. Ensure the user is logged in and is on the Markdown editor screen.2. Identify a document with a Vietnamese title or content containing a word with accents, e.g., “tài liệu”.3. Enter “tài liệu” into the search box.4. Press Enter or click the Search icon.","1. The system supports Unicode input in the search box.2. Documents whose titles or contents contain the accented word (e.g., “tài liệu”) are correctly displayed in the result list.3. No encoding or display issues occur for accented characters.",,,Danh,,
+UC05,UI10,UI10 – Search performance under normal load,"1. Ensure the user is logged in and the system has a realistic number of documents (e.g., several hundred or more).2. Enter a common keyword into the search box.3. Press Enter or click the Search icon.4. Measure the time from submitting the search to results being fully displayed.","1. The system returns and renders the search results list within an acceptable response time (e.g., ≤ 2 seconds) under normal load.2. The UI remains responsive while the search is being processed.3. No timeout, freeze, or “not responding” behavior occurs during the search operation.",,,Danh,,

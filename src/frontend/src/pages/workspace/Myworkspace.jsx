@@ -10,8 +10,9 @@ import { Link } from "react-router";
 
 
 import {
-    Edit, SortAsc, Tag, Search, X, Grid, List, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, Check, ArrowDownAZ, ArrowUpZA, Calendar, Clock
+    Edit, SortAsc, Tag, Search, X, Grid, List, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark, Check, ArrowDownAZ, ArrowUpZA, Calendar, Clock, MoreHorizontal, Filter, ArrowUpDown, Archive, FileText
 } from 'lucide-react';
+import { useTagService } from '../../services/tagService';
 
 
 const DocumentCard = ({ card, isExpanded }) => {
@@ -279,7 +280,7 @@ const DocumentCard = ({ card, isExpanded }) => {
                             )}
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{card.date}</p>
+                    <p className="text-xs text-gray-400 mt-1">{card.createdDate || card.date}</p>
                 </div>
             </div>
 
@@ -322,8 +323,22 @@ export default function Myworkspace() {
         title: '',
         date: ''
     });
+    const [selectedDocs, setSelectedDocs] = useState([]);
     const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
-    const [filterTags, setFilterTags] = useState([]); // Mảng chứa các tag đang lọc
+    const [filterTags, setFilterTags] = useState([]);
+    const [availableTags, setAvailableTags] = useState([]);
+
+    const { getAllTags } = useTagService();
+
+    // 1. Fetch tags on mount
+    useEffect(() => {
+        const fetchTags = async () => {
+            const tags = await getAllTags();
+            const uniqueTags = [...new Set([...tags])];
+            setAvailableTags(uniqueTags);
+        }
+        fetchTags();
+    }, []);
 
 
     useEffect(() => {
@@ -331,7 +346,7 @@ export default function Myworkspace() {
 
     }, [fetchListDocuments]);
 
-    const handleToggleFilterTag = (tag) => {
+    const handleTagSelection = (tag) => {
         setFilterTags(prev => {
             if (prev.includes(tag)) {
                 return prev.filter(t => t !== tag); // Bỏ chọn
@@ -372,11 +387,21 @@ export default function Myworkspace() {
     };
 
     const parseDate = (dateStr) => {
-
         if (!dateStr) return new Date(0);
-        const [day, month, year] = dateStr.split('/');
+        // Attempt to parse ISO string first (YYYY-MM-DD)
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
 
-        return new Date(`${year}-${month}-${day}`);
+        // Fallback for DD/MM/YYYY if needed (legacy/mock)
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return new Date(`${year}-${month}-${day}`);
+        }
+
+        return new Date(0);
     }
 
 
@@ -400,8 +425,8 @@ export default function Myworkspace() {
         })
         .sort((a, b) => {
             if (sortConfig.date) {
-                const dateA = parseDate(a.date);
-                const dateB = parseDate(b.date);
+                const dateA = parseDate(a.createdDate || a.date); // Support both for safety
+                const dateB = parseDate(b.createdDate || b.date);
                 if (dateA.getTime() !== dateB.getTime()) {
                     return sortConfig.date === 'latest' ? dateB - dateA : dateA - dateB;
                 }
@@ -458,12 +483,11 @@ export default function Myworkspace() {
                                     {/* Menu Dropdown (Chỉ hiển thị khi isTagMenuOpen là true) */}
                                     {isTagMenuOpen && (
                                         <TagDropMenu
-                                            // Truyền vị trí top/left/right qua props nếu cần căn chỉnh
                                             isOpen={isTagMenuOpen}
                                             onClose={() => setIsTagMenuOpen(false)}
                                             selectedTags={filterTags}
-                                            onToggleTag={handleToggleFilterTag}
-                                        // Nếu bạn cần tính toán vị trí động như Card Dropdown, bạn cần thêm logic đó ở đây
+                                            onToggleTag={handleTagSelection}
+                                            availableTags={availableTags} // Pass dynamic tags
                                         />
                                     )}
                                 </div>

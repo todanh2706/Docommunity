@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { Search, Tag, Check, ArrowDownAZ, ArrowUpZA , Clock, Calendar } from 'lucide-react';
+import { Search, Tag, Check, ArrowDownAZ, ArrowUpZA, Clock, Calendar } from 'lucide-react';
 
-// Danh sách tag có sẵn trong hệ thống (Mock data)
-const AVAILABLE_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
+// Danh sách tag sẽ được truyền vào qua props. 
+// Xóa hardcoded AVAILABLE_TAGS
+// const AVAILABLE_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
 
-export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag }) => {
+export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag, availableTags = [] }) => {
     const [searchTerm, setSearchTerm] = useState("");
 
     if (!isOpen) return null;
 
     // Lọc tag theo từ khóa tìm kiếm
-    const filteredTags = AVAILABLE_TAGS.filter(tag =>
+    const filteredTags = availableTags.filter(tag =>
         tag.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -68,7 +69,7 @@ export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag }) => {
                 </div>
 
 
-             
+
 
                 {/* 3. Footer: Clear Filter */}
                 {selectedTags.length > 0 && (
@@ -87,21 +88,21 @@ export const TagDropMenu = ({ isOpen, onClose, selectedTags, onToggleTag }) => {
     );
 };
 
-export const SortDropMenu = ({ 
-    isOpen, 
+export const SortDropMenu = ({
+    isOpen,
     onClose, // Hàm đóng menu
     sortConfig, // State cấu hình hiện tại
     onSelect, // Hàm xử lý khi chọn (thay cho handleSortSelection)
     onClear // Hàm xóa cấu hình
 }) => {
-    
+
     // Nếu menu không mở, không render gì cả
     if (!isOpen) return null;
 
     return (
         <>
             {/* Lớp phủ click outside. Dùng z-index thấp hơn menu chính */}
-            <div className="fixed inset-0 z-49" onClick={onClose}></div> 
+            <div className="fixed inset-0 z-49" onClick={onClose}></div>
 
             {/* SỬA LỖI ĐỊNH VỊ: Thay thế vị trí cứng top-20 left-15 bằng top-full left-0 */}
             {/* Component này được đặt bên trong một thẻ cha có thuộc tính relative */}
@@ -110,7 +111,7 @@ export const SortDropMenu = ({
                 {/* GROUP 1: BY TITLE */}
                 <div className="p-2 border-b border-gray-700/50">
                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-3 py-1 mb-1">By Title</div>
-                    
+
                     {/* Option: A - Z */}
                     <button
                         onClick={() => onSelect('title', 'asc')}
