@@ -15,21 +15,27 @@ import { useTagService } from '../../services/tagService';
 const DocumentCard = ({ card, isExpanded }) => {
     console.log("Full Card Data:", card);
 
-    const { deleteDocument, handleDocumentUpdate } = useDocument();
+    const { deleteDocument, handleDocumentUpdate, toggleBookmark } = useDocument();
     const [showMenu, setShowMenu] = useState(false);
-    const [isBookmarked, setIsBookmarked] = useState(card.tags.includes('bookmarked'));
+
+    // Use prop for bookmark state, fallback to False
+    const isBookmarked = card.isBookmarked || false;
 
     const [title, setTitle] = useState(card?.title || "");
 
     const [privacy, setPrivacy] = useState(card.isPublic ? 'public' : 'private');
 
     // --- MỚI: State quản lý tags và Modal ---
-    const [activeTags, setActiveTags] = useState(card.tags);
+    const [activeTags, setActiveTags] = useState(card.tags || []);
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
 
     const [menuPositionClass, setMenuPositionClass] = useState("left-0 top-full mt-2");
 
-    const isBlank = !card.note && card.members === 0 && activeTags.length === 0; // Lưu ý dùng activeTags thay vì card.tags để check blank
+    // Check if blank (using activeTags)
+    const isBlank = !card.note && card.members === 0 && activeTags.length === 0;
+
+
+
 
 
     const toggleMenu = (e) => {
@@ -105,23 +111,9 @@ const DocumentCard = ({ card, isExpanded }) => {
         setDialogConfig((prev) => ({ ...prev, isOpen: false }));
     };
 
-    const handleBookmark = () => {
-        const newIsBookmarked = !isBookmarked;
-        setIsBookmarked(newIsBookmarked);
+    const handleBookmark = async () => {
         setShowMenu(false);
-
-        // Update tags
-        let newTags;
-        if (newIsBookmarked) {
-            newTags = [...activeTags, 'bookmarked'];
-        } else {
-            newTags = activeTags.filter(t => t !== 'bookmarked');
-        }
-        // Deduplicate just in case
-        newTags = [...new Set(newTags)];
-
-        setActiveTags(newTags);
-        handleDocumentUpdate(card.id, { tags: newTags });
+        await toggleBookmark(card.id);
     };
 
     // --- MỚI: Hàm xử lý mở modal Edit Tag ---

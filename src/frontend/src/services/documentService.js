@@ -237,3 +237,35 @@ export const permanentDeleteDocument = async (id) => {
         throw error;
     }
 };
+
+// ============================================================
+// 10. GET BOOKMARKED DOCUMENTS (GET /documents/bookmarked)
+// ============================================================
+export const getBookmarkedDocuments = async () => {
+    if (USE_MOCK_DATA) {
+        await mockDelay();
+        return localDocuments.filter(d => d.tags.includes('bookmarked'));
+    }
+
+    try {
+        const response = await axiosInstance.get(`${BACKEND_ROOT}/bookmarked`);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 11. MARK/BOOKMARK DOCUMENT (POST /documents/:id/mark)
+// ============================================================
+export const bookmarkDocument = async (id) => {
+    if (USE_MOCK_DATA) {
+        return { message: "Mock marked" };
+    }
+    try {
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/${id}/mark`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

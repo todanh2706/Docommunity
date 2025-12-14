@@ -180,4 +180,14 @@ public class DocumentController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping("/bookmarked")
+    public ResponseEntity<ResponseDTO> getBookmarkedDocuments() {
+        List<DocumentResponse> documents = documentService.getBookmarkedDocuments();
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documents);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Bookmarked documents retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
 }

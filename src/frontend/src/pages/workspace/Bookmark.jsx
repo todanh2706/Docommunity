@@ -15,9 +15,13 @@ import {
 
 
 const DocumentCard = ({ card, isExpanded }) => {
-    const { deleteDocument, handleDocumentUpdate } = useDocument();
+    const { deleteDocument, handleDocumentUpdate, toggleBookmark } = useDocument();
     const [showMenu, setShowMenu] = useState(false);
-    const [isBookmarked, setIsBookmarked] = useState(card.tags?.includes('bookmarked') || false);
+
+    // Use prop for bookmark state, default true since we are in Bookmark page (normally)
+    // But if we toggle off, it becomes false.
+    // Ideally card.isBookmarked should be populated from backend response of getBookmarkedDocuments.
+    const [isBookmarked, setIsBookmarked] = useState(card.isBookmarked);
 
     const [title, setTitle] = useState(card?.title || "");
     const [privacy, setPrivacy] = useState(card.isPublic ? 'public' : 'private');
@@ -87,23 +91,9 @@ const DocumentCard = ({ card, isExpanded }) => {
         setDialogConfig((prev) => ({ ...prev, isOpen: false }));
     };
 
-    const handleBookmark = () => {
-        const newIsBookmarked = !isBookmarked;
-        setIsBookmarked(newIsBookmarked);
+    const handleBookmark = async () => {
         setShowMenu(false);
-
-        // Update tags
-        let newTags;
-        if (newIsBookmarked) {
-            newTags = [...activeTags, 'bookmarked'];
-        } else {
-            newTags = activeTags.filter(t => t !== 'bookmarked');
-        }
-        // Deduplicate just in case
-        newTags = [...new Set(newTags)];
-
-        setActiveTags(newTags);
-        handleDocumentUpdate(card.id, { tags: newTags });
+        await toggleBookmark(card.id);
     };
 
     const handleOpenTagEditor = () => {
@@ -238,7 +228,7 @@ export default function Bookmark() {
     // Note: getTrashedDocuments logic makes sure we don't see deleted ones here if filtered in documentService correctly.
     // However, if we want to show bookmarked items even if trash, we should rely on where we fetch.
     // Currently documentService.getAllDocument filters OUT 'TRASHED'. So bookmark view will only show active bookmarked docs. This is correct.
-    const { listDocuments, loading, fetchListDocuments, error } = useDocument();
+    const { bookmarkedList, loading, fetchBookmarkedDocuments, error } = useDocument();
 
     const [value, setValue] = useState("");
     const [isSortOpen, setIsSortOpen] = useState(false);
@@ -251,8 +241,8 @@ export default function Bookmark() {
     const [isModalOpen, setIsModalOpen] = useState(false); // For Plus button if used
 
     useEffect(() => {
-        fetchListDocuments();
-    }, [fetchListDocuments]);
+        fetchBookmarkedDocuments();
+    }, [fetchBookmarkedDocuments]);
 
     // Handlers
     const toggleSort = () => setIsSortOpen(!isSortOpen);
@@ -278,9 +268,7 @@ export default function Bookmark() {
         });
     };
 
-    const bookmarkedDocuments = (listDocuments || []).filter(doc =>
-        doc.tags && doc.tags.includes('bookmarked')
-    );
+    const bookmarkedDocuments = bookmarkedList || [];
 
     const filteredAndSortedDocuments = [...bookmarkedDocuments]
         .filter(doc => {

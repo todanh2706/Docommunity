@@ -1,13 +1,13 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MessageSquare, Share2 } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Bookmark } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 
-const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], isLiked = false, onClick, onLike, onComment }) => {
+const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], isLiked = false, isBookmarked = false, onClick, onLike, onComment, onBookmark }) => {
     return (
         <div
             className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 overflow-hidden"
@@ -40,11 +40,11 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], i
             <div className="z-10 space-y-2">
                 <h3
                     onClick={onClick}
-                    className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 cursor-pointer hover:underline"
+                    className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-2 cursor-pointer hover:underline break-words"
                 >
                     {title}
                 </h3>
-                <div className="text-gray-300 text-sm leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none">
+                <div className="text-gray-300 text-sm leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none break-words">
                     <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</Markdown>
                 </div>
 
@@ -84,9 +84,22 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], i
                     <span className="text-xs font-medium">{comments}</span>
                 </button>
 
-                <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors ml-auto">
-                    <Share2 size={18} />
-                </button>
+                <div className="flex items-center gap-4 ml-auto">
+                    {/* Bookmark Button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onBookmark) onBookmark();
+                        }}
+                        className={`transition-colors group/btn ${isBookmarked ? 'text-blue-400' : 'text-gray-400 hover:text-blue-400'}`}
+                    >
+                        <Bookmark size={18} className={`group-hover/btn:fill-blue-400/20 ${isBookmarked ? 'fill-blue-400' : ''}`} />
+                    </button>
+
+                    <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors">
+                        <Share2 size={18} />
+                    </button>
+                </div>
             </div>
         </div>
     );

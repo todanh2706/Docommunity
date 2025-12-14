@@ -159,6 +159,7 @@ public class DocumentService {
                 .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
                 .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
                 .isLiked(isLiked)
+                .isBookmarked(doc.getMarkedByUsers().stream().anyMatch(u -> u.getUsername().equals(currentUsername)))
                 .tags(doc.getTags().stream().map(TagEntity::getName).collect(Collectors.toList()))
                 .build();
     }
@@ -287,8 +288,11 @@ public class DocumentService {
 
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         boolean isLiked = false;
+        boolean isBookmarked = false;
         if (currentUsername != null && !currentUsername.equals("anonymousUser")) {
             isLiked = doc.getLikedByUsers().stream()
+                    .anyMatch(u -> u.getUsername().equals(currentUsername));
+            isBookmarked = doc.getMarkedByUsers().stream()
                     .anyMatch(u -> u.getUsername().equals(currentUsername));
         }
 
@@ -304,7 +308,8 @@ public class DocumentService {
                 doc.getUser().getId(),
                 doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0,
                 doc.getComments() != null ? doc.getComments().size() : 0,
-                isLiked);
+                isLiked,
+                isBookmarked);
     }
 
     public int likeDocument(Long documentId) {
@@ -419,8 +424,22 @@ public class DocumentService {
         DocumentEntity doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
 
-        doc.getMarkedByUsers().add(user);
+        if (!doc.getMarkedByUsers().removeIf(u -> u.getId().equals(user.getId()))) {
+            doc.getMarkedByUsers().add(user);
+        }
 
         documentRepository.save(doc);
+    }
+
+    public List<DocumentResponse> getBookmarkedDocuments() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        List<DocumentEntity> docs = documentRepository.findByMarkedByUsersContaining(user);
+
+        return docs.stream()
+                .map(this::mapToDocumentResponse)
+                .collect(Collectors.toList());
     }
 }

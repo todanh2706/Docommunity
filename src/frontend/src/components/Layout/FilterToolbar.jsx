@@ -1,6 +1,7 @@
 import React from 'react';
-import { SortAsc, Search, X, Grid, List } from 'lucide-react';
+import { SortAsc, Search, X, Grid, List, Tag } from 'lucide-react';
 import { TagDropMenu, SortDropMenu } from './DropMenu';
+import { useUIContext } from '../../context/useUIContext';
 
 const FilterToolbar = ({
     // State
@@ -27,6 +28,7 @@ const FilterToolbar = ({
     // Slots/Children
     children // For extra buttons (Add, More, etc.)
 }) => {
+    const { showSidebar } = useUIContext();
 
     const handleCloseSort = () => {
         setIsSortOpen(false);
@@ -66,7 +68,8 @@ const FilterToolbar = ({
                                 ${isTagMenuOpen || filterTags.length > 0 ? 'bg-gray-700 text-white' : 'hover:bg-gray-700'}
                             `}
                         >
-                            <span className="hidden md:block font-medium">Tags</span>
+                            <Tag size={20} className="mr-2" />
+                            <span className={`hidden font-medium ${showSidebar ? '' : 'md:block'}`}>Tags</span>
                         </button>
 
                         {isTagMenuOpen && (

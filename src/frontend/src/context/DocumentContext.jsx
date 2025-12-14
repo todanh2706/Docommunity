@@ -7,7 +7,9 @@ import {
     getAllDocument,
     getTrashedDocuments,
     restoreDocument as restoreDocumentAPI,
-    permanentDeleteDocument as permanentDeleteDocumentAPI
+    permanentDeleteDocument as permanentDeleteDocumentAPI,
+    getBookmarkedDocuments,
+    bookmarkDocument as bookmarkDocumentAPI
 } from '../services/documentService';
 
 const DocumentContext = createContext();
@@ -16,6 +18,7 @@ export const DocumentProvider = ({ children }) => {
     const [currentDocument, setCurrentDocument] = useState(null);
     const [listDocuments, setListDocuments] = useState([]);
     const [trashedList, setTrashedList] = useState([]);
+    const [bookmarkedList, setBookmarkedList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -165,6 +168,51 @@ export const DocumentProvider = ({ children }) => {
         }
     };
 
+    //10. Lấy danh sách Bookmarks
+    const fetchBookmarkedDocuments = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getBookmarkedDocuments();
+            setBookmarkedList(data);
+        } catch (err) {
+            setError(err.message || 'Failed to load bookmarked documents');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // 11. Toggle Bookmark
+    const toggleBookmark = async (docId) => {
+        // Optimistic update
+        const updateLists = (bookmarkStatus) => {
+            setListDocuments(prev => prev.map(d => d.id === docId ? { ...d, isBookmarked: bookmarkStatus } : d));
+            if (currentDocument && currentDocument.id === docId) {
+                setCurrentDocument(prev => ({ ...prev, isBookmarked: bookmarkStatus }));
+            }
+            // If unbookmarking, remove from bookmarkedList locally
+            if (!bookmarkStatus) {
+                setBookmarkedList(prev => prev.filter(d => d.id !== docId));
+            }
+        };
+
+        // Find doc to check current status
+        const doc = listDocuments.find(d => d.id === docId) || bookmarkedList.find(d => d.id === docId) || currentDocument;
+        if (!doc) return; // Should not happen if clicked from UI
+
+        const newStatus = !doc.isBookmarked;
+        updateLists(newStatus);
+
+        try {
+            await bookmarkDocumentAPI(docId);
+        } catch (err) {
+            console.error(err);
+            // Revert
+            updateLists(!newStatus);
+            setError("Failed to toggle bookmark");
+        }
+    };
+
 
 
     return (
@@ -184,7 +232,11 @@ export const DocumentProvider = ({ children }) => {
                 deleteDocument,
                 fetchTrashedDocuments,
                 restoreDocument,
-                permanentDeleteDocument
+                restoreDocument,
+                permanentDeleteDocument,
+                fetchBookmarkedDocuments,
+                bookmarkedList,
+                toggleBookmark
             }}
         >
             {children}

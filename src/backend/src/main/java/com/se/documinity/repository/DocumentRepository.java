@@ -15,6 +15,8 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 
     List<DocumentEntity> findByUserIdAndIsPublicTrue(Long userId);
 
+    List<DocumentEntity> findByMarkedByUsersContaining(UserEntity user);
+
     List<DocumentEntity> findByUserId(Long userId);
 
     Page<DocumentEntity> findByIsPublicTrueAndStatus(String status, Pageable pageable);

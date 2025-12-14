@@ -17,13 +17,32 @@ export default function Community() {
     const [loading, setLoading] = useState(true);
     const [totalPages, setTotalPages] = useState(0);
     const navigate = useNavigate();
-    const { viewAllDocs, likeDocument, unlikeDocument } = useCommunity();
+    const { viewAllDocs, likeDocument, unlikeDocument, bookmarkDocument } = useCommunity();
     const { getAllTags } = useTagService();
 
     // Toolbar State (Local)
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
     const [availableTags, setAvailableTags] = useState([]);
+
+    const handleBookmarkToggle = async (doc) => {
+        // Optimistic UI Update
+        const newIsBookmarked = !doc.isBookmarked;
+
+        setDocuments(prev => prev.map(d =>
+            d.id === doc.id ? { ...d, isBookmarked: newIsBookmarked } : d
+        ));
+
+        try {
+            await bookmarkDocument(doc.id);
+        } catch (error) {
+            console.error("Bookmark toggle failed:", error);
+            // Revert on error
+            setDocuments(prev => prev.map(d =>
+                d.id === doc.id ? { ...d, isBookmarked: doc.isBookmarked } : d
+            ));
+        }
+    };
 
     // Fetch Tags
     useEffect(() => {
@@ -244,7 +263,7 @@ export default function Community() {
             <Sidebar />
 
             <main
-                className={`transition-all duration-300 ease-in-out min-h-screen p-8 flex-grow
+                className={`transition-all duration-300 ease-in-out min-h-screen p-8 flex-grow min-w-0
                 ${showSidebar ? 'ml-0 md:ml-64' : 'ml-0'}`}
             >
                 {/* Toolbar */}
@@ -295,9 +314,11 @@ export default function Community() {
                                     comments={doc.commentsCount || 0}
                                     tags={doc.tags} // Pass tags
                                     isLiked={doc.isLiked}
+                                    isBookmarked={doc.isBookmarked}
                                     onClick={() => handleCardClick(doc.id)}
                                     onLike={() => handleLikeToggle(doc)}
                                     onComment={() => handleCommentClick(doc.id)}
+                                    onBookmark={() => handleBookmarkToggle(doc)}
                                 />
                             ))}
 

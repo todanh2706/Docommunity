@@ -22,4 +22,5 @@ public class DocumentResponse {
     private int likesCount;
     private int commentsCount;
     private Boolean isLiked;
+    private Boolean isBookmarked;
 }

@@ -19,4 +19,5 @@ public class PublicDocumentResponse {
     private int commentsCount;
     private Boolean isLiked;
     private java.util.List<String> tags;
+    private Boolean isBookmarked;
 }

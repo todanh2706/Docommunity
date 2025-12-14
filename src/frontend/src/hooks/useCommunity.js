@@ -85,6 +85,15 @@ export const useCommunity = () => {
         return response.data;
     };
 
+    /**
+     * Bookmark (or unbookmark) a document
+     * POST /documents/{id}/mark
+     */
+    const bookmarkDocument = async (id) => {
+        const response = await post(`/documents/${id}/mark`);
+        return response.data;
+    };
+
     return {
         viewAllDocs,
         viewDoc,
@@ -93,6 +102,7 @@ export const useCommunity = () => {
         addComment,
         getComments,
         replyComment,
-        getPopularDocs
+        getPopularDocs,
+        bookmarkDocument
     };
 };
