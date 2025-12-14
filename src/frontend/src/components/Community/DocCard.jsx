@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 
-const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) => {
+const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], isLiked = false, onClick, onLike, onComment }) => {
     return (
         <div
             className="group relative flex flex-col gap-4 p-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl shadow-lg hover:shadow-2xl hover:bg-white/10 transition-all duration-300 overflow-hidden"
@@ -47,16 +47,39 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, onClick }) =
                 <div className="text-gray-300 text-sm leading-relaxed line-clamp-3 prose prose-invert prose-sm max-w-none">
                     <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{content}</Markdown>
                 </div>
+
+                {/* Tags */}
+                {tags && tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                        {tags.map(tag => (
+                            <span key={tag} className="text-xs px-2 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md">
+                                #{tag}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Footer / Actions */}
             <div className="flex items-center gap-6 mt-2 pt-4 border-t border-white/5 z-10">
-                <button className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-colors group/btn">
-                    <Heart size={18} className="group-hover/btn:fill-red-400/20" />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onLike) onLike();
+                    }}
+                    className={`flex items-center gap-2 transition-colors group/btn ${isLiked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'}`}
+                >
+                    <Heart size={18} className={`group-hover/btn:fill-red-400/20 ${isLiked ? 'fill-red-400' : ''}`} />
                     <span className="text-xs font-medium">{likes}</span>
                 </button>
 
-                <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onComment) onComment();
+                    }}
+                    className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors"
+                >
                     <MessageSquare size={18} />
                     <span className="text-xs font-medium">{comments}</span>
                 </button>

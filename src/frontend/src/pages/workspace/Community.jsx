@@ -5,6 +5,7 @@ import DocCard from '../../components/Community/DocCard';
 import CommunityToolbar from '../../components/Community/CommunityToolbar';
 import { useUIContext } from '../../context/useUIContext';
 import { useCommunity } from '../../hooks/useCommunity';
+import { DocCardSkeleton } from '../../components/UI/Skeleton';
 
 export default function Community() {
     const { showSidebar } = useUIContext();
@@ -12,28 +13,68 @@ export default function Community() {
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const { viewAllDocs } = useCommunity();
+    const { viewAllDocs, likeDocument, unlikeDocument } = useCommunity();
 
     useEffect(() => {
+        let isMounted = true;
         const fetchDocs = async () => {
+            setLoading(true);
             try {
-                const response = await viewAllDocs();
-                setDocuments(response.data || []);
+                // Fetch data with minimum loading time to prevent flicker
+                const [response] = await Promise.all([
+                    viewAllDocs(),
+                    new Promise(resolve => setTimeout(resolve, 600)) // 600ms min loading
+                ]);
+
+                if (isMounted) {
+                    setDocuments(response.data || []);
+                }
             } catch (error) {
                 console.error("Failed to fetch documents:", error);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
         fetchDocs();
+
+        return () => { isMounted = false; };
     }, []);
 
     const handleCardClick = (id) => {
         navigate(`/home/community/doc/${id}`);
     };
 
+    const handleLikeToggle = async (doc) => {
+        // Optimistic UI Update
+        const isLiked = doc.isLiked;
+        const newLikesCount = isLiked ? doc.likesCount - 1 : doc.likesCount + 1;
+        const newIsLiked = !isLiked;
+
+        setDocuments(prev => prev.map(d =>
+            d.id === doc.id ? { ...d, likesCount: newLikesCount, isLiked: newIsLiked } : d
+        ));
+
+        try {
+            if (isLiked) {
+                await unlikeDocument(doc.id);
+            } else {
+                await likeDocument(doc.id);
+            }
+        } catch (error) {
+            console.error("Like toggle failed:", error);
+            // Revert on error
+            setDocuments(prev => prev.map(d =>
+                d.id === doc.id ? { ...d, likesCount: doc.likesCount, isLiked: doc.isLiked } : d
+            ));
+        }
+    };
+
+    const handleCommentClick = (id) => {
+        navigate(`/home/community/doc/${id}`, { state: { focusComment: true } });
+    };
+
     return (
-        <div className="flex flex-row items-left justify-between h-screen bg-gray-900 text-gray-100">
+        <div className="flex flex-row items-left justify-between min-h-screen bg-gray-900 text-gray-100">
             <Sidebar />
 
             <main
@@ -52,7 +93,10 @@ export default function Community() {
                 {/* Feed Content */}
                 <div className="space-y-6">
                     {loading ? (
-                        <div className="text-white text-center py-10">Loading community feed...</div>
+                        // Render Skeletons
+                        Array.from({ length: 3 }).map((_, index) => (
+                            <DocCardSkeleton key={index} />
+                        ))
                     ) : documents.length > 0 ? (
                         documents.map((doc) => (
                             <DocCard
@@ -74,7 +118,11 @@ export default function Community() {
                                 }}
                                 likes={doc.likesCount || 0}
                                 comments={doc.commentsCount || 0}
+                                tags={doc.tags} // Pass tags
+                                isLiked={doc.isLiked}
                                 onClick={() => handleCardClick(doc.id)}
+                                onLike={() => handleLikeToggle(doc)}
+                                onComment={() => handleCommentClick(doc.id)}
                             />
                         ))
                     ) : (

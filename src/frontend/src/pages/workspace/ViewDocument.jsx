@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Share2, Heart, MoreVertical, Clock, Calendar } from 'lucide-react';
 import Sidebar from '../../components/Layout/Sidebar';
 import CommentSection from '../../components/Community/CommentSection';
@@ -9,10 +9,12 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
+import { DocDetailSkeleton } from '../../components/UI/Skeleton';
 
 export default function ViewDocument() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { showSidebar } = useUIContext();
     const [document, setDocument] = useState(null);
     const { viewDoc, likeDocument, unlikeDocument } = useCommunity();
@@ -36,7 +38,8 @@ export default function ViewDocument() {
                         comments: data.commentsCount || 0
                     },
                     readTime: "5 min read", // Placeholder
-                    createdAt: data.createdDate
+                    createdAt: data.createdDate,
+                    tags: data.tags || []
                 });
                 setIsLiked(data.isLiked);
             } catch (error) {
@@ -62,7 +65,21 @@ export default function ViewDocument() {
         }
     };
 
-    if (!document) return <div className="text-white p-10">Loading...</div>;
+    // Loading Skeleton View
+    if (!document) {
+        return (
+            <div className="flex flex-row items-left justify-between h-screen bg-gray-900 text-gray-100 overflow-hidden">
+                <Sidebar />
+                <main className={`transition-all duration-300 ease-in-out h-screen p-4 md:p-6 flex gap-6
+                    ${showSidebar ? 'ml-0 md:ml-64 w-[calc(100%-16rem)]' : 'ml-0 w-full'}`}
+                >
+                    <DocDetailSkeleton />
+                    {/* Comment Skeleton (Placeholder for now) */}
+                    <div className="w-96 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hidden xl:flex flex-col animate-pulse"></div>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-row items-left justify-between h-screen bg-gray-900 text-gray-100 overflow-hidden">
@@ -99,6 +116,17 @@ export default function ViewDocument() {
                         <h1 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
                             {document.title}
                         </h1>
+
+                        {/* Tags */}
+                        {document.tags && document.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-6">
+                                {document.tags.map(tag => (
+                                    <span key={tag} className="text-sm px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <div className="flex items-center gap-3">
@@ -149,7 +177,7 @@ export default function ViewDocument() {
 
                 {/* Right Panel - Comments */}
                 <div className="w-96 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hidden xl:flex flex-col">
-                    <CommentSection docId={id} />
+                    <CommentSection docId={id} shouldFocus={location.state?.focusComment} />
                 </div>
             </main>
         </div>

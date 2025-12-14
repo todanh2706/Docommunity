@@ -17,4 +17,6 @@ public class PublicDocumentResponse {
     private java.time.LocalDate lastModified;
     private int likesCount;
     private int commentsCount;
+    private Boolean isLiked;
+    private java.util.List<String> tags;
 }

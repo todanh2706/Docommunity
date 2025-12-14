@@ -19,4 +19,5 @@ public class ViewDocumentResponse {
     private int commentsCount;
     private String createdDate;
     private Boolean isLiked;
+    private java.util.List<String> tags;
 }

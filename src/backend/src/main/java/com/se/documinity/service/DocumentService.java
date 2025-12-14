@@ -134,6 +134,13 @@ public class DocumentService {
     private PublicDocumentResponse toPublicDocumentResponse(DocumentEntity doc) {
         String snippet = buildSnippet(doc.getContent());
 
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isLiked = false;
+        if (currentUsername != null && !currentUsername.equals("anonymousUser")) {
+            isLiked = doc.getLikedByUsers().stream()
+                    .anyMatch(u -> u.getUsername().equals(currentUsername));
+        }
+
         return PublicDocumentResponse.builder()
                 .id(doc.getId())
                 .title(doc.getTitle())
@@ -145,6 +152,8 @@ public class DocumentService {
                 .lastModified(doc.getLastModified() != null ? doc.getLastModified() : doc.getCreatedDate())
                 .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
                 .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
+                .isLiked(isLiked)
+                .tags(doc.getTags().stream().map(TagEntity::getName).collect(Collectors.toList()))
                 .build();
     }
 
@@ -190,6 +199,7 @@ public class DocumentService {
                 .commentsCount(doc.getComments() != null ? doc.getComments().size() : 0)
                 .createdDate(doc.getCreatedDate().toString())
                 .isLiked(isLiked)
+                .tags(doc.getTags().stream().map(TagEntity::getName).collect(Collectors.toList()))
                 .build();
     }
 

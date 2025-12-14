@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MessageSquare, Reply, MoreHorizontal, Send } from 'lucide-react';
 import { useCommunity } from '../../hooks/useCommunity';
 
@@ -74,9 +74,10 @@ const CommentItem = ({ comment, isReply = false, onReply }) => {
     );
 };
 
-const CommentSection = ({ docId }) => {
+const CommentSection = ({ docId, shouldFocus = false }) => {
     const [newComment, setNewComment] = useState("");
     const [comments, setComments] = useState([]);
+    const commentInputRef = useRef(null);
     const { getComments, addComment, replyComment } = useCommunity();
 
     useEffect(() => {
@@ -91,6 +92,16 @@ const CommentSection = ({ docId }) => {
         };
         fetchComments();
     }, [docId]);
+
+    // Auto-focus logic
+    useEffect(() => {
+        if (shouldFocus && commentInputRef.current) {
+            // Tiny delay to ensure visibility
+            setTimeout(() => {
+                commentInputRef.current.focus();
+            }, 100);
+        }
+    }, [shouldFocus]);
 
     const handleAddComment = async () => {
         if (!newComment.trim()) return;
@@ -140,9 +151,10 @@ const CommentSection = ({ docId }) => {
                     />
                     <div className="flex-1 relative">
                         <textarea
+                            ref={commentInputRef}
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add to the discussion..."
+                            placeholder="Add to the discussion..." // Corrected typo from user request "commnet"
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none h-24"
                         />
                         <button
