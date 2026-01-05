@@ -96,7 +96,14 @@ export default function EditorPage({ initialContent = '' }) {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
 
-    const [viewMode, setViewMode] = useState('side-by-side');
+    const [viewMode, setViewMode] = useState(() => {
+        const savedMode = localStorage.getItem('editorViewMode');
+        return savedMode || 'side-by-side';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('editorViewMode', viewMode);
+    }, [viewMode]);
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
 
     const handleCopyLink = () => {
@@ -122,7 +129,7 @@ export default function EditorPage({ initialContent = '' }) {
 
 
     //Document handle
-     // --- LOGIC DOCUMENT ---
+    // --- LOGIC DOCUMENT ---
     useEffect(() => {
         if (document) {
             setTitle(document.title || "Untitled Notebook");
@@ -285,16 +292,16 @@ export default function EditorPage({ initialContent = '' }) {
             } else {
                 data = await generateContent(type, prompt);
             }
-            
+
             console.log("AI Generated Data:", data);
-            
+
             if (data && data.content) {
                 let newText = markdown;
-                
+
                 if (aiMode === 'refine' && selectionRange) {
-                     const before = markdown.substring(0, selectionRange.start);
-                     const after = markdown.substring(selectionRange.end);
-                     newText = before + `\n:::mark\n${data.content}\n:::\n` + after;
+                    const before = markdown.substring(0, selectionRange.start);
+                    const after = markdown.substring(selectionRange.end);
+                    newText = before + `\n:::mark\n${data.content}\n:::\n` + after;
                 } else {
                     // Generate mode: Append to end
                     newText = markdown + '\n\n' + data.content;
@@ -572,19 +579,19 @@ export default function EditorPage({ initialContent = '' }) {
         // Matches :::mark [content] :::
         const regex = /:::mark\s+([\s\S]*?)\s+:::/g;
         let match;
-        
+
         while ((match = regex.exec(text)) !== null) {
             const start = match.index;
             const end = start + match[0].length;
-            
+
             // Check if cursor is inside the block
             if (cursor >= start && cursor <= end) {
                 // Remove the markers
                 const content = match[1];
                 const newText = text.substring(0, start) + content + text.substring(end);
-                
+
                 setMarkdown(newText);
-                
+
                 // Adjust cursor
                 // We removed ":::mark\n" (approx 8 chars) from the start
                 // But we need to be precise.
@@ -592,20 +599,20 @@ export default function EditorPage({ initialContent = '' }) {
                 // match[1] is the content.
                 // The start marker length is (start of content) - (start of match)
                 const startMarkerLength = text.indexOf(content, start) - start;
-                
+
                 let newCursor = cursor;
                 if (cursor > start + startMarkerLength) {
                     newCursor -= startMarkerLength;
                 } else if (cursor > start) {
                     newCursor = start;
                 }
-                
+
                 // We need to set selection range after render
                 setTimeout(() => {
                     textarea.setSelectionRange(newCursor, newCursor);
                     textarea.focus();
                 }, 0);
-                
+
                 return; // Handle one click at a time
             }
         }
@@ -732,7 +739,7 @@ export default function EditorPage({ initialContent = '' }) {
     const handleToolClick = (toolName) => {
         setSelectedTools(prev => prev.includes(toolName) ? prev.filter(t => t !== toolName) : [...prev, toolName]);
     };
-   
+
 
 
     // --- LOGIC COMMENT ---
@@ -820,7 +827,7 @@ export default function EditorPage({ initialContent = '' }) {
 
                             >
                             </ToolbarBtn>
-                            {viewMode}
+                            {/* {viewMode === 'editor' ? 'Editor' : viewMode === 'preview' ? 'Preview' : 'Side-by-side'} */}
                         </div>
 
 
