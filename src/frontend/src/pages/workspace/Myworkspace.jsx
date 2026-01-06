@@ -229,11 +229,11 @@ const DocumentCard = ({ card, isExpanded }) => {
                                 <div
                                     className={`absolute w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-60 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${menuPositionClass}`}
                                 >
-                                    <Link to="/home/editor" >
-                                        <button className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition">
-                                            <Eye size={16} />
-                                            <span>View mode</span>
-                                        </button>
+                                    <Link to="/home/editor" state={{ document: card, viewMode: 'preview' }}
+                                        className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-800 text-left text-sm text-gray-200 transition w-full block"
+                                    >
+                                        <Eye size={16} />
+                                        <span>View mode</span>
                                     </Link>
 
                                     {/* --- MỚI: Gắn sự kiện mở Modal --- */}

@@ -77,7 +77,27 @@ export default function useAuth() {
             console.error('Registered failed: ', errMessage);
             throw new Error(errMessage);
         }
-    }
+    };
 
-    return { login, logout, register, isLoading, error };
+    const verifyAccount = async (email, otp) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const res = await api.post(`/auth/verify-account`, { email, otp });
+            setIsLoading(false);
+            return res.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Verification failed!";
+            setError(errMessage);
+            console.error('Verification failed: ', errMessage);
+            throw new Error(errMessage);
+        }
+    };
+
+    return { login, logout, register, verifyAccount, isLoading, error };
 }

@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,20 +53,12 @@ public class CommunityControllerTest {
                 PagedResponseDTO<PublicDocumentResponse> pagedResponse = new PagedResponseDTO<>();
                 pagedResponse.setContent(Collections.emptyList());
 
-                when(documentService.getPublicDocuments(anyString(), anyInt())).thenReturn(pagedResponse); // Corrected
-                                                                                                           // matcher:
-                                                                                                           // anyString()
-                                                                                                           // might
-                                                                                                           // be null so
-                                                                                                           // strict
-                                                                                                           // matchers
-                                                                                                           // needed or
-                                                                                                           // nullable
+                when(documentService.getPublicDocuments(any(), any(), anyInt())).thenReturn(pagedResponse); // Corrected
 
                 // Since tagName is optional and I'm not passing it, mockito matcher might need
                 // adjustment or call without param
                 // But let's try with basic call first. If param is missing, it's null.
-                when(documentService.getPublicDocuments(eq(null), anyInt())).thenReturn(pagedResponse);
+                when(documentService.getPublicDocuments(eq(null), eq(null), anyInt())).thenReturn(pagedResponse);
 
                 mockMvc.perform(get("/view-all-docs"))
                                 .andExpect(status().isOk())

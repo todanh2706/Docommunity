@@ -14,6 +14,7 @@ import Community from '@/pages/workspace/Community';
 import ViewDocument from '@/pages/workspace/ViewDocument';
 import FindPeople from '@/pages/FindPeople';
 import UserProfile from '@/pages/UserProfile';
+import VerifyAccountPage from '@/pages/Auth/VerifyAccountPage';
 
 export default function AppRoutes() {
     const location = useLocation();
@@ -23,6 +24,7 @@ export default function AppRoutes() {
             <Route path='/' element={<Navigate to='/login' replace />} />
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
+            <Route path='/verify-account' element={<VerifyAccountPage />} />
 
             {/* Protected Routes (Implicitly protected for now, layout should enforce this) */}
             <Route path='/home' element={<Home />} />

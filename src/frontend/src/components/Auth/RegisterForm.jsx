@@ -24,7 +24,8 @@ export default function RegisterForm() {
         try {
             const message = await register(username, password, confirmPassword, fullname, phone, email);
             success(message);
-            navigate('/login');
+            // Redirect to verify account page with email
+            navigate(`/verify-account?email=${encodeURIComponent(email)}`);
         } catch (err) {
             console.log('An error occured: ', err);
         }

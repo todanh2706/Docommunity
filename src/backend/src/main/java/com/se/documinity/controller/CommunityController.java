@@ -17,9 +17,10 @@ public class CommunityController {
     @GetMapping("/view-all-docs")
     public ResponseEntity<ResponseDTO> viewAllPublicDocuments(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(required = false) String tagName) {
+            @RequestParam(required = false) String tagName,
+            @RequestParam(required = false) String search) {
         com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> documents = documentService
-                .getPublicDocuments(tagName, page);
+                .getPublicDocuments(tagName, search, page);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documents);
         responseDTO.setMessage("success");

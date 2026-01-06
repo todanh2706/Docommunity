@@ -7,12 +7,15 @@ export const useCommunity = () => {
      * View public documents
      * GET /documents/public?page={page}&size={size}
      */
-    const viewAllDocs = async (page = 1, size = 10, tagName = null) => {
+    const viewAllDocs = async (page = 1, size = 10, tagName = null, search = null) => {
         const params = new URLSearchParams();
         params.append('page', page);
         params.append('size', size);
         if (tagName) {
             params.append('tagName', tagName);
+        }
+        if (search) {
+            params.append('search', search);
         }
 
         const queryString = params.toString();

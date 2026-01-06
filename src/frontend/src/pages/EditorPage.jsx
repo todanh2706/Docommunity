@@ -97,6 +97,7 @@ export default function EditorPage({ initialContent = '' }) {
 
 
     const [viewMode, setViewMode] = useState(() => {
+        if (location.state?.viewMode) return location.state.viewMode;
         const savedMode = localStorage.getItem('editorViewMode');
         return savedMode || 'side-by-side';
     });
@@ -135,16 +136,16 @@ export default function EditorPage({ initialContent = '' }) {
             setTitle(document.title || "Untitled Notebook");
             setMarkdown(document.content || "");
             setActiveTags(document.tags || []);
-            setIsBookmark(document.Bookmark || false)
+            setIsBookmark(document.isBookmarked || false)
         }
     }, [document]);
-    const { handleDocumentUpdate } = useDocument();
+    const { handleDocumentUpdate, toggleBookmark } = useDocument();
     const docDataRef = useRef({
         id: document?.id, // Giả sử document có id
         title,
         content: markdown,
         tags: activeTags,
-        isBookmark
+
     });
     useEffect(() => {
         docDataRef.current = {
@@ -152,9 +153,8 @@ export default function EditorPage({ initialContent = '' }) {
             title,
             content: markdown,
             tags: activeTags, // State này bạn đang dùng
-            isBookmark
         };
-    }, [title, markdown, activeTags, isBookmark, document?.id]);
+    }, [title, markdown, activeTags, document?.id]);
     useEffect(() => {
         // A. Hàm lưu dữ liệu
         const saveData = () => {
@@ -166,8 +166,7 @@ export default function EditorPage({ initialContent = '' }) {
             handleDocumentUpdate(currentData.id, {
                 title: currentData.title,
                 content: currentData.content,
-                tags: currentData.tags,
-                isBookmark: currentData.isBookmark
+                tags: currentData.tags
             });
         };
 
@@ -245,11 +244,6 @@ export default function EditorPage({ initialContent = '' }) {
         }
     }, [future]);
 
-    // --- MỚI: Hàm lưu tags từ modal ---
-    const handleOpenTagEditor = () => {
-        setIsTagEditorOpen(true);
-    }
-
     const handleSaveTags = (newTags) => {
         setActiveTags(newTags); // Cập nhật state activeTags (hiển thị trên UI)
 
@@ -322,18 +316,22 @@ export default function EditorPage({ initialContent = '' }) {
 
 
     // --- LOGIC BOOKMARK ---
-    const toggleBookmarkSection = () => {
-        const newBookmarkStatus = !isBookmark; // Tính toán trạng thái mới
-        setIsBookmark(newBookmarkStatus); // Cập nhật state UI
+    const toggleBookmarkSection = async () => {
+        if (!document?.id) return;
 
-        if (newBookmarkStatus) success("Bookmark successfully");
-        else success("Unbookmark successfully");
+        // Optimistic UI update
+        const newStatus = !isBookmark;
+        setIsBookmark(newStatus);
 
-        // Gọi updateDocument NGAY LẬP TỨC
-        handleDocumentUpdate(document?.id, {
-            ...docDataRef.current,
-            isBookmark: newBookmarkStatus
-        });
+        try {
+            await toggleBookmark(document.id);
+            if (newStatus) success("Bookmark successfully");
+            else success("Unbookmark successfully");
+        } catch (error) {
+            // Revert on error
+            setIsBookmark(!newStatus);
+            console.error("Failed to toggle bookmark", error);
+        }
     }
 
     // --- LOGIC EDITOR ---
@@ -793,7 +791,7 @@ export default function EditorPage({ initialContent = '' }) {
         <ToolbarBtn
             icon={Icon}
             isActive={(toolName === 'comment' ? showComments : selectedTools.includes(toolName)) ||
-                ((toolName == 'bookmark' && !isBookmark) ? true : false)}
+                ((toolName == 'bookmark' && isBookmark) ? true : false)}
             onClick={action ? action : () => handleToolClick(toolName)}
         />
     );
@@ -860,7 +858,7 @@ export default function EditorPage({ initialContent = '' }) {
                         )}
 
                         {renderToolbarBtn(Bookmark, 'bookmark', toggleBookmarkSection)}
-                        {renderToolbarBtn(Tag, 'tag', handleOpenTagEditor)}
+
 
                         {renderToolbarBtn(MessageSquareText, 'comment', toggleCommentSection)}
                         {comments.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse pointer-events-none"></span>}

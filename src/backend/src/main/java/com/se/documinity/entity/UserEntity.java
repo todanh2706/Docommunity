@@ -34,9 +34,12 @@ public class UserEntity {
 
     @Column(name = "avatar_url")
     private String avatarUrl;
-    
+
     @Column(name = "status")
     private Boolean status;
+
+    @Column(name = "is_verified")
+    private Boolean isVerified = false;
 
     @Column(columnDefinition = "TEXT")
     private String bio;
@@ -52,8 +55,10 @@ public class UserEntity {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         UserEntity that = (UserEntity) o;
         // nếu id null (chưa persist) thì coi như khác
         return id != null && id.equals(that.id);
