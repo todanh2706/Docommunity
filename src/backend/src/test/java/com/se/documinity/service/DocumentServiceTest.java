@@ -19,13 +19,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,8 +86,8 @@ public class DocumentServiceTest {
         savedDoc.setContent("Content");
         savedDoc.setUser(user); // Important: set user
         savedDoc.setTags(new HashSet<>(Collections.singletonList(tag)));
-        savedDoc.setCreatedDate(LocalDate.now());
-        savedDoc.setLastModified(LocalDate.now());
+        savedDoc.setCreatedDate(LocalDateTime.now());
+        savedDoc.setLastModified(LocalDateTime.now());
         savedDoc.setIsPublic(true);
         savedDoc.setLikedByUsers(new HashSet<>());
         savedDoc.setMarkedByUsers(new HashSet<>());

@@ -53,12 +53,14 @@ public class CommunityControllerTest {
                 PagedResponseDTO<PublicDocumentResponse> pagedResponse = new PagedResponseDTO<>();
                 pagedResponse.setContent(Collections.emptyList());
 
-                when(documentService.getPublicDocuments(any(), any(), anyInt())).thenReturn(pagedResponse); // Corrected
+                when(documentService.getPublicDocuments(any(), any(), anyInt(), anyString(), anyString()))
+                                .thenReturn(pagedResponse); // Corrected
 
                 // Since tagName is optional and I'm not passing it, mockito matcher might need
                 // adjustment or call without param
                 // But let's try with basic call first. If param is missing, it's null.
-                when(documentService.getPublicDocuments(eq(null), eq(null), anyInt())).thenReturn(pagedResponse);
+                when(documentService.getPublicDocuments(eq(null), eq(null), anyInt(), anyString(), anyString()))
+                                .thenReturn(pagedResponse);
 
                 mockMvc.perform(get("/view-all-docs"))
                                 .andExpect(status().isOk())

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import com.se.documinity.entity.TagEntity;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -69,8 +69,8 @@ public class DocumentService {
         doc.setTitle(request.getTitle());
         doc.setContent(request.getContent());
         doc.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : false);
-        doc.setCreatedDate(LocalDate.now());
-        doc.setLastModified(LocalDate.now());
+        doc.setCreatedDate(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
+        doc.setLastModified(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
         doc.setUser(user);
         doc.setTags(tagEntities);
         doc.setStatus(ACTIVE_STATUS);
@@ -110,11 +110,17 @@ public class DocumentService {
     }
 
     public com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> getPublicDocuments(String tagName,
-            String search, int page) {
+            String search, int page, String sortBy, String sortDir) {
         if (page < 1)
             page = 1;
 
-        var pageable = PageRequest.of(page - 1, PAGE_SIZE);
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(
+                sortDir.equalsIgnoreCase("asc") ? org.springframework.data.domain.Sort.Direction.ASC
+                        : org.springframework.data.domain.Sort.Direction.DESC,
+                sortBy.equalsIgnoreCase("title") ? "title" : "createdDate" // Default to createdDate for 'date'
+        );
+
+        var pageable = PageRequest.of(page - 1, PAGE_SIZE, sort);
 
         org.springframework.data.domain.Page<DocumentEntity> pageDocs = documentRepository
                 .searchPublicDocuments(ACTIVE_STATUS, tagName, search, pageable);
@@ -122,6 +128,11 @@ public class DocumentService {
         List<PublicDocumentResponse> content = pageDocs.getContent().stream()
                 .map(this::toPublicDocumentResponse)
                 .toList();
+
+        // Optimization: checking isLiked for each doc is inefficient if we do it one by
+        // one against DB.
+        // For now keep existing logic but wrapped in toPublicDocumentResponse which
+        // does it simply.
 
         return new com.se.documinity.dto.PagedResponseDTO<>(
                 content,
@@ -248,7 +259,7 @@ public class DocumentService {
             }
             doc.setTags(newTags);
         }
-        doc.setLastModified(LocalDate.now());
+        doc.setLastModified(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
         documentRepository.save(doc);
 
         return mapToDocumentResponse(doc);

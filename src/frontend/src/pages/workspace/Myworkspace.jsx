@@ -270,7 +270,24 @@ const DocumentCard = ({ card, isExpanded }) => {
                             )}
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{card.createdDate || card.date}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {(() => {
+                            const dateStr = card.createdDate || card.date;
+                            if (!dateStr) return '';
+                            // If it's an ISO string without offset, assume it's Asia/Ho_Chi_Minh wall time
+                            const hasOffset = dateStr.includes('Z') || dateStr.includes('+') || dateStr.match(/-\d{2}:\d{2}$/);
+                            const normalizedDateStr = hasOffset ? dateStr : `${dateStr}+07:00`;
+
+                            return new Date(normalizedDateStr).toLocaleString('vi-VN', {
+                                timeZone: 'Asia/Ho_Chi_Minh',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                        })()}
+                    </p>
                 </div>
             </div>
 

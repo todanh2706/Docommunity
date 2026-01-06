@@ -3,7 +3,7 @@ package com.se.documinity.dto.document;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
+
 import java.util.List;
 
 @Data
@@ -13,8 +13,8 @@ public class DocumentResponse {
     private Long id;
     private String title;
     private String content;
-    private LocalDate createdDate;
-    private LocalDate lastModified;
+    private java.time.LocalDateTime createdDate;
+    private java.time.LocalDateTime lastModified;
     private Boolean isPublic;
     private List<String> tags;
     private String authorName;
