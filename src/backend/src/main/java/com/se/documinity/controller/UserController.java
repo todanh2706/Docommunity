@@ -67,17 +67,6 @@ public class UserController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<ResponseDTO> deleteUser(@Valid @RequestBody UpdateUserRequest updateRequest) {
-        UserResponse updatedUser = userService.updateUser(updateRequest);
-
-        ResponseDTO responseDTO = new ResponseDTO();
-        responseDTO.setData(updatedUser);
-        responseDTO.setMessage("success");
-        responseDTO.setDetail("User deleted successfully");
-        return ResponseEntity.ok(responseDTO);
-
-    }
-
     public ResponseEntity<ResponseDTO> deleteAccount(@Valid @RequestBody DeleteUserRequest request) {
         try {
             userService.deleteAccount(request);

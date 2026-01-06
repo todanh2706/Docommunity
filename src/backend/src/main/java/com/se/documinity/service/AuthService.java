@@ -70,6 +70,7 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setFullname(request.getFullname());
+        user.setPhoneNumber(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Set defaults
@@ -123,6 +124,11 @@ public class AuthService {
             throw new com.se.documinity.exception.UserNotFoundException("User not found");
         }
         UserEntity user = userOpt.get();
+
+        // Check if account is deleted/inactive
+        if (Boolean.FALSE.equals(user.getStatus())) {
+            throw new RuntimeException("Account has been deactivated or deleted.");
+        }
 
         // Check if verified
         if (Boolean.FALSE.equals(user.getIsVerified())) {

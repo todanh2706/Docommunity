@@ -61,10 +61,29 @@ export const useUser = () => {
         }
     };
 
+    const deleteAccount = async (password) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.delete('/users/me', {
+                data: { password } // Axios requires body in 'data' field for DELETE
+            });
+            setIsLoading(false);
+            return response.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.detail || "Failed to delete account";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
     return {
         getUserProfile,
         updateUserProfile,
         getPublicProfile,
+        deleteAccount,
         isLoading,
         error
     };

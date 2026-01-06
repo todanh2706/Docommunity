@@ -33,14 +33,14 @@ const ProfileSection = ({
                 {/* Inputs */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                        <InputField label="Full Name" name="fullname" icon={User} value={formData.fullname} onChange={handleInputChange} disabled={!isEditing} />
+                        <InputField label="Full Name" name="fullname" icon={User} value={formData.fullname} onChange={handleInputChange} disabled={!isEditing} maxLength={50} />
                     </div>
                     <div className="md:col-span-2 ">
-                        <InputField label="Bio" name="bio" icon={BadgeInfo} value={formData.bio} onChange={handleInputChange} disabled={!isEditing} />
+                        <InputField label="Bio" name="bio" icon={BadgeInfo} value={formData.bio} onChange={handleInputChange} disabled={!isEditing} maxLength={200} />
                     </div>
-                    <InputField label="Username" name="username" value={formData.username} onChange={handleInputChange} disabled={!isEditing} />
+                    <InputField label="Username" name="username" value={formData.username} onChange={handleInputChange} disabled={!isEditing} maxLength={20} />
                     <InputField label="Email Address" name="email" type="email" icon={Mail} value={formData.email} onChange={handleInputChange} disabled={!isEditing} />
-                    <InputField label="Phone number" name="phone" type="phone" icon={Phone} value={formData.phone} onChange={handleInputChange} disabled={!isEditing} />
+                    <InputField label="Phone number" name="phone" type="phone" icon={Phone} value={formData.phone} onChange={handleInputChange} disabled={!isEditing} maxLength={15} />
                 </div>
             </div>
         </div>
