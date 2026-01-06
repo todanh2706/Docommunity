@@ -15,7 +15,7 @@ const CommentItem = ({ comment, isReply = false, onReply }) => {
     };
 
     return (
-        <div className={`flex gap-3 ${isReply ? 'ml-12 mt-3' : 'mt-6'}`}>
+        <div className={`flex gap-3 ${isReply ? 'ml-12 mt-3' : 'mt-6'}`} data-testid="comment-item">
             <img
                 src={comment.author.avatar || "/dump_avt.jpg"}
                 alt={comment.author.name}
@@ -156,10 +156,12 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
                             onChange={(e) => setNewComment(e.target.value)}
                             placeholder="Add to the discussion..." // Corrected typo from user request "commnet"
                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none h-24"
+                            data-testid="comment-input"
                         />
                         <button
                             onClick={handleAddComment}
                             className="absolute bottom-3 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg"
+                            data-testid="comment-submit-btn"
                         >
                             <Send size={16} />
                         </button>

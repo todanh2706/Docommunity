@@ -79,6 +79,7 @@ const DocCard = ({ title, content, author, likes = 0, comments = 0, tags = [], i
                         if (onComment) onComment();
                     }}
                     className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors"
+                    data-testid="comment-button"
                 >
                     <MessageSquare size={18} />
                     <span className="text-xs font-medium">{comments}</span>
