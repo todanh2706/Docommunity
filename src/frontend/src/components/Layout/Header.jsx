@@ -31,7 +31,7 @@ export function Header() {
 
         {/* Logo bên trái */}
 
-        <Link to="/" className="contents">
+        <Link to="/home" className="contents">
           <img src='logo.png' alt="Logo" className="h-20 w-auto" />
         </Link>
 
@@ -51,7 +51,7 @@ export function Header() {
                 <div className="absolute right-0 top-full mt-2 w-48 bg-[#062452]/90 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl overflow-hidden z-50">
                   <div className="py-1">
                     <Link
-                      to="#"
+                      to="/home/setting"
                       className="flex items-center gap-2 px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors"
                       onClick={() => setIsDropdownOpen(false)}
                     >

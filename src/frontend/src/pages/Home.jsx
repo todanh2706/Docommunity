@@ -1,6 +1,7 @@
 import { Header } from '@/components/Layout/Header';
 import { Link, useNavigate } from 'react-router-dom';
 import { TypeWriter } from '../components/UI/TypeWriter';
+import { Sparkles, Bot, Wand2, Zap } from 'lucide-react';
 import styles from './Home.module.css';
 // import PopularPostCard from '../components/Community/PopularPostCard'; // REMOVE
 import DocCard from '../components/Community/DocCard'; // ADD
@@ -75,7 +76,9 @@ export default function HomePage() {
                           bg-white/[0.027]                     // Nền trong suốt nhẹ hơn
                           backdrop-blur-[15px]             // Blur mạnh hơn cho sang trọng
                           border border-white/20          // Viền kính
-                          shadow-2xl shadow-black/5'
+                          shadow-2xl shadow-black/5
+                          '
+
                     >
 
                         {/* CỘT TRÁI: TEXT */}
@@ -121,24 +124,84 @@ export default function HomePage() {
                                 <span className="text-white/60 font-medium text-sm">OR</span>
                                 <div className="h-[1px] w-12 bg-white/30"></div>
                             </div>
-
-                            <button className='px-8 py-4 rounded-xl font-semibold text-[#062452] bg-white/90
+                            <Link to="community">
+                                <button className='px-8 py-4 rounded-xl font-semibold text-[#062452] bg-white/90
                                      hover:bg-white hover:scale-105 transition-all shadow-lg'>
-                                GO TO COMMUNITY
-                            </button>
+                                    GO TO COMMUNITY
+                                </button>
+                            </Link>
+
                         </div>
 
                     </div>
                 </div>
 
+                {/* === AI FEATURES SECTION === */}
+                <div className='relative z-20 w-full max-w-6xl px-4 mb-10'>
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">
+                            Supercharge with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">AI Power</span>
+                        </h2>
+                        <p className="text-blue-100/60 text-lg max-w-3xl mx-auto leading-relaxed">
+                            Experience the future of documentation with Docommunity's intelligent features.
+                            Write faster, smarter, and more creatively than ever before.
+                        </p>
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+                        {/* 1. AI Refinement */}
+                        <div className='group p-8 rounded-[32px] bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-purple-500/20'>
+                            <div className="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                                <Sparkles size={32} className="text-purple-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors">AI Refinement</h3>
+                            <p className="text-blue-100/50 text-sm leading-relaxed">
+                                Polish your writing instantly. Use AI to fix grammar, improve tone, and make your content shine.
+                            </p>
+                        </div>
+
+                        {/* 2. AI Chatbot */}
+                        <div className='group p-8 rounded-[32px] bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/20'>
+                            <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                                <Bot size={32} className="text-cyan-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-300 transition-colors">AI Chatbot</h3>
+                            <p className="text-blue-100/50 text-sm leading-relaxed">
+                                Your intelligent assistant. Ask questions about your documents and get instant context-aware answers.
+                            </p>
+                        </div>
+
+                        {/* 3. Generate Doc */}
+                        <div className='group p-8 rounded-[32px] bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-green-500/20'>
+                            <div className="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                                <Wand2 size={32} className="text-green-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-green-300 transition-colors">Generate Doc</h3>
+                            <p className="text-blue-100/50 text-sm leading-relaxed">
+                                Create content in seconds. Generate outlines, drafts, or full documents from a simple prompt.
+                            </p>
+                        </div>
+
+                        {/* 4. Inline Suggestion */}
+                        <div className='group p-8 rounded-[32px] bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-yellow-500/20'>
+                            <div className="w-14 h-14 rounded-2xl bg-yellow-500/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300">
+                                <Zap size={32} className="text-yellow-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-3 group-hover:text-yellow-300 transition-colors">Inline Suggestion</h3>
+                            <p className="text-blue-100/50 text-sm leading-relaxed">
+                                Write faster with smart completions. Get intelligent ghost-text suggestions as you type.
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 {/* === POPULAR POSTS SECTION === */}
-                <div className='relative z-20 w-full max-w-6xl px-4 mt-12'>
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-3xl font-bold text-white tracking-wide">
-                            Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Popular</span>
+                <div className='relative z-20 w-full max-w-6xl px-10 mt-20'>
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">
+                            Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Document</span>
                         </h2>
-                        <button onClick={() => navigate('/community')} className="text-sm text-gray-400 hover:text-white transition-colors">
+                        <button onClick={() => navigate('/home/community')} className="text-sm text-gray-400 hover:text-white transition-colors">
                             View All →
                         </button>
                     </div>
@@ -169,25 +232,21 @@ export default function HomePage() {
                     )}
                 </div>
 
-                <div className='flex flex-col lg:flex-row items-center justify-between
-                          w-full max-w-6xl                // Giới hạn chiều rộng tối đa chuẩn web
-                          p-8 md:p-12 gap-10 lg:gap-20    // Dùng gap thay vì margin/padding lẻ tẻ
-                          rounded-[40px]
-                          bg-white/[0.027]                     // Nền trong suốt nhẹ hơn
-                          backdrop-blur-[15px]             // Blur mạnh hơn cho sang trọng
-                          border border-white/20          // Viền kính
-                          shadow-2xl shadow-black/5
-                          mt-20 '
-
-
-                >
-
-                    <h1>MARKDOWN EDITOR</h1>
-                </div>
-
-                <div className='m-10 underline'>
-                    about us
-                </div>
+                {/* === FOOTER === */}
+                <footer className="w-full mt-20 border-t border-white/10 bg-black/20 backdrop-blur-md">
+                    <div className="max-w-6xl mx-auto px-4 py-8">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="text-white/40 text-sm">
+                                © 2024 Docommunity. All rights reserved.
+                            </div>
+                            <div className="flex gap-6">
+                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">About Us</Link>
+                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">Privacy Policy</Link>
+                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">Terms of Service</Link>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
 
             </main>
         </div>
