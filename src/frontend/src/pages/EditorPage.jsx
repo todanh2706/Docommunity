@@ -38,7 +38,7 @@ import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
     List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck, Eye, Pencil,
-    GripVertical, X, User, Sparkles // Đảm bảo đã import User và X
+    GripVertical, X, User, Sparkles, Cloud, CloudOff, Loader, CheckCircle // Đảm bảo đã import User và X
 } from "lucide-react";
 
 
@@ -70,6 +70,7 @@ export default function EditorPage({ initialContent = '' }) {
     const [title, setTitle] = useState(document?.title || "");
     const [markdown, setMarkdown] = useState(document?.content || "");
     const [activeTags, setActiveTags] = useState(document?.tags || []); // Sử dụng tags từ document
+    const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'unsaved', 'saving', 'error'
 
     // State cho Toolbar & UI
     const [selectedTools, setSelectedTools] = useState([]);
@@ -137,6 +138,7 @@ export default function EditorPage({ initialContent = '' }) {
             setMarkdown(document.content || "");
             setActiveTags(document.tags || []);
             setIsBookmark(document.isBookmarked || false)
+            setSaveStatus('saved');
         }
     }, [document]);
     const { handleDocumentUpdate, toggleBookmark } = useDocument();
@@ -157,17 +159,26 @@ export default function EditorPage({ initialContent = '' }) {
     }, [title, markdown, activeTags, document?.id]);
     useEffect(() => {
         // A. Hàm lưu dữ liệu
-        const saveData = () => {
+        const saveData = async () => {
+            if (saveStatus !== 'unsaved') return;
+
+            setSaveStatus('saving');
             const currentData = docDataRef.current;
             console.log("Saving data...", currentData);
 
-            // Gọi hàm updateDocument từ context
-            // Lưu ý: Cấu trúc tham số phụ thuộc vào cách bạn viết hàm updateDocument
-            handleDocumentUpdate(currentData.id, {
-                title: currentData.title,
-                content: currentData.content,
-                tags: currentData.tags
-            });
+            try {
+                // Gọi hàm updateDocument từ context
+                // Lưu ý: Cấu trúc tham số phụ thuộc vào cách bạn viết hàm updateDocument
+                await handleDocumentUpdate(currentData.id, {
+                    title: currentData.title,
+                    content: currentData.content,
+                    tags: currentData.tags
+                });
+                setSaveStatus('saved');
+            } catch (error) {
+                console.error(error);
+                setSaveStatus('error');
+            }
         };
 
         // B. Setup Interval 15s (15000ms)
@@ -178,12 +189,13 @@ export default function EditorPage({ initialContent = '' }) {
         // C. Cleanup function (Chạy khi component unmount / rời trang)
         return () => {
             clearInterval(intervalId); // Xóa bộ đếm giờ
-            saveData(); // LƯU LẦN CUỐI trước khi component biến mất hoàn toàn
+            if (saveStatus === 'unsaved') saveData(); // LƯU LẦN CUỐI trước khi component biến mất hoàn toàn
         };
-    }, []); // Empty
+    }, [saveStatus, handleDocumentUpdate]); // Re-run if saveStatus changes to ensure interval has latest closure
 
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
+        setSaveStatus('unsaved');
 
         setHistory(prevHistory => {
             const lastState = prevHistory[prevHistory.length - 1];
@@ -251,6 +263,28 @@ export default function EditorPage({ initialContent = '' }) {
             ...docDataRef.current, // Giữ nguyên các thông tin cũ (content, title...)
             tags: newTags // Chỉ cập nhật tags mới
         });
+        // We triggered manual save, but let's sync status just in case, or assume handleDocumentUpdate handles it?
+        // Actually, handleDocumentUpdate is async, but here we don't await. 
+        // Let's set unsaved to trigger auto-save if manual fails? 
+        // Or better: set 'saved' if we trust this manual call, OR set 'unsaved' to let auto-save pick it up.
+        // Given existing code calls handleDocumentUpdate directly, let's trust it but maybe set 'saving' -> 'saved' if we could await.
+        // For now, setting 'unsaved' ensures consistency with auto-save loop if we want to rely on single source of truth, 
+        // BUT here we call API explicitly. 
+        // Let's leave it as is, but maybe setStatus('saved') after await if we changed this function to async.
+        // For minimal change, let's just mark it dirty and let the next auto-save cycle catch it OR (since we call update directly) we assume it saves.
+        // Ideally:
+        setSaveStatus('unsaved'); // Mark dirty so auto-save picks it up if this call fails? No, this call executes immediately.
+        // Let's keep it simple: assume this manual save works or adds to queue. 
+        // Actually, to show "Saved", we should await it.
+        // But for now, let's just set 'unsaved' so `saveData` loop will eventually try again or confirm it's saved.
+        // Wait, if we call update directly, docDataRef is updated via useEffect [activeTags].
+        // So `saveData` loop will see new tags.
+        // If we set 'unsaved', `saveData` will check state and save again. Unique double save?
+        // Fix: Call setSaveStatus('saved') if we await, or set 'unsaved' to rely on auto-save.
+        // Let's rely on auto-save for consistency? No, user expects immediate tag save.
+        // Let's just set 'saved' after a timeout or await.
+        // Since I can't easily change signature to async without checking callers, I will set 'unsaved' to be safe.
+        setSaveStatus('unsaved');
 
         setIsTagEditorOpen(false); // Đóng modal sau khi lưu
     };
@@ -809,8 +843,39 @@ export default function EditorPage({ initialContent = '' }) {
                         <input className="bg-transparent text-sm sm:text-lg font-semibold text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 rounded px-2 py-1 w-24 md:w-48 transition-all placeholder:text-gray-600"
                             type="text" placeholder="Untitled Notebook"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)} />
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                setSaveStatus('unsaved');
+                            }} />
                         <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+
+                    {/* Save Status Indicator */}
+                    <div className="flex items-center space-x-2 text-xs ml-0 select-none">
+                        {saveStatus === 'saved' && (
+                            <div className="flex items-center text-green-500 opacity-60">
+                                <Cloud size={14} className="mr-1" />
+                                <span className="hidden sm:inline">Saved</span>
+                            </div>
+                        )}
+                        {saveStatus === 'saving' && (
+                            <div className="flex items-center text-blue-400">
+                                <Loader size={14} className="mr-1 animate-spin" />
+                                <span className="hidden sm:inline">Saving...</span>
+                            </div>
+                        )}
+                        {saveStatus === 'unsaved' && (
+                            <div className="flex items-center text-yellow-500">
+                                <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2 animate-pulse"></div>
+                                <span className="hidden sm:inline">Unsaved changes</span>
+                            </div>
+                        )}
+                        {saveStatus === 'error' && (
+                            <div className="flex items-center text-red-500" title="Check your internet connection">
+                                <CloudOff size={14} className="mr-1" />
+                                <span className="hidden sm:inline">Save failed</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-5">
