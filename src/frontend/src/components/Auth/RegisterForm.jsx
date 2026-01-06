@@ -23,7 +23,7 @@ export default function RegisterForm() {
         e.preventDefault();
         try {
             const message = await register(username, password, confirmPassword, fullname, phone, email);
-            success(message);
+            if (message === "success") success("Register successfully! Please check your email and enter the OTP code.");
             // Redirect to verify account page with email
             navigate(`/verify-account?email=${encodeURIComponent(email)}`);
         } catch (err) {

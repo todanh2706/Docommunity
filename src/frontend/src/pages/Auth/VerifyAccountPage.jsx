@@ -8,12 +8,34 @@ const VerifyAccountPage = () => {
     const [searchParams] = useSearchParams();
     const emailFromUrl = searchParams.get('email');
     const navigate = useNavigate();
-    const { verifyAccount, isLoading, error: authError } = useAuth();
+    const { verifyAccount, resendVerification, isLoading, error: authError } = useAuth();
     const { success, error: toastError } = useToast();
 
     const [otp, setOtp] = useState('');
     const [email, setEmail] = useState(emailFromUrl || '');
     const [isVerified, setIsVerified] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+
+    useEffect(() => {
+        let timer;
+        if (cooldown > 0) {
+            timer = setInterval(() => {
+                setCooldown((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(timer);
+    }, [cooldown]);
+
+    const handleResend = async () => {
+        if (cooldown > 0) return;
+        try {
+            await resendVerification(email);
+            success("Verification code resent! Please check your email.");
+            setCooldown(60);
+        } catch (err) {
+            // Error handled in hook or toast
+        }
+    };
 
     useEffect(() => {
         if (emailFromUrl) {
@@ -108,8 +130,12 @@ const VerifyAccountPage = () => {
                 <div className="mt-6 text-center">
                     <p className="text-sm text-gray-500">
                         Didn't receive code?{' '}
-                        <button className="text-blue-400 hover:text-blue-300 font-medium">
-                            Resend (Not Implemented)
+                        <button
+                            onClick={handleResend}
+                            disabled={cooldown > 0}
+                            className={`font-medium ${cooldown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-blue-400 hover:text-blue-300'}`}
+                        >
+                            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
                         </button>
                     </p>
                     <button

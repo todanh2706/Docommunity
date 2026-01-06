@@ -178,6 +178,51 @@ public class AuthService {
         verificationTokenRepository.save(verificationToken);
     }
 
+    public void resendVerification(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getIsVerified())) {
+            throw new RuntimeException("Account already verified");
+        }
+
+        // Generate new OTP
+        String otp = generateOTP();
+
+        // Check if token exists, update it or create new
+        // Note: Currently we don't have a direct link from user to token in Entity
+        // (OneToMany?)
+        // or we just find by user? VerificationTokenEntity has User.
+        // Let's create a new token for simplicity as multiple tokens are fine,
+        // OR better: expire old ones?
+        // For now, just save a new one.
+        VerificationTokenEntity verificationToken = new VerificationTokenEntity();
+        verificationToken.setToken(otp);
+        verificationToken.setUser(user);
+        verificationToken.setExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES));
+        verificationTokenRepository.save(verificationToken);
+
+        // Send Email
+        String subject = "Resend: Verify your Documinity account";
+        String body = """
+                Xin chào %s,
+
+                Đây là mã xác thực (OTP) mới của bạn: %s
+
+                Mã này sẽ hết hạn sau 10 phút.
+
+                Trân trọng,
+                Documinity Team
+                """.formatted(user.getFullname(), otp);
+
+        try {
+            emailService.sendSimpleMessage(user.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Failed to resend verification email: " + e.getMessage());
+            System.out.println("RESEND VERIFICATION OTP: " + otp);
+        }
+    }
+
     public void logout(LogoutRequest request) {
         String token = request.getRefreshToken();
         // 1. Check if the token is valid (format and expiration)

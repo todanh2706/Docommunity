@@ -44,6 +44,16 @@ public class AuthController {
         return ResponseEntity.ok("Account verified successfully");
     }
 
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ResponseDTO> resendVerification(
+            @Valid @RequestBody com.se.documinity.dto.auth.ResendVerificationRequest request) {
+        authService.resendVerification(request.getEmail());
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Verification code resent successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @PostMapping("/login")
     public ResponseEntity<ResponseDTO> login(@Valid @RequestBody LoginRequest request) {
         ResponseDTO responseDTO = new ResponseDTO();

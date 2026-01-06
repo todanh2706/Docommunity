@@ -99,5 +99,25 @@ export default function useAuth() {
         }
     };
 
-    return { login, logout, register, verifyAccount, isLoading, error };
+    const resendVerification = async (email) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const res = await api.post(`/auth/resend-verification`, { email });
+            setIsLoading(false);
+            return res.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Failed to resend code!";
+            setError(errMessage);
+            console.error('Resend failed: ', errMessage);
+            throw new Error(errMessage);
+        }
+    };
+
+    return { login, logout, register, verifyAccount, resendVerification, isLoading, error };
 }
