@@ -46,6 +46,9 @@ public class DocumentServiceTest {
     @Mock
     private Authentication authentication;
 
+    @Mock
+    private com.se.documinity.repository.CommentRepository commentRepository;
+
     @InjectMocks
     private DocumentService documentService;
 

@@ -1,6 +1,5 @@
 package com.se.documinity.dto.document;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,4 +18,6 @@ public class CommentResponse {
 
     @JsonProperty("created_at")
     private String createdAt;
+
+    private java.util.List<CommentResponse> replies;
 }

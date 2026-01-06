@@ -366,6 +366,14 @@ public class DocumentService {
     }
 
     private CommentResponse mapToCommentResponse(CommentEntity comment) {
+        List<CommentResponse> replies = null;
+        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
+            replies = comment.getReplies().stream()
+                    .map(this::mapToCommentResponse)
+                    .sorted((c1, c2) -> c1.getCreatedAt().compareTo(c2.getCreatedAt()))
+                    .toList();
+        }
+
         return CommentResponse.builder()
                 .id(String.valueOf(comment.getId()))
                 .content(comment.getContent())
@@ -374,6 +382,7 @@ public class DocumentService {
                         .name(comment.getUser().getFullname()) // chỉnh đúng field trong UserEntity
                         .build())
                 .createdAt(comment.getCreatedAt().toString()) // 2025-12-03T10:00:00Z
+                .replies(replies)
                 .build();
     }
 
@@ -383,7 +392,9 @@ public class DocumentService {
 
         List<CommentEntity> comments = commentRepository.findByDocument_IdOrderByCreatedAtAsc(documentId);
 
+        // Filter root comments (those without parent)
         return comments.stream()
+                .filter(c -> c.getParentComment() == null)
                 .map(this::mapToCommentResponse)
                 .toList();
     }
