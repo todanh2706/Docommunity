@@ -128,18 +128,25 @@ export default function SettingsPage() {
     };
 
     // --- ACTION: XÓA TÀI KHOẢN ---
+    const { deleteAccount } = useUser();
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deleteError, setDeleteError] = useState("");
+
+    const handleDeleteAccount = async () => {
+        try {
+            await deleteAccount(deletePassword);
+            // Logout logic
+            logout();
+        } catch (err) {
+            setDeleteError("Incorrect password or failed to delete.");
+        }
+    };
+
     const confirmDeleteAccount = () => {
-        openDialog({
-            title: "Deactivate Account",
-            msg: "Are you sure you want to deactivate your account? All of your data will be permanently removed. This action cannot be undone.",
-            confirmText: "Yes, Delete It",
-            cancelText: "Cancel",
-            isDanger: true, // Bật màu đỏ
-            onConfirm: () => {
-                console.log("Account Deleted!");
-                // Logic logout/redirect...
-            }
-        });
+        setIsDeleteModalOpen(true);
+        setDeletePassword("");
+        setDeleteError("");
     };
 
     // --- LOGIC: CLICK OUTSIDE (UNSAVED CHANGES) ---
@@ -249,8 +256,50 @@ export default function SettingsPage() {
             <ConfirmDialog
                 isOpen={dialogConfig.isOpen}
                 onClose={closeDialog}
-                {...dialogConfig} // Truyền toàn bộ config (title, msg, onConfirm...) vào
+                {...dialogConfig}
             />
+
+            {/* DELETE ACCOUNT MODAL */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-[#1e1f22] border border-red-500/20 rounded-2xl shadow-2xl p-6 transform transition-all scale-100">
+                        <h3 className="text-xl font-bold text-red-500 mb-2">Delete Account</h3>
+                        <p className="text-gray-400 text-sm mb-6">
+                            This action is permanent and cannot be undone. Please enter your password to confirm.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Password</label>
+                                <input
+                                    type="password"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    className="w-full bg-[#0F1623] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:border-red-500 focus:outline-none transition-colors"
+                                    placeholder="Enter your password"
+                                />
+                                {deleteError && <p className="text-red-500 text-xs mt-2">{deleteError}</p>}
+                            </div>
+
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={!deletePassword}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-red-900/20"
+                                >
+                                    Confirm Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

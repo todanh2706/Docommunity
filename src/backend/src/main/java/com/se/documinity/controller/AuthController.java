@@ -1,6 +1,14 @@
 package com.se.documinity.controller;
 
-import com.se.documinity.dto.auth.*;
+import com.se.documinity.dto.auth.ForgotPasswordRequest;
+import com.se.documinity.dto.auth.LoginRequest;
+import com.se.documinity.dto.auth.LogoutRequest;
+import com.se.documinity.dto.auth.LogoutResponse;
+import com.se.documinity.dto.auth.RefreshRequest;
+import com.se.documinity.dto.auth.RegisterRequest;
+import com.se.documinity.dto.auth.RegisterResponse;
+import com.se.documinity.dto.auth.ResetPasswordRequest;
+import com.se.documinity.dto.auth.VerifyAccountRequest;
 import com.se.documinity.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.se.documinity.dto.ResponseDTO;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -27,6 +36,22 @@ public class AuthController {
         responseDTO.setData(authService.register(request));
         responseDTO.setMessage("success");
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    }
+
+    @PostMapping("/verify-account")
+    public ResponseEntity<String> verifyAccount(@RequestBody VerifyAccountRequest request) {
+        authService.verifyAccount(request);
+        return ResponseEntity.ok("Account verified successfully");
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ResponseDTO> resendVerification(
+            @Valid @RequestBody com.se.documinity.dto.auth.ResendVerificationRequest request) {
+        authService.resendVerification(request.getEmail());
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Verification code resent successfully");
+        return ResponseEntity.ok(responseDTO);
     }
 
     @PostMapping("/login")

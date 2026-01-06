@@ -23,8 +23,9 @@ export default function RegisterForm() {
         e.preventDefault();
         try {
             const message = await register(username, password, confirmPassword, fullname, phone, email);
-            success(message);
-            navigate('/login');
+            if (message === "success") success("Register successfully! Please check your email and enter the OTP code.");
+            // Redirect to verify account page with email
+            navigate(`/verify-account?email=${encodeURIComponent(email)}`);
         } catch (err) {
             console.log('An error occured: ', err);
         }

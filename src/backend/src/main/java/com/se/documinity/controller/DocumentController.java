@@ -48,9 +48,10 @@ public class DocumentController {
     public ResponseEntity<ResponseDTO> getPublicDocuments(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String tagName) {
+            @RequestParam(required = false) String tagName,
+            @RequestParam(required = false) String search) {
         com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> documents = documentService
-                .getPublicDocuments(tagName, page);
+                .getPublicDocuments(tagName, search, page);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documents);
         responseDTO.setMessage("success");

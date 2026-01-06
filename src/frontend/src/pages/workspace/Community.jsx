@@ -66,7 +66,7 @@ export default function Community() {
                 // Fetch data for current page and tag filter
                 const tagName = filterTags.length > 0 ? filterTags[0] : null;
                 const [response] = await Promise.all([
-                    viewAllDocs(page, 10, tagName),
+                    viewAllDocs(page, 10, tagName, value),
                     new Promise(resolve => setTimeout(resolve, 600)) // 600ms min loading
                 ]);
 
@@ -88,7 +88,7 @@ export default function Community() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         return () => { isMounted = false; };
-    }, [page, filterTags]); // Re-run when page or tags changes
+    }, [page, filterTags, value]); // Re-run when page, tags or search changes
 
     // Toolbar Handlers
     const handleSortSelection = (type, val) => {
@@ -119,19 +119,8 @@ export default function Community() {
         });
     };
 
-    // Client-side Search & Sort (Applied to items fetched from server)
+    // Client-side Sort (Applied to items fetched from server)
     const processedDocuments = [...documents]
-        .filter(doc => {
-            const searchTerm = value.toLowerCase().trim();
-            // Note: Server filters by Tag. Client filters by Search Term.
-
-            const matchesSearchTerm =
-                (searchTerm === "") ||
-                doc.title.toLowerCase().includes(searchTerm) ||
-                (doc.owner && doc.owner.name && doc.owner.name.toLowerCase().includes(searchTerm));
-
-            return matchesSearchTerm;
-        })
         .sort((a, b) => {
             if (sortConfig.date) {
                 const dateA = new Date(a.lastModified || a.createdDate).getTime();
@@ -269,7 +258,7 @@ export default function Community() {
                 {/* Toolbar */}
                 <FilterToolbar
                     searchValue={value}
-                    setSearchValue={(val) => setCommunityState(prev => ({ ...prev, searchValue: val }))}
+                    setSearchValue={(val) => setCommunityState(prev => ({ ...prev, searchValue: val, page: 1 }))}
                     sortConfig={sortConfig}
                     filterTags={filterTags}
                     isSortOpen={isSortOpen}

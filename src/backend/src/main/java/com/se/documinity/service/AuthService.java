@@ -10,9 +10,11 @@ import com.se.documinity.dto.auth.RegisterResponse;
 import com.se.documinity.dto.auth.ResetPasswordRequest;
 import com.se.documinity.entity.PasswordResetTokenEntity;
 import com.se.documinity.entity.UserEntity;
+import com.se.documinity.entity.VerificationTokenEntity;
 import com.se.documinity.exception.UserAlreadyExistsException;
 import com.se.documinity.repository.PasswordResetTokenRepository;
 import com.se.documinity.repository.UserRepository;
+import com.se.documinity.repository.VerificationTokenRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
@@ -24,9 +26,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.se.documinity.dto.auth.ChangePasswordRequest;
 import com.se.documinity.dto.auth.ForgotPasswordRequest;
+import com.se.documinity.dto.auth.VerifyAccountRequest;
 import java.util.UUID;
+import java.util.Random;
 import org.springframework.beans.factory.annotation.Value;
 
 @Service
@@ -40,15 +43,26 @@ public class AuthService {
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final VerificationTokenRepository verificationTokenRepository;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    private String generateOTP() {
+        Random random = new Random();
+        int otp = 100000 + random.nextInt(900000);
+        return String.valueOf(otp);
+    }
+
     public RegisterResponse register(RegisterRequest request) {
         // 1. Check for existing username
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            // In a real app, you might want a custom exception here to return 400
             throw new UserAlreadyExistsException("Username already taken");
+        }
+
+        // Check for existing email
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new UserAlreadyExistsException("Email already taken");
         }
 
         // 2. Create UserEntity and map fields
@@ -56,24 +70,69 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setFullname(request.getFullname());
+        user.setPhoneNumber(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Set defaults
         user.setStatus(true);
-        user.setBio(""); // Empty bio since it's not in the register request
+        user.setIsVerified(false); // Default to false
+        user.setBio("");
 
         // 3. Save
         userRepository.save(user);
 
-        // 4. Return response matching the docs: { "message": "Account created" }
-        return new RegisterResponse("Account created");
+        // 4. Generate Verification OTP
+        String otp = generateOTP();
+        VerificationTokenEntity verificationToken = new VerificationTokenEntity();
+        verificationToken.setToken(otp); // Store OTP in token field
+        verificationToken.setUser(user);
+        verificationToken.setExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES)); // 10 minutes expiry
+        verificationTokenRepository.save(verificationToken);
+
+        // 5. Send Verification Email
+        String subject = "Verify your Documinity account";
+        String body = """
+                Xin chào %s,
+
+                Cảm ơn bạn đã đăng ký tài khoản tại Documinity.
+
+                Mã xác thực (OTP) của bạn là: %s
+
+                Mã này sẽ hết hạn sau 10 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.
+
+                Trân trọng,
+                Documinity Team
+                """.formatted(user.getFullname(), otp);
+
+        try {
+            emailService.sendSimpleMessage(user.getEmail(), subject, body);
+        } catch (Exception e) {
+            // Log the error and the token so the user can verify manually in dev
+            // environment
+            System.err.println("Failed to send verification email: " + e.getMessage());
+            System.out.println("VERIFICATION OTP: " + otp);
+        }
+
+        // 6. Return response
+        return new RegisterResponse("Account created. Please check your email for the verification code.");
     }
 
     public LoginResponse login(LoginRequest request) {
         // 1. Check if user exists first to provide specific error
-        var user = userRepository.findByUsername(request.getUsername());
-        if (user.isEmpty()) {
+        var userOpt = userRepository.findByUsername(request.getUsername());
+        if (userOpt.isEmpty()) {
             throw new com.se.documinity.exception.UserNotFoundException("User not found");
+        }
+        UserEntity user = userOpt.get();
+
+        // Check if account is deleted/inactive
+        if (Boolean.FALSE.equals(user.getStatus())) {
+            throw new RuntimeException("Account has been deactivated or deleted.");
+        }
+
+        // Check if verified
+        if (Boolean.FALSE.equals(user.getIsVerified())) {
+            throw new RuntimeException("Account not verified. Please check your email.");
         }
 
         // 2. Authenticate the user (Checks password)
@@ -98,17 +157,78 @@ public class AuthService {
         return new LoginResponse(accessToken, refreshToken);
     }
 
+    public void verifyAccount(VerifyAccountRequest request) {
+        VerificationTokenEntity verificationToken = verificationTokenRepository
+                .findByTokenAndUser_Email(request.getOtp(), request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid OTP or Email"));
+
+        if (verificationToken.getConfirmedAt() != null) {
+            throw new RuntimeException("Account already verified");
+        }
+
+        if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        UserEntity user = verificationToken.getUser();
+        user.setIsVerified(true);
+        userRepository.save(user);
+
+        verificationToken.setConfirmedAt(Instant.now());
+        verificationTokenRepository.save(verificationToken);
+    }
+
+    public void resendVerification(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getIsVerified())) {
+            throw new RuntimeException("Account already verified");
+        }
+
+        // Generate new OTP
+        String otp = generateOTP();
+
+        // Check if token exists, update it or create new
+        // Note: Currently we don't have a direct link from user to token in Entity
+        // (OneToMany?)
+        // or we just find by user? VerificationTokenEntity has User.
+        // Let's create a new token for simplicity as multiple tokens are fine,
+        // OR better: expire old ones?
+        // For now, just save a new one.
+        VerificationTokenEntity verificationToken = new VerificationTokenEntity();
+        verificationToken.setToken(otp);
+        verificationToken.setUser(user);
+        verificationToken.setExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES));
+        verificationTokenRepository.save(verificationToken);
+
+        // Send Email
+        String subject = "Resend: Verify your Documinity account";
+        String body = """
+                Xin chào %s,
+
+                Đây là mã xác thực (OTP) mới của bạn: %s
+
+                Mã này sẽ hết hạn sau 10 phút.
+
+                Trân trọng,
+                Documinity Team
+                """.formatted(user.getFullname(), otp);
+
+        try {
+            emailService.sendSimpleMessage(user.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Failed to resend verification email: " + e.getMessage());
+            System.out.println("RESEND VERIFICATION OTP: " + otp);
+        }
+    }
+
     public void logout(LogoutRequest request) {
         String token = request.getRefreshToken();
-
         // 1. Check if the token is valid (format and expiration)
         try {
             String username = jwtService.extractUsername(token);
-
-            // TODO: In a production app, this is where you would:
-            // 1. Check if the token exists in a "refresh_tokens" database table.
-            // 2. Delete it or set a 'revoked' flag to true.
-
+            // TODO: In a production app, revoke token logic
         } catch (Exception e) {
             throw new RuntimeException("Unauthorized or invalid token");
         }
@@ -118,8 +238,7 @@ public class AuthService {
         String refreshToken = request.getRefreshToken();
         String username;
 
-        // 1. Try to extract username (this will throw an exception if token is
-        // invalid/expired)
+        // 1. Try to extract username
         try {
             username = jwtService.extractUsername(refreshToken);
         } catch (Exception e) {
@@ -131,10 +250,8 @@ public class AuthService {
 
         // 3. Validate the token fully (check expiry and signature)
         if (jwtService.validateToken(refreshToken, userDetails)) {
-
             // 4. Generate a NEW access token
             String newAccessToken = jwtService.generateToken(userDetails);
-
             return new RefreshResponse(newAccessToken);
         } else {
             throw new RuntimeException("Invalid refresh token");

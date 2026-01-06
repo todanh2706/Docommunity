@@ -28,8 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
@@ -51,34 +50,38 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             logger.warn("JWT processing error: " + e.getMessage());
         }
 
-
         // 3. If username is found and the user is not already authenticated
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 4. Load the user details (username, hashed password, authorities)
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            try {
+                // 4. Load the user details (username, hashed password, authorities)
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // 5. Validate the token against the loaded user details
-            if (jwtService.validateToken(jwt, userDetails)) {
+                // 5. Validate the token against the loaded user details
+                if (jwtService.validateToken(jwt, userDetails)) {
 
-                // 6. Create an authentication token
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
+                    // 6. Create an authentication token
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
 
-                // Add details about the request (optional but good practice)
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                    // Add details about the request (optional but good practice)
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // 7. Store the user in the Security Context: This tells Spring "This user is logged in!"
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // 7. Store the user in the Security Context: This tells Spring "This user is
+                    // logged in!"
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                // If user not found or other errors, we just ignore this token
+                // and let the request proceed as unauthenticated.
+                logger.warn("Cannot set user authentication: " + e.getMessage());
             }
         }
 
         // 8. Continue the filter chain
         filterChain.doFilter(request, response);
     }
-}
+};
