@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { IoChatbubbleEllipsesOutline, IoClose, IoSend } from "react-icons/io5";
-import { TypeAnimation } from 'react-type-animation';
+import { useNavigate } from 'react-router-dom';
+import { IoChatbubbleEllipsesOutline, IoClose, IoSend, IoExpand, IoContract } from "react-icons/io5";
 import { getAiChat } from '../../services/AIService';
+import ReactMarkdown from 'react-markdown';
 
 export default function Chatbot() {
+    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [messages, setMessages] = useState([
         { id: 1, text: "Hello! How can I assist you today?", sender: "bot" }
     ]);
@@ -12,6 +15,47 @@ export default function Chatbot() {
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
     const chatContainerRef = useRef(null);
+
+    // Custom link handler for deep navigation
+    const handleLinkClick = (href) => {
+        // Check if it's an internal link (starts with / or /home)
+        if (href.startsWith('/home') || href.startsWith('/')) {
+            navigate(href);
+            setIsOpen(false); // Close chatbot after navigation
+            return true;
+        }
+        return false;
+    };
+
+    // Custom components for ReactMarkdown
+    const markdownComponents = {
+        a: ({ href, children }) => {
+            const isInternal = href?.startsWith('/home') || (href?.startsWith('/') && !href?.startsWith('//'));
+
+            if (isInternal) {
+                return (
+                    <button
+                        onClick={() => handleLinkClick(href)}
+                        className="text-cyan-400 hover:text-cyan-300 underline cursor-pointer bg-transparent border-none p-0 font-inherit"
+                    >
+                        {children}
+                    </button>
+                );
+            }
+
+            // External links open in new tab
+            return (
+                <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-400 hover:text-cyan-300 underline"
+                >
+                    {children}
+                </a>
+            );
+        }
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,7 +132,7 @@ export default function Chatbot() {
                 className={`
           transition-all duration-300 ease-in-out transform origin-bottom-right pointer-events-auto
           ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4 pointer-events-none'}
-          w-80 sm:w-96 h-[500px] mb-4
+          ${isExpanded ? 'w-[600px] h-[700px]' : 'w-80 sm:w-96 h-[500px]'} mb-4
           bg-slate-900/80 backdrop-blur-md border border-white/10
           rounded-2xl shadow-2xl overflow-hidden flex flex-col
         `}
@@ -96,15 +140,25 @@ export default function Chatbot() {
                 {/* Header */}
                 <div className="p-4 bg-white/5 border-b border-white/10 flex justify-between items-center backdrop-blur-sm">
                     <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                        <div className={`w-2 h-2 rounded-full ${isTyping ? 'bg-yellow-400' : 'bg-cyan-400'} animate-pulse`}></div>
                         <h3 className="text-white font-semibold tracking-wide">AI Assistant</h3>
+                        {isTyping && <span className="text-xs text-yellow-400 animate-pulse">thinking...</span>}
                     </div>
-                    <button
-                        onClick={toggleChat}
-                        className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-full"
-                    >
-                        <IoClose size={20} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-full"
+                            title={isExpanded ? 'Minimize' : 'Expand'}
+                        >
+                            {isExpanded ? <IoContract size={18} /> : <IoExpand size={18} />}
+                        </button>
+                        <button
+                            onClick={toggleChat}
+                            className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-full"
+                        >
+                            <IoClose size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages Area */}
@@ -123,21 +177,30 @@ export default function Chatbot() {
                   ${msg.sender === 'user'
                                         ? 'bg-cyan-600/80 text-white rounded-br-none'
                                         : 'bg-white/10 text-slate-200 rounded-bl-none border border-white/5'}
-                `}
+                                `}
                             >
                                 {msg.sender === 'bot' ? (
-                                    <TypeAnimation
-                                        sequence={[msg.text]}
-                                        wrapper="span"
-                                        speed={50}
-                                        cursor={false}
-                                    />
+                                    <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-headings:my-2">
+                                        <ReactMarkdown components={markdownComponents}>{msg.text}</ReactMarkdown>
+                                    </div>
                                 ) : (
                                     msg.text
                                 )}
                             </div>
                         </div>
                     ))}
+                    {/* Typing Indicator */}
+                    {isTyping && (
+                        <div className="flex justify-start">
+                            <div className="bg-white/10 text-slate-200 rounded-2xl rounded-bl-none border border-white/5 p-3">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div ref={messagesEndRef} />
                 </div>
 
@@ -150,7 +213,7 @@ export default function Chatbot() {
                             onChange={(e) => setInputValue(e.target.value)}
                             placeholder={isTyping ? "Bot is typing..." : "Type a message..."}
                             disabled={isTyping}
-                            className={`w-full bg-slate-800/50 text-white text-sm rounded-full pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 placeholder-slate-400 transition-all ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full bg-slate-800 /50 text-white text-sm rounded-full pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 placeholder-slate-400 transition-all ${isTyping ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         <button
                             type="submit"

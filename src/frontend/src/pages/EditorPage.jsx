@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useToast } from "../context/ToastContext";
-import { TagEditorModal } from '../components/Layout/Modal'
+import { DocumentSettingsModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
 import { AIModal } from '../components/Layout/AIModal'
 import { Link, useLocation } from "react-router-dom";
 import { useDocument } from "../context/DocumentContext";
-import { generateContent, refineContent } from '../services/AIService';
+import { useAISettings } from "../context/AISettingsContext";
+import { generateContent, refineContent, getWritingSuggestion } from '../services/AIService';
 
 import Markdown from 'react-markdown';
 
@@ -34,6 +35,7 @@ function remarkHighlightPlugin() {
     };
 }
 
+import { useTagService } from '../services/tagService';
 import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
@@ -43,6 +45,165 @@ import {
 
 
 
+
+const SettingsPanel = ({ isOpen, onClose, tags, privacy, onSave, availableTags }) => {
+    const [localTags, setLocalTags] = useState(tags);
+    const [localPrivacy, setLocalPrivacy] = useState(privacy);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    useEffect(() => {
+        if (isOpen) {
+            setLocalTags(tags);
+            setLocalPrivacy(privacy);
+        }
+    }, [isOpen, tags, privacy]);
+
+    if (!isOpen) return null;
+
+    const filteredSuggestions = availableTags.length > 0
+        ? availableTags.filter(tag => tag && tag.toLowerCase().includes(searchTerm.toLowerCase()) && !localTags.includes(tag))
+        : [];
+
+    const handleAddTag = (tag) => {
+        if (!localTags.includes(tag)) {
+            setLocalTags([...localTags, tag]);
+            setSearchTerm("");
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove) => {
+        setLocalTags(localTags.filter(tag => tag !== tagToRemove));
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && searchTerm.trim() !== "") {
+            handleAddTag(searchTerm.trim());
+        }
+    };
+
+    const handleSave = () => {
+        onSave(localTags, localPrivacy);
+        onClose();
+    };
+
+    return (
+        <div className="absolute top-4  right-6 w-80 bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-[9999] flex flex-col animate-in fade-in slide-in-from-top-4 duration-200">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#1e1f22] rounded-t-xl">
+                <div className="flex items-center gap-2 text-white font-semibold">
+                    <Tag size={16} />
+                    <span>Settings</span>
+                </div>
+                <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                    <X size={18} />
+                </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-6 overflow-y-auto custom-scrollbar max-h-[400px]">
+                {/* Privacy */}
+                <div>
+                    <label className="text-xs font-medium text-gray-400 mb-2 block uppercase tracking-wider">Privacy</label>
+                    <div className="flex flex-col gap-2">
+                        <label className={`flex items-center gap-3 p-2 rounded-lg border transition-colors cursor-pointer ${localPrivacy === 'public' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}>
+                            <input
+                                type="radio"
+                                name="privacy"
+                                value="public"
+                                checked={localPrivacy === 'public'}
+                                onChange={(e) => setLocalPrivacy(e.target.value)}
+                                className="hidden"
+                            />
+                            <Globe size={16} className={localPrivacy === 'public' ? "text-blue-400" : "text-gray-400"} />
+                            <span className={`text-sm font-medium ${localPrivacy === 'public' ? "text-blue-100" : "text-gray-300"}`}>Public</span>
+                            {localPrivacy === 'public' && <CheckIcon className="ml-auto text-blue-400" size={14} />}
+                        </label>
+
+                        <label className={`flex items-center gap-3 p-2 rounded-lg border transition-colors cursor-pointer ${localPrivacy === 'private' ? 'bg-red-900/20 border-red-500/50' : 'bg-white/5 border-transparent hover:bg-white/10'}`}>
+                            <input
+                                type="radio"
+                                name="privacy"
+                                value="private"
+                                checked={localPrivacy === 'private'}
+                                onChange={(e) => setLocalPrivacy(e.target.value)}
+                                className="hidden"
+                            />
+                            <Lock size={16} className={localPrivacy === 'private' ? "text-red-400" : "text-gray-400"} />
+                            <span className={`text-sm font-medium ${localPrivacy === 'private' ? "text-red-100" : "text-gray-300"}`}>Private</span>
+                            {localPrivacy === 'private' && <CheckIcon className="ml-auto text-red-400" size={14} />}
+                        </label>
+                    </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                    <label className="text-xs font-medium text-gray-400 mb-2 block uppercase tracking-wider">Tags</label>
+
+                    {/* Tag List */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {localTags.map(tag => (
+                            <span key={tag} className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs border border-blue-500/30">
+                                {tag}
+                                <button onClick={() => handleRemoveTag(tag)} className="hover:text-white transition">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        ))}
+                        {localTags.length === 0 && <span className="text-gray-500 text-xs italic">No tags assigned</span>}
+                    </div>
+
+                    {/* Search/Add */}
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <input
+                            type="text"
+                            className="w-full bg-[#2b2d31] text-white text-sm pl-9 pr-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-blue-500 transition placeholder:text-gray-600"
+                            placeholder="Add tag..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
+
+                        {/* Suggestions Dropdown */}
+                        {searchTerm && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-[#2b2d31] border border-white/10 rounded-lg shadow-xl max-h-32 overflow-y-auto z-10">
+                                {filteredSuggestions.length > 0 ? (
+                                    filteredSuggestions.map(tag => (
+                                        <button
+                                            key={tag}
+                                            onClick={() => handleAddTag(tag)}
+                                            className="w-full text-left px-3 py-2 hover:bg-white/5 text-gray-300 text-sm flex items-center justify-between group"
+                                        >
+                                            <span>{tag}</span>
+                                            <Plus size={12} className="opacity-0 group-hover:opacity-100 text-blue-400" />
+                                        </button>
+                                    ))
+                                ) : (
+                                    <button
+                                        onClick={() => handleAddTag(searchTerm)}
+                                        className="w-full text-left px-3 py-2 hover:bg-white/5 text-blue-400 text-sm italic flex items-center gap-2"
+                                    >
+                                        <Plus size={12} /> Create "{searchTerm}"
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/5 flex justify-end gap-2 bg-[#1e1f22] rounded-b-xl">
+                <button onClick={onClose} className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white transition">Cancel</button>
+                <button onClick={handleSave} className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">Save Changes</button>
+            </div>
+        </div>
+    );
+};
+
+const CheckIcon = ({ className, size }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"></polyline></svg>
+);
 
 const ToolbarBtn = ({ icon: Icon, isActive, onClick }) => (
     <button
@@ -89,10 +250,21 @@ export default function EditorPage({ initialContent = '' }) {
     // Refs
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
+    const suggestionTimeoutRef = useRef(null);
+
+    // Writing Suggestion State
+    const [writingSuggestion, setWritingSuggestion] = useState('');
+    const [isFetchingSuggestion, setIsFetchingSuggestion] = useState(false);
+    // Collaborative mode: when true, show bottom bar; when false, show inline ghost text
+    // TODO: Set this to true when real-time collaboration is detected
+    const [isCollaborativeMode, setIsCollaborativeMode] = useState(false);
 
     //Toasts
     const { success } = useToast();
     const [isBookmark, setIsBookmark] = useState(true)
+
+    // AI Settings
+    const { writingSuggestionEnabled, generateDocumentEnabled } = useAISettings();
 
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
@@ -123,6 +295,16 @@ export default function EditorPage({ initialContent = '' }) {
     const [aiMode, setAiMode] = useState('generate'); // 'generate' | 'refine'
     const [selectedTextForAI, setSelectedTextForAI] = useState('');
     const [selectionRange, setSelectionRange] = useState(null);
+    const [quickRefinePos, setQuickRefinePos] = useState(null);
+    const [privacy, setPrivacy] = useState(document?.isPublic ? 'public' : 'private');
+    const [availableTags, setAvailableTags] = useState([]);
+    const { getAllTags } = useTagService();
+
+    useEffect(() => {
+        if (isTagEditorOpen) {
+            getAllTags().then(tags => setAvailableTags([...new Set(tags)]));
+        }
+    }, [isTagEditorOpen]);
 
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
@@ -216,6 +398,32 @@ export default function EditorPage({ initialContent = '' }) {
             }
             return prevHistory; // Không thay đổi history
         });
+
+        // Debounced writing suggestion fetching
+        if (suggestionTimeoutRef.current) {
+            clearTimeout(suggestionTimeoutRef.current);
+        }
+
+        // Only fetch suggestion if enabled and content is long enough and cursor is at end
+        const textarea = textareaRef.current;
+        const cursorAtEnd = textarea && textarea.selectionStart === newMarkdown.length;
+
+        if (writingSuggestionEnabled && cursorAtEnd && newMarkdown.length > 20) {
+            suggestionTimeoutRef.current = setTimeout(async () => {
+                setIsFetchingSuggestion(true);
+                try {
+                    const cursorText = newMarkdown.slice(-100); // Last 100 chars for context
+                    const data = await getWritingSuggestion(newMarkdown, cursorText);
+                    if (data.suggestion && data.suggestion.trim()) {
+                        setWritingSuggestion(data.suggestion);
+                    }
+                } catch (error) {
+                    console.error('Error fetching suggestion:', error);
+                } finally {
+                    setIsFetchingSuggestion(false);
+                }
+            }, 500); // 500ms debounce
+        }
     }, []);
     // Lưu ý: Các hàm format (toggleFormat, handleListFormat) cần gọi handleContentChange thay vì setMarkdown
 
@@ -256,8 +464,9 @@ export default function EditorPage({ initialContent = '' }) {
         }
     }, [future]);
 
-    const handleSaveTags = (newTags) => {
-        setActiveTags(newTags); // Cập nhật state activeTags (hiển thị trên UI)
+    const handleSaveTags = (newTags, newPrivacy) => {
+        setActiveTags(newTags);
+        setPrivacy(newPrivacy);
 
         handleDocumentUpdate(document?.id, {
             ...docDataRef.current, // Giữ nguyên các thông tin cũ (content, title...)
@@ -307,6 +516,58 @@ export default function EditorPage({ initialContent = '' }) {
             }
         }
         setIsAIModalOpen(true);
+    };
+
+    const handleMouseUp = (e) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        // Stop resizing logic if any
+        if (isResizing) stopResizing();
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+
+        if (start !== end) {
+            // Calculate position relative to viewport
+            // We want it above the selection.
+            // Since we only have mouse coordinates, we use those.
+            setQuickRefinePos({ x: e.clientX, y: e.clientY });
+        } else {
+            setQuickRefinePos(null);
+        }
+    };
+
+    const handleQuickRefine = async () => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value.substring(start, end);
+
+        if (!text.trim()) return;
+
+        setQuickRefinePos(null);
+        success("Refining text...");
+
+        try {
+            const docId = document?.id || null;
+            const data = await refineContent(docId, text, "Refine this text to be more professional, clear, and concise.");
+
+            if (data && data.content) {
+                const before = markdown.substring(0, start);
+                const after = markdown.substring(end);
+                // Using the mark syntax as per existing pattern
+                const newText = before + `\n:::mark\n${data.content}\n:::\n` + after;
+
+                setMarkdown(newText);
+                setHistory(prev => [...prev, newText]);
+                setFuture([]);
+            }
+        } catch (error) {
+            console.error("Quick refine error:", error);
+        }
     };
 
     const handleAIGenerate = async (type, prompt) => {
@@ -385,6 +646,54 @@ export default function EditorPage({ initialContent = '' }) {
         }, 0);
     };
     const handleKeyDown = (e) => {
+        // Keyboard shortcuts for formatting
+        if (e.ctrlKey || e.metaKey) {
+            // Ctrl + B: Bold
+            if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                toggleFormat('**');
+                return;
+            }
+            // Ctrl + I: Italic
+            if (e.key === 'i' || e.key === 'I') {
+                e.preventDefault();
+                toggleFormat('_');
+                return;
+            }
+            // Ctrl + Shift + S: Strikethrough
+            if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                toggleFormat('~~');
+                return;
+            }
+        }
+
+        // Handle Tab key for accepting writing suggestion
+        if (e.key === 'Tab' && writingSuggestion) {
+            e.preventDefault();
+            const newText = markdown + writingSuggestion;
+            setMarkdown(newText);
+            setWritingSuggestion('');
+            setHistory(prev => [...prev, newText]);
+            setFuture([]);
+
+            // Move cursor to end
+            setTimeout(() => {
+                const textarea = textareaRef.current;
+                if (textarea) {
+                    textarea.setSelectionRange(newText.length, newText.length);
+                    textarea.focus();
+                }
+            }, 0);
+            return;
+        }
+
+        // Handle Escape key to dismiss suggestion
+        if (e.key === 'Escape' && writingSuggestion) {
+            setWritingSuggestion('');
+            return;
+        }
+
         if (e.key === 'Enter') {
             const textarea = textareaRef.current;
             if (!textarea) return;
@@ -607,6 +916,9 @@ export default function EditorPage({ initialContent = '' }) {
         const cursor = textarea.selectionStart;
         const text = textarea.value;
 
+        // If text is selected, do not process click events for markers
+        if (textarea.selectionStart !== textarea.selectionEnd) return;
+
         // Find all highlight matches using directive syntax
         // Matches :::mark [content] :::
         const regex = /:::mark\s+([\s\S]*?)\s+:::/g;
@@ -775,7 +1087,12 @@ export default function EditorPage({ initialContent = '' }) {
 
 
     // --- LOGIC COMMENT ---
-    const toggleCommentSection = () => setShowComments(!showComments);
+    const toggleCommentSection = () => {
+        if (!showComments) {
+            setIsTagEditorOpen(false);
+        }
+        setShowComments(!showComments);
+    }
 
     const handlePostComment = () => {
         if (!newCommentText.trim()) {
@@ -1001,7 +1318,69 @@ export default function EditorPage({ initialContent = '' }) {
                             placeholder="# Start writing..." value={markdown}
                             onChange={(e) => handleContentChange(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            onClick={handleEditorClick} />
+                            onClick={handleEditorClick}
+                            onMouseUp={handleMouseUp}
+                        />
+                        {quickRefinePos && (
+                            <div
+                                className="fixed z-50 flex items-center gap-2 bg-gray-800 border border-gray-700 shadow-xl rounded-lg p-1 animate-in fade-in zoom-in-95 duration-200"
+                                style={{
+                                    top: quickRefinePos.y - 50,
+                                    left: quickRefinePos.x - 20
+                                }}
+                            >
+                                <button
+                                    onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                                    onClick={handleQuickRefine}
+                                    className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-md transition-colors"
+                                >
+                                    <Sparkles size={14} />
+                                    Refine
+                                </button>
+                            </div>
+                        )}
+                        {/* Writing Suggestion - Inline Ghost Text (Single User Mode) */}
+                        {writingSuggestion && !isCollaborativeMode && (
+                            <div
+                                className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none p-6 font-mono text-sm leading-relaxed overflow-hidden"
+                                style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                            >
+                                {/* Invisible text to match position */}
+                                <span className="invisible">{markdown}</span>
+                                {/* Ghost suggestion text */}
+                                <span className="text-gray-500/50 italic">{writingSuggestion}</span>
+                                {/* Tab hint */}
+                                <span className="ml-2 text-xs text-gray-600 bg-gray-800/50 px-1 py-0.5 rounded border border-gray-700">
+                                    Tab ↵
+                                </span>
+                            </div>
+                        )}
+                        {/* Writing Suggestion - Bottom Bar (Collaborative Mode) */}
+                        {writingSuggestion && isCollaborativeMode && (
+                            <div className="absolute bottom-4 left-6 right-6 pointer-events-none">
+                                <div className="flex items-center gap-2 bg-gray-800/90 border border-gray-700 rounded-lg px-4 py-2 backdrop-blur-sm">
+                                    <Sparkles size={14} className="text-blue-400 shrink-0" />
+                                    <span className="text-gray-400/80 text-sm font-mono truncate">
+                                        {writingSuggestion.length > 100 ? writingSuggestion.substring(0, 100) + '...' : writingSuggestion}
+                                    </span>
+                                    <div className="flex items-center gap-2 ml-auto shrink-0">
+                                        <kbd className="px-2 py-0.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-300">Tab</kbd>
+                                        <span className="text-xs text-gray-500">to accept</span>
+                                        <kbd className="px-2 py-0.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-300">Esc</kbd>
+                                        <span className="text-xs text-gray-500">to dismiss</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {/* Loading indicator for suggestion */}
+                        {isFetchingSuggestion && (
+                            <div className="absolute bottom-4 right-8">
+                                <div className="flex items-center gap-2 bg-gray-800/80 border border-gray-700 rounded-lg px-3 py-1.5">
+                                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-xs text-gray-400">AI thinking...</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -1115,12 +1494,13 @@ export default function EditorPage({ initialContent = '' }) {
                     documentTitle={title}
                     onCopyLink={handleCopyLink}
                 />
-                <TagEditorModal
+                <SettingsPanel
                     isOpen={isTagEditorOpen}
                     onClose={() => setIsTagEditorOpen(false)}
-                    currentTags={activeTags}
-                    onSave={handleSaveTags} // Hàm này sẽ cập nhật activeTags
-                    documentContent={markdown}
+                    tags={activeTags}
+                    privacy={privacy}
+                    onSave={handleSaveTags}
+                    availableTags={availableTags}
                 />
                 <AIModal
                     isOpen={isAIModalOpen}

@@ -83,18 +83,34 @@ public class AIService {
         return callOpenRouter(systemRules, content);
     }
 
-    // --- 2. Chat (With Document Context) ---
-    public String chat(String message, String documentContext) {
-        String systemRules = "You are a helpful assistant. Answer the user's question.";
+    // --- 2. Chat (With Document Context and App Knowledge) ---
+    // Load app knowledge from external file for easy editing
+    private String appKnowledge;
 
-        // Inject context if available
-        String prompt = message;
+    @jakarta.annotation.PostConstruct
+    public void loadAppKnowledge() {
+        try {
+            org.springframework.core.io.ClassPathResource resource = new org.springframework.core.io.ClassPathResource(
+                    "instruction.md");
+            appKnowledge = new String(resource.getInputStream().readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            System.out.println("Loaded app knowledge from instruction.md (" + appKnowledge.length() + " chars)");
+        } catch (Exception e) {
+            System.err.println("Failed to load instruction.md: " + e.getMessage());
+            appKnowledge = "You are Docommunity AI Assistant. Help users with their questions about the app.";
+        }
+    }
+
+    public String chat(String message, String documentContext) {
+        String systemRules = appKnowledge + "\n\nAnswer the user's question based on the app knowledge above.";
+
+        // Inject document context if available
         if (documentContext != null && !documentContext.isBlank()) {
-            systemRules += " You have access to the following document content to help answer:\n---\n"
+            systemRules += "\n\nThe user is currently viewing this document:\n---\n"
                     + documentContext + "\n---";
         }
 
-        return callOpenRouter(systemRules, prompt);
+        return callOpenRouter(systemRules, message);
     }
 
     // --- 3. Suggest Tags ---
@@ -111,5 +127,30 @@ public class AIService {
                 "Generate a " + (type != null ? type : "document") + " based on the user's prompt. " +
                 "Use Markdown formatting.";
         return callOpenRouter(systemRules, prompt);
+    }
+
+    // --- 5. Autocomplete (Writing Suggestions) ---
+    public String autocomplete(String content, String cursorText, Integer maxTokens) {
+        String systemRules = "You are an AI writing assistant. " +
+                "Based on the context provided, suggest the next sentence or phrase to continue the text. " +
+                "Return ONLY the suggested text continuation, nothing else. " +
+                "Keep suggestions concise (1-2 sentences max). " +
+                "Match the writing style and language of the context. " +
+                "If no good suggestion is possible, return an empty string.";
+
+        String prompt = "Document context:\n" + (content != null ? content : "") +
+                "\n\nContinue from: \"" + (cursorText != null ? cursorText : "") + "\"";
+
+        String result = callOpenRouter(systemRules, prompt);
+
+        // Clean up the result - remove quotes if AI wrapped them
+        if (result != null) {
+            result = result.trim();
+            if (result.startsWith("\"") && result.endsWith("\"")) {
+                result = result.substring(1, result.length() - 1);
+            }
+        }
+
+        return result != null ? result : "";
     }
 }

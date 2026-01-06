@@ -9,7 +9,7 @@ const HARDCODED_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', '
 
 export const CreateDocumentModal = ({ isOpen, onClose }) => {
   // 2. Lấy hàm createNewDocument từ Context
-  const { createDocument } = useDocument();
+  const { createDocument, listDocuments } = useDocument();
   const { success } = useToast();
   // State nội bộ của Modal để quản lý Form input
   const [formData, setFormData] = useState({
@@ -37,10 +37,36 @@ export const CreateDocumentModal = ({ isOpen, onClose }) => {
     setLoading(true);
     setErrorMsg('');
 
+    const title = formData.title.trim();
+
+    // 1. Verify Max Character Length for Name
+    if (title.length > 50) {
+      setErrorMsg('Document name must be less than 50 characters.');
+      setLoading(false);
+      return;
+    }
+
+    // 2. Verify Special Characters in Name
+    // Allow letters (including Vietnamese), numbers, spaces, hyphens, underscores
+    const validNameRegex = /^[\p{L}\p{N}\s\-_]+$/u;
+    if (!validNameRegex.test(title)) {
+      setErrorMsg('Document name contains invalid characters. Only letters, numbers, spaces, hyphens, and underscores are allowed.');
+      setLoading(false);
+      return;
+    }
+
+    // 3. Verify Duplicate Name Validation
+    const isDuplicate = listDocuments?.some(doc => doc.title.toLowerCase() === title.toLowerCase());
+    if (isDuplicate) {
+      setErrorMsg('A document with this name already exists.');
+      setLoading(false);
+      return;
+    }
+
     try {
       // 3. Chuẩn bị gói dữ liệu (docData) để đưa cho Context
       const payload = {
-        title: formData.title,
+        title: title,
         content: formData.content || "", // Mặc định rỗng nếu không nhập
         // Tách chuỗi tags thành mảng, loại bỏ khoảng trắng thừa
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : [],
