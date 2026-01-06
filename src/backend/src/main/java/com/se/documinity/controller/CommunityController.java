@@ -20,7 +20,7 @@ public class CommunityController {
             @RequestParam(required = false) String tagName,
             @RequestParam(required = false) String search) {
         com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> documents = documentService
-                .getPublicDocuments(tagName, search, page);
+                .getPublicDocuments(tagName, search, page, "date", "desc");
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documents);
         responseDTO.setMessage("success");

@@ -264,6 +264,7 @@ const DocumentCard = ({ card, isExpanded }) => {
                         <div className="relative">
                             <button
                                 onClick={toggleMenu}
+                                data-testid="document-menu-btn"
                                 className={`hover:bg-gray-700 rounded p-1 transition ${showMenu ? 'bg-gray-700 text-white' : 'text-gray-400'}`}
                             >
                                 <EllipsisVertical size={20} />
@@ -302,7 +303,7 @@ const DocumentCard = ({ card, isExpanded }) => {
 
                                     <div className="h-px bg-gray-700 mx-2"></div>
 
-                                    <button onClick={confirmDeleteNote} className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition">
+                                    <button onClick={confirmDeleteNote} data-testid="delete-document-btn" className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition">
                                         <Trash2 size={16} />
                                         <span>Delete note</span>
                                     </button>
@@ -314,7 +315,24 @@ const DocumentCard = ({ card, isExpanded }) => {
                             )}
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">{card.createdDate || card.date}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {(() => {
+                            const dateStr = card.createdDate || card.date;
+                            if (!dateStr) return '';
+                            // If it's an ISO string without offset, assume it's Asia/Ho_Chi_Minh wall time
+                            const hasOffset = dateStr.includes('Z') || dateStr.includes('+') || dateStr.match(/-\d{2}:\d{2}$/);
+                            const normalizedDateStr = hasOffset ? dateStr : `${dateStr}+07:00`;
+
+                            return new Date(normalizedDateStr).toLocaleString('vi-VN', {
+                                timeZone: 'Asia/Ho_Chi_Minh',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                        })()}
+                    </p>
                 </div>
             </div>
 

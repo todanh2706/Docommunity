@@ -66,7 +66,7 @@ export default function Community() {
                 // Fetch data for current page and tag filter
                 const tagName = filterTags.length > 0 ? filterTags[0] : null;
                 const [response] = await Promise.all([
-                    viewAllDocs(page, 10, tagName, value),
+                    viewAllDocs(page, 10, tagName, value, sortConfig.title ? 'title' : 'date', sortConfig.title === 'asc' ? 'asc' : 'desc'),
                     new Promise(resolve => setTimeout(resolve, 600)) // 600ms min loading
                 ]);
 
@@ -88,7 +88,7 @@ export default function Community() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         return () => { isMounted = false; };
-    }, [page, filterTags, value]); // Re-run when page, tags or search changes
+    }, [page, filterTags, value, sortConfig]); // Re-run when page, tags, search or sort changes
 
     // Toolbar Handlers
     const handleSortSelection = (type, val) => {
@@ -119,23 +119,8 @@ export default function Community() {
         });
     };
 
-    // Client-side Sort (Applied to items fetched from server)
-    const processedDocuments = [...documents]
-        .sort((a, b) => {
-            if (sortConfig.date) {
-                const dateA = new Date(a.lastModified || a.createdDate).getTime();
-                const dateB = new Date(b.lastModified || b.createdDate).getTime();
-                if (dateA !== dateB) {
-                    return sortConfig.date === 'latest' ? dateB - dateA : dateA - dateB;
-                }
-            }
-            if (sortConfig.title) {
-                return sortConfig.title === 'asc'
-                    ? a.title.localeCompare(b.title)
-                    : b.title.localeCompare(a.title);
-            }
-            return 0; // Default order
-        });
+    // Client-side Sort removed - using server document order
+    const processedDocuments = documents;
 
 
     const handlePageChange = (newPage) => {

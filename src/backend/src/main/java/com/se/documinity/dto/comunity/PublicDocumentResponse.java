@@ -14,7 +14,7 @@ public class PublicDocumentResponse {
     private String title;
     private String snipetContent;
     private PublicDocumentOwnerResponse owner;
-    private java.time.LocalDate lastModified;
+    private java.time.LocalDateTime lastModified;
     private int likesCount;
     private int commentsCount;
     private Boolean isLiked;

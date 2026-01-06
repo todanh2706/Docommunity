@@ -49,9 +49,11 @@ public class DocumentController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String tagName,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
         com.se.documinity.dto.PagedResponseDTO<PublicDocumentResponse> documents = documentService
-                .getPublicDocuments(tagName, search, page);
+                .getPublicDocuments(tagName, search, page, sortBy, sortDir);
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setData(documents);
         responseDTO.setMessage("success");
