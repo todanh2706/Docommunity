@@ -646,6 +646,28 @@ export default function EditorPage({ initialContent = '' }) {
         }, 0);
     };
     const handleKeyDown = (e) => {
+        // Keyboard shortcuts for formatting
+        if (e.ctrlKey || e.metaKey) {
+            // Ctrl + B: Bold
+            if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                toggleFormat('**');
+                return;
+            }
+            // Ctrl + I: Italic
+            if (e.key === 'i' || e.key === 'I') {
+                e.preventDefault();
+                toggleFormat('_');
+                return;
+            }
+            // Ctrl + Shift + S: Strikethrough
+            if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                toggleFormat('~~');
+                return;
+            }
+        }
+
         // Handle Tab key for accepting writing suggestion
         if (e.key === 'Tab' && writingSuggestion) {
             e.preventDefault();
