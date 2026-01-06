@@ -8,6 +8,7 @@ import { Settings, Edit2, Save, LogOut } from 'lucide-react';
 import ProfileSection from '../components/Settings/ProfileSection';
 import SecuritySection from '../components/Settings/SecuritySection';
 import DangerZoneSection from '../components/Settings/DangerZoneSection';
+import AISettingsSection from '../components/Settings/AISettingsSection';
 
 // --- 3. MAIN PAGE ---
 export default function SettingsPage() {
@@ -232,6 +233,9 @@ export default function SettingsPage() {
                             isPrivate={isPrivate}
                             togglePrivacy={togglePrivacy}
                         />
+
+                        {/* AI Features */}
+                        <AISettingsSection />
 
                         {/* Danger Zone */}
                         <DangerZoneSection

@@ -99,3 +99,22 @@ export const suggestTags = async (content) => {
     }
 }
 
+// Writing suggestion (autocomplete)
+export const getWritingSuggestion = async (content, cursorText, maxTokens = 50) => {
+    if (USE_MOCK_DATA) {
+        await mockDelay(300);
+        return { suggestion: " tiếp tục viết nội dung ở đây..." };
+    }
+    try {
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/autocomplete`, {
+            content,
+            cursorText,
+            maxTokens
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error getting suggestion:', error);
+        // Return empty suggestion on error to avoid breaking the UI
+        return { suggestion: '' };
+    }
+}

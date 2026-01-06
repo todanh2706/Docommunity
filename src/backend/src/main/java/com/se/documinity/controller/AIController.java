@@ -27,8 +27,10 @@ public class AIController {
                 DocumentResponse doc = documentService.getDocument(request.getDocumentId());
                 context = doc.getContent();
             } catch (Exception e) {
-                // If doc not found or unauthorized, we proceed without context (or could return 404)
-                // For a chat feature, it's often better to just warn the user or ignore the context.
+                // If doc not found or unauthorized, we proceed without context (or could return
+                // 404)
+                // For a chat feature, it's often better to just warn the user or ignore the
+                // context.
             }
         }
 
@@ -53,5 +55,16 @@ public class AIController {
     public ResponseEntity<Map<String, String>> generate(@RequestBody GenerateRequest request) {
         String content = aiService.generateContent(request.getType(), request.getPrompt());
         return ResponseEntity.ok(Map.of("content", content));
+    }
+
+    // 4. Autocomplete (Writing Suggestions)
+    @PostMapping("/autocomplete")
+    public ResponseEntity<Map<String, String>> autocomplete(@RequestBody AutocompleteRequest request) {
+        Integer maxTokens = request.getMaxTokens() != null ? request.getMaxTokens() : 50;
+        String suggestion = aiService.autocomplete(
+                request.getContent(),
+                request.getCursorText(),
+                maxTokens);
+        return ResponseEntity.ok(Map.of("suggestion", suggestion));
     }
 }
