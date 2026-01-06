@@ -77,6 +77,7 @@ const CommentItem = ({ comment, isReply = false, onReply }) => {
 const CommentSection = ({ docId, shouldFocus = false }) => {
     const [newComment, setNewComment] = useState("");
     const [comments, setComments] = useState([]);
+    const [error, setError] = useState("");
     const commentInputRef = useRef(null);
     const { getComments, addComment, replyComment } = useCommunity();
 
@@ -104,7 +105,10 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
     }, [shouldFocus]);
 
     const handleAddComment = async () => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim()) {
+            setError("Comment cannot be empty");
+            return;
+        }
         try {
             const response = await addComment(docId, newComment);
             setComments(prev => [response.data, ...prev]);
@@ -153,11 +157,19 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
                         <textarea
                             ref={commentInputRef}
                             value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add to the discussion..." // Corrected typo from user request "commnet"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none h-24"
+                            onChange={(e) => {
+                                setNewComment(e.target.value);
+                                if (error) setError(""); // Clear error on type
+                            }}
+                            placeholder="Add to the discussion..."
+                            className={`w-full bg-white/5 border ${error ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-colors resize-none h-24`}
                             data-testid="comment-input"
                         />
+                        {error && (
+                            <div className="absolute top-full mt-1 text-red-500 text-xs" data-testid="comment-error">
+                                {error}
+                            </div>
+                        )}
                         <button
                             onClick={handleAddComment}
                             className="absolute bottom-3 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg"

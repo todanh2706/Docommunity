@@ -88,4 +88,49 @@ public class AddCommentTest extends BaseE2ETest {
         boolean commentFound = driver.getPageSource().contains(commentText);
         assertTrue(commentFound, "The new comment should be displayed.");
     }
+
+    @Test
+    void testEmptyCommentValidation() {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        // 1. Navigate to Login Page
+        driver.get("http://localhost:3000/login");
+
+        // 2. Perform Login with "todanh" / "123123"
+        WebElement usernameField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("username")));
+        usernameField.sendKeys("todanh");
+
+        WebElement passwordField = driver.findElement(By.name("password"));
+        passwordField.sendKeys("123123");
+
+        WebElement loginButton = driver.findElement(By.xpath("//button[contains(., 'Log In')]"));
+        loginButton.click();
+
+        // 3. Navigate to Workspace/Community
+        wait.until(ExpectedConditions.urlContains("/home"));
+        driver.get("http://localhost:3000/home/community");
+
+        // 4. Click Comment Icon on the first document card
+        WebElement commentButton = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-testid='comment-button']")));
+        commentButton.click();
+
+        // 5. Wait for Comment Input to be visible
+        WebElement commentInput = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-testid='comment-input']")));
+
+        // Ensure input is empty (it should be new)
+        commentInput.clear();
+
+        // 6. Click Post without typing
+        WebElement postButton = driver.findElement(By.cssSelector("[data-testid='comment-submit-btn']"));
+        postButton.click();
+
+        // 7. Expected Result: System displays "Comment cannot be empty"
+        WebElement errorMessage = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-testid='comment-error']")));
+        String errorText = errorMessage.getText();
+
+        assertTrue(errorText.contains("Comment cannot be empty"), "Error message should be 'Comment cannot be empty'");
+    }
 }
