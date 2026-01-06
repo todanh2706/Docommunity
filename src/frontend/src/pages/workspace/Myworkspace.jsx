@@ -219,6 +219,7 @@ const DocumentCard = ({ card, isExpanded }) => {
                         <div className="relative">
                             <button
                                 onClick={toggleMenu}
+                                data-testid="document-menu-btn"
                                 className={`hover:bg-gray-700 rounded p-1 transition ${showMenu ? 'bg-gray-700 text-white' : 'text-gray-400'}`}
                             >
                                 <EllipsisVertical size={20} />
@@ -257,7 +258,7 @@ const DocumentCard = ({ card, isExpanded }) => {
 
                                     <div className="h-px bg-gray-700 mx-2"></div>
 
-                                    <button onClick={confirmDeleteNote} className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition">
+                                    <button onClick={confirmDeleteNote} data-testid="delete-document-btn" className="flex items-center space-x-3 px-4 py-3 hover:bg-red-900/30 text-left text-sm text-red-400 transition">
                                         <Trash2 size={16} />
                                         <span>Delete note</span>
                                     </button>

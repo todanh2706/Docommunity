@@ -1,6 +1,6 @@
-import {AlertTriangle} from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 
-export const  ConfirmDialog = ({
+export const ConfirmDialog = ({
     isOpen, onClose, onConfirm, onCancel,
     title, msg,
     confirmText = "Confirm", cancelText = "Cancel",
@@ -26,6 +26,7 @@ export const  ConfirmDialog = ({
                 <div className="bg-gray-800/50 px-6 py-4 flex justify-end gap-3">
                     <button
                         onClick={() => { onCancel && onCancel(); onClose(); }}
+                        data-testid="confirm-dialog-cancel"
                         className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                     >
                         {cancelText}
