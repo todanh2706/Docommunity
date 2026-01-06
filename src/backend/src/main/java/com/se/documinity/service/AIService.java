@@ -73,7 +73,8 @@ public class AIService {
         if ("summarize".equalsIgnoreCase(action)) {
             systemRules = "You are a professional summarizer. " +
                     "Create a concise summary of the provided text. " +
-                    "Return ONLY the summary in Markdown.";
+                    "Return ONLY the summary in Markdown." +
+                    "Keep the Language the same as input";
         } else {
             // Default: improve
             systemRules = "You are a professional technical editor. " +

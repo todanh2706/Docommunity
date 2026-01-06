@@ -2,11 +2,14 @@ import { Link } from 'react-router'
 import { User, LogOut, Settings } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import useAuth from '../../hooks/useAuth.js';
+import { useUser } from '../../hooks/useUser.js';
 
 export function Header() {
   const { logout } = useAuth();
+  const { getUserProfile } = useUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [userAvatar, setUserAvatar] = useState("/dump_avt.jpg");
 
   const handleSignOut = () => {
     logout();
@@ -25,6 +28,20 @@ export function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await getUserProfile();
+        setUserAvatar(data.avatar_url || "/dump_avt.jpg");
+      } catch (error) {
+        console.error("Failed to fetch user for header", error);
+      }
+    };
+    if (localStorage.getItem('accessToken')) {
+      fetchUser();
+    }
+  }, []);
+
   return (
     <header>
       <div className="flex justify-between p-4  bg-white/3 shadow-lg z-12 ">
@@ -41,9 +58,13 @@ export function Header() {
             <>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition text-white border border-white/20 shadow-lg"
+                className="rounded-full bg-white/10 hover:bg-white/20 transition border-2 border-white/20 shadow-lg overflow-hidden"
               >
-                <User size={32} />
+                <img
+                  src={userAvatar}
+                  alt="User Avatar"
+                  className="w-12 h-12 object-cover"
+                />
               </button>
 
               {/* Dropdown Menu */}

@@ -218,7 +218,7 @@ export default function HomePage() {
                                     author={{
                                         id: doc.owner?.id,
                                         name: doc.owner?.name,
-                                        avatar: "/dump_avt.jpg",
+                                        avatar: doc.owner?.avatar_url || "/dump_avt.jpg",
                                         time: new Date(doc.lastModified).toLocaleDateString('en-US')
                                     }}
                                     likes={doc.likesCount || 0}

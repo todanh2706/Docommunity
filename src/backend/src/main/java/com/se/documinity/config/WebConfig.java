@@ -1,4 +1,5 @@
 package com.se.documinity.config;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -12,7 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // /api/avatars/**  ->  đọc file từ thư mục uploads/avatars
+        // /api/avatars/** -> đọc file từ thư mục uploads/avatars
         registry.addResourceHandler("/avatars/**")
                 .addResourceLocations("file:" + uploadDir + "/avatars/");
     }

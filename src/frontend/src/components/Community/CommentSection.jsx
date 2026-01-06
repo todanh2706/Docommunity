@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, MessageSquare, Reply, MoreHorizontal, Send } from 'lucide-react';
 import { useCommunity } from '../../hooks/useCommunity';
+import { useUser } from '../../hooks/useUser';
 
 const CommentItem = ({ comment, isReply = false, onReply }) => {
     const [isReplying, setIsReplying] = useState(false);
@@ -80,6 +81,8 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
     const [error, setError] = useState("");
     const commentInputRef = useRef(null);
     const { getComments, addComment, replyComment } = useCommunity();
+    const { getUserProfile } = useUser();
+    const [currentUserAvatar, setCurrentUserAvatar] = useState("/dump_avt.jpg");
 
     useEffect(() => {
         const fetchComments = async () => {
@@ -93,6 +96,18 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
         };
         fetchComments();
     }, [docId]);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const data = await getUserProfile();
+                setCurrentUserAvatar(data.avatar_url || "/dump_avt.jpg");
+            } catch (error) {
+                console.error("Failed to fetch user for comments", error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     // Auto-focus logic
     useEffect(() => {
@@ -149,7 +164,7 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
             <div className="mt-6 pt-4 border-t border-white/10">
                 <div className="flex gap-3">
                     <img
-                        src="/dump_avt.jpg"
+                        src={currentUserAvatar}
                         alt="Current User"
                         className="w-10 h-10 rounded-full object-cover border border-white/10"
                     />

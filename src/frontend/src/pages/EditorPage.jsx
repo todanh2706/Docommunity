@@ -6,7 +6,8 @@ import { AIModal } from '../components/Layout/AIModal'
 import { Link, useLocation } from "react-router-dom";
 import { useDocument } from "../context/DocumentContext";
 import { useAISettings } from "../context/AISettingsContext";
-import { generateContent, refineContent, getWritingSuggestion } from '../services/AIService';
+import { useUser } from '../hooks/useUser';
+import { generateContent, refineContent, getWritingSuggestion, suggestTags } from '../services/AIService';
 
 import Markdown from 'react-markdown';
 
@@ -40,13 +41,13 @@ import {
     Edit2, Bookmark, Tag, MessageSquareText, Columns2,
     Undo2, Redo2, Bold, Italic, Underline, Code, Table as TableIcon,
     List, Link as LinkIcon, Image as ImageIcon, Strikethrough, ListOrdered, SquareCheck, Eye, Pencil,
-    GripVertical, X, User, Sparkles, Cloud, CloudOff, Loader, CheckCircle // Đảm bảo đã import User và X
+    GripVertical, X, User, Sparkles, Cloud, CloudOff, Loader, CheckCircle, Search, Globe, Lock, Plus // Đảm bảo đã import User và X
 } from "lucide-react";
 
 
 
 
-const SettingsPanel = ({ isOpen, onClose, tags, privacy, onSave, availableTags }) => {
+const SettingsPanel = ({ isOpen, onClose, tags, privacy, onSave, availableTags, aiSuggestedTags = [], onAISuggest, isLoadingSuggestions = false }) => {
     const [localTags, setLocalTags] = useState(tags);
     const [localPrivacy, setLocalPrivacy] = useState(privacy);
     const [searchTerm, setSearchTerm] = useState("");
@@ -189,6 +190,37 @@ const SettingsPanel = ({ isOpen, onClose, tags, privacy, onSave, availableTags }
                             </div>
                         )}
                     </div>
+
+                    {/* AI Suggestions */}
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">AI Suggestions</label>
+                            <button
+                                onClick={onAISuggest}
+                                disabled={isLoadingSuggestions}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-900/20"
+                            >
+                                <Sparkles size={12} className={isLoadingSuggestions ? 'animate-spin' : ''} />
+                                {isLoadingSuggestions ? 'Generating...' : 'Suggest Tags'}
+                            </button>
+                        </div>
+
+                        {aiSuggestedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {aiSuggestedTags.map(tag => (
+                                    <button
+                                        key={tag}
+                                        onClick={() => handleAddTag(tag)}
+                                        disabled={localTags.includes(tag)}
+                                        className="px-2 py-1 text-xs bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded border border-purple-500/30 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                    >
+                                        <Plus size={10} />
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -268,6 +300,11 @@ export default function EditorPage({ initialContent = '' }) {
 
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+    // Tag Settings Panel State
+    const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
+    const [aiSuggestedTags, setAiSuggestedTags] = useState([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
 
     const [viewMode, setViewMode] = useState(() => {
         if (location.state?.viewMode) return location.state.viewMode;
@@ -299,12 +336,34 @@ export default function EditorPage({ initialContent = '' }) {
     const [privacy, setPrivacy] = useState(document?.isPublic ? 'public' : 'private');
     const [availableTags, setAvailableTags] = useState([]);
     const { getAllTags } = useTagService();
+    const { getUserProfile } = useUser();
+    const [userData, setUserData] = useState({
+        fullname: "User",
+        email: "user@example.com",
+        avatar_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s"
+    });
 
     useEffect(() => {
         if (isTagEditorOpen) {
             getAllTags().then(tags => setAvailableTags([...new Set(tags)]));
         }
     }, [isTagEditorOpen]);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const data = await getUserProfile();
+                setUserData({
+                    fullname: data.fullname || data.username || "User",
+                    email: data.email || "user@example.com",
+                    avatar_url: data.avatar_url || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s"
+                });
+            } catch (error) {
+                console.error("Failed to fetch user for editor", error);
+            }
+        };
+        fetchUser();
+    }, []);
 
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
@@ -339,41 +398,50 @@ export default function EditorPage({ initialContent = '' }) {
             tags: activeTags, // State này bạn đang dùng
         };
     }, [title, markdown, activeTags, document?.id]);
+    // Ref to track saveStatus for interval without triggering re-renders/loop
+    const saveStatusRef = useRef(saveStatus);
     useEffect(() => {
-        // A. Hàm lưu dữ liệu
-        const saveData = async () => {
-            if (saveStatus !== 'unsaved') return;
+        saveStatusRef.current = saveStatus;
+    }, [saveStatus]);
 
-            setSaveStatus('saving');
-            const currentData = docDataRef.current;
-            console.log("Saving data...", currentData);
+    const saveData = useCallback(async () => {
+        if (saveStatusRef.current !== 'unsaved') return;
 
-            try {
-                // Gọi hàm updateDocument từ context
-                // Lưu ý: Cấu trúc tham số phụ thuộc vào cách bạn viết hàm updateDocument
-                await handleDocumentUpdate(currentData.id, {
-                    title: currentData.title,
-                    content: currentData.content,
-                    tags: currentData.tags
-                });
-                setSaveStatus('saved');
-            } catch (error) {
-                console.error(error);
-                setSaveStatus('error');
-            }
-        };
+        setSaveStatus('saving');
+        const currentData = docDataRef.current;
+        console.log("Auto-saving data...", currentData);
 
-        // B. Setup Interval 15s (15000ms)
+        try {
+            await handleDocumentUpdate(currentData.id, {
+                title: currentData.title,
+                content: currentData.content,
+                tags: currentData.tags
+            });
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error("Auto-save failed:", error);
+            setSaveStatus('error');
+        }
+    }, [handleDocumentUpdate]);
+
+    useEffect(() => {
         const intervalId = setInterval(() => {
             saveData();
         }, 10000);
 
-        // C. Cleanup function (Chạy khi component unmount / rời trang)
         return () => {
-            clearInterval(intervalId); // Xóa bộ đếm giờ
-            if (saveStatus === 'unsaved') saveData(); // LƯU LẦN CUỐI trước khi component biến mất hoàn toàn
+            clearInterval(intervalId);
+            if (saveStatusRef.current === 'unsaved') {
+                const currentData = docDataRef.current;
+                // Fire and forget on unmount
+                handleDocumentUpdate(currentData.id, {
+                    title: currentData.title,
+                    content: currentData.content,
+                    tags: currentData.tags
+                }).catch(e => console.error("Unmount save failed", e));
+            }
         };
-    }, [saveStatus, handleDocumentUpdate]); // Re-run if saveStatus changes to ensure interval has latest closure
+    }, [saveData, handleDocumentUpdate]);
 
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
@@ -516,6 +584,46 @@ export default function EditorPage({ initialContent = '' }) {
             }
         }
         setIsAIModalOpen(true);
+    };
+
+    // Tag Management Handlers
+    const handleOpenTagPanel = () => {
+        setIsSettingsPanelOpen(true);
+        setAiSuggestedTags([]); // Reset suggestions when opening
+    };
+
+    const handleAISuggestTags = async () => {
+        setIsLoadingSuggestions(true);
+        try {
+            const result = await suggestTags(markdown);
+            setAiSuggestedTags(result.tags || []);
+        } catch (error) {
+            console.error('Failed to get AI tag suggestions:', error);
+            setAiSuggestedTags([]);
+        } finally {
+            setIsLoadingSuggestions(false);
+        }
+    };
+
+    const handleSaveTagsFromPanel = async (newTags, newPrivacy) => {
+        setActiveTags(newTags);
+        setPrivacy(newPrivacy);
+
+        setSaveStatus('saving');
+        try {
+            const currentData = docDataRef.current;
+            await handleDocumentUpdate(document?.id, {
+                title: currentData.title,
+                content: currentData.content,
+                tags: newTags
+            });
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error("Manual tag save failed", error);
+            setSaveStatus('error');
+        }
+
+        setIsSettingsPanelOpen(false);
     };
 
     const handleMouseUp = (e) => {
@@ -1245,16 +1353,20 @@ export default function EditorPage({ initialContent = '' }) {
                         {renderToolbarBtn(MessageSquareText, 'comment', toggleCommentSection)}
                         {comments.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse pointer-events-none"></span>}
                     </div>
+                    <div className="relative">
+                        <ToolbarBtn icon={Tag} onClick={handleOpenTagPanel} />
+                        {activeTags.length > 0 && <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">{activeTags.length}</span>}
+                    </div>
                     <button onClick={() => setIsShareModalOpen(true)} className="flex items-center py-1.5 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-900/20">Share</button>
                     <div className="relative">
                         <div onClick={() => setIsOpen(!isOpen)} className="w-9 h-9 rounded-full overflow-hidden shrink-0 cursor-pointer ring-2 ring-transparent hover:ring-blue-500/50 transition-all">
-                            <img className="w-full h-full object-cover" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s" alt="User" />
+                            <img className="w-full h-full object-cover" src={userData.avatar_url} alt="User" />
                         </div>
                         {isOpen && (
                             <div className="absolute right-0 mt-3 w-48 bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div className="px-4 py-3 border-b border-white/5">
-                                    <p className="text-sm text-white font-medium">Bonnie Green</p>
-                                    <p className="text-xs text-gray-500 truncate">name@flowbite.com</p>
+                                    <p className="text-sm text-white font-medium">{userData.fullname}</p>
+                                    <p className="text-xs text-gray-500 truncate">{userData.email}</p>
                                 </div>
                                 <ul className="py-1 text-sm text-gray-400">
                                     <li><Link to="/home/myworkspace" className="block px-4 py-2 hover:bg-white/5 hover:text-white">My workspace</Link></li>
@@ -1495,12 +1607,15 @@ export default function EditorPage({ initialContent = '' }) {
                     onCopyLink={handleCopyLink}
                 />
                 <SettingsPanel
-                    isOpen={isTagEditorOpen}
-                    onClose={() => setIsTagEditorOpen(false)}
+                    isOpen={isSettingsPanelOpen}
+                    onClose={() => setIsSettingsPanelOpen(false)}
                     tags={activeTags}
                     privacy={privacy}
-                    onSave={handleSaveTags}
+                    onSave={handleSaveTagsFromPanel}
                     availableTags={availableTags}
+                    aiSuggestedTags={aiSuggestedTags}
+                    onAISuggest={handleAISuggestTags}
+                    isLoadingSuggestions={isLoadingSuggestions}
                 />
                 <AIModal
                     isOpen={isAIModalOpen}

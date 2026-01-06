@@ -61,6 +61,30 @@ export const useUser = () => {
         }
     };
 
+    const uploadAvatar = async (file) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await api.post('/users/me/avatar', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            setIsLoading(false);
+            return response.data.data; // Expected format: { avatarUrl: "..." }
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.detail || "Failed to upload avatar";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
     const deleteAccount = async (password) => {
         setIsLoading(true);
         setError(null);
@@ -84,6 +108,7 @@ export const useUser = () => {
         updateUserProfile,
         getPublicProfile,
         deleteAccount,
+        uploadAvatar,
         isLoading,
         error
     };

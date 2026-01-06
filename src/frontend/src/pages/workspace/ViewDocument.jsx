@@ -29,8 +29,8 @@ export default function ViewDocument() {
                 setDocument({
                     ...data,
                     author: {
-                        name: data.authorName || "Unknown",
-                        avatar: "/dump_avt.jpg", // Placeholder as backend doesn't send avatar yet
+                        name: data.owner?.name || "Unknown",
+                        avatar: data.owner?.avatar_url || "/dump_avt.jpg",
                         role: "Member" // Placeholder
                     },
                     stats: {

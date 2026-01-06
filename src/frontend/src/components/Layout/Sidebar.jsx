@@ -22,7 +22,8 @@ export default function Sidebar({ onDocumentCreated }) {
     const { getUserProfile } = useUser();
     const [userData, setUserData] = useState({
         fullname: "User",
-        bio: "Member"
+        bio: "Member",
+        avatar_url: "/dump_avt.jpg"
     });
 
     useEffect(() => {
@@ -31,7 +32,8 @@ export default function Sidebar({ onDocumentCreated }) {
                 const data = await getUserProfile();
                 setUserData({
                     fullname: data.fullname || data.username || "User",
-                    bio: data.bio || "Member"
+                    bio: data.bio || "Member",
+                    avatar_url: data.avatar_url || "/dump_avt.jpg"
                 });
             } catch (error) {
                 console.error("Failed to fetch user for sidebar", error);
@@ -92,7 +94,7 @@ export default function Sidebar({ onDocumentCreated }) {
                             <LuPlus className='w-5 h-5' />
                             Add note
                         </button>
-                       
+
                     </div>
 
                     {/* Nav Links */}
@@ -107,7 +109,7 @@ export default function Sidebar({ onDocumentCreated }) {
                             Bookmark
                         </NavLink>
 
-                   
+
 
                         <hr className='my-3 border-gray-700' />
 
@@ -157,7 +159,7 @@ export default function Sidebar({ onDocumentCreated }) {
                         {/* User Profile */}
                         <div className='mt-auto flex items-center gap-3 pt-6'>
                             <img
-                                src='/dump_avt.jpg'
+                                src={userData.avatar_url}
                                 alt='User Avatar'
                                 className='w-10 h-10 rounded-full'
                             />

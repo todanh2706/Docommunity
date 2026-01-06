@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class PublicDocumentOwnerResponse {
     private Long id;
     private String name;
+    @com.fasterxml.jackson.annotation.JsonProperty("avatar_url")
+    private String avatarUrl;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUIContext } from '../context/useUIContext';
+import { useToast } from '../context/ToastContext';
 import useAuth from '../hooks/useAuth';
 import { useUser } from '../hooks/useUser';
 import Sidebar from "../components/Layout/Sidebar";
@@ -23,8 +24,10 @@ export default function SettingsPage() {
     const { showSidebar } = useUIContext();
     const [isEditing, setIsEditing] = useState(false);
     const [backupData, setBackupData] = useState(null);
-    const { getUserProfile, updateUserProfile } = useUser();
+    const { getUserProfile, updateUserProfile, uploadAvatar } = useUser();
     const { logout } = useAuth();
+    const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
+    const toast = useToast();
 
     // --- STATE QUẢN LÝ DIALOG DUY NHẤT ---
     const [dialogConfig, setDialogConfig] = useState({
@@ -51,7 +54,8 @@ export default function SettingsPage() {
                     fullname: userData.fullname || "",
                     email: userData.email || "",
                     phone: userData.phone || "",
-                    bio: userData.bio || ""
+                    bio: userData.bio || "",
+                    avatar: userData.avatar_url || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s"
                 }));
             } catch (error) {
                 // Error is already logged in the hook
@@ -98,24 +102,47 @@ export default function SettingsPage() {
         if (file) {
             const imageUrl = URL.createObjectURL(file);
             setFormData(prev => ({ ...prev, avatar: imageUrl }));
+            setSelectedAvatarFile(file);
         }
     };
 
     const saveData = async () => {
         try {
-            await updateUserProfile(formData);
-            console.log("Data saved successfully");
+            // 1. Tạo một bản sao của formData để chuẩn bị gửi đi
+            let dataToSave = { ...formData };
+
+            if (selectedAvatarFile) {
+                // 2. Upload ảnh lên server để lấy URL thật
+                const avatarResponse = await uploadAvatar(selectedAvatarFile);
+
+                if (avatarResponse && avatarResponse.avatarUrl) {
+                    // 3. QUAN TRỌNG: Gán URL thật từ server vào dữ liệu gửi đi
+                    dataToSave.avatar = avatarResponse.avatarUrl;
+
+                    // Cập nhật luôn vào state để UI đồng bộ (nếu cần)
+                    setFormData(prev => ({ ...prev, avatar: avatarResponse.avatarUrl }));
+                }
+            }
+
+            // 4. Gửi dataToSave (đã có URL ảnh thật) lên backend
+            await updateUserProfile(dataToSave);
+
+            toast.success("Profile updated successfully!");
+            console.log("Dữ liệu thực tế đã lưu:", dataToSave.avatar);
+
             setIsEditing(false);
             setBackupData(null);
-        } catch (error) {
-            console.error("Failed to save data", error);
-            // Optionally show an error toast here
+            setSelectedAvatarFile(null);
+        } catch (err) {
+            console.error("Failed to save data", err);
+            toast.error(err.message || "Failed to update profile");
         }
     };
 
     const discardChanges = () => {
         if (backupData) setFormData(backupData);
         setIsEditing(false);
+        setSelectedAvatarFile(null);
     };
 
     const handleEditToggle = () => {
