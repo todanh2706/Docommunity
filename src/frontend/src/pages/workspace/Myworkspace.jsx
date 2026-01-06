@@ -167,7 +167,7 @@ const DocumentCard = ({ card, isExpanded }) => {
             <div className="bg-gray-800  rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
                 {/* Phần Body giữ nguyên, CHỈ sửa card.tags thành activeTags */}
                 <Link to="/home/editor" state={{ document: card }}>
-                    <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
+                    <div data-testid={`document-card-${card.id}`} className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
                         {isBlank && isExpanded ? (
                             <div className="flex-grow flex items-center justify-center text-gray-500 ">
                                 <Edit size={32} />

@@ -105,6 +105,7 @@ const FilterToolbar = ({
                 <div className="flex items-center gap-3 flex-shrink-0">
                     {showViewToggle && setViewMode && (
                         <button
+                            data-testid="view-toggle-btn"
                             onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
                             className="p-2 rounded-lg bg-blue-600 text-white flex-shrink-0"
                         >
