@@ -10,6 +10,8 @@ import {
     Edit, Tag, Plus, MoreVertical, EllipsisVertical, Eye, Trash2, Bookmark
 } from 'lucide-react';
 import { useTagService } from '../../services/tagService';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 
 const DocumentCard = ({ card, isExpanded }) => {
@@ -167,16 +169,59 @@ const DocumentCard = ({ card, isExpanded }) => {
             <div className="bg-gray-800  rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
                 {/* Phần Body giữ nguyên, CHỈ sửa card.tags thành activeTags */}
                 <Link to="/home/editor" state={{ document: card }}>
-                    <div data-testid={`document-card-${card.id}`} className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
+                    <div data-testid={`document-card-${card.id}`} className={`${isExpanded ? 'h-64' : 'h-10'} flex flex-col ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
                         {isBlank && isExpanded ? (
                             <div className="flex-grow flex items-center justify-center text-gray-500 ">
                                 <Edit size={32} />
                             </div>
                         ) : (
                             <>
-                                {isExpanded ? (<img src='logo.png' className="w-32 h-auto" alt="logo" />) : null}
+                                {isExpanded ? (() => {
+                                    const content = card.content || card.note || '# Empty Document\nNo content yet.';
+                                    // Truncate to first 400 characters for performance
+                                    const truncatedContent = content.length > 400
+                                        ? content.substring(0, 400) + '...'
+                                        : content;
 
-                                <div className={`flex justify-between items-center ${isExpanded ? 'mt-4' : ''}`}>
+                                    return (
+                                        <div className="flex-1 overflow-hidden px-4 pt-4 pb-2">
+                                            <div
+                                                className="h-full overflow-y-auto custom-scrollbar"
+                                                style={{
+                                                    scrollbarWidth: 'thin',
+                                                    scrollbarColor: 'rgba(107, 114, 128, 0.5) transparent'
+                                                }}
+                                            >
+                                                <style>{`
+                                                    .custom-scrollbar::-webkit-scrollbar {
+                                                        width: 6px;
+                                                    }
+                                                    .custom-scrollbar::-webkit-scrollbar-track {
+                                                        background: transparent;
+                                                    }
+                                                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                                                        background: rgba(107, 114, 128, 0.3);
+                                                        border-radius: 3px;
+                                                        transition: background 0.2s ease;
+                                                    }
+                                                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                                        background: rgba(107, 114, 128, 0.6);
+                                                    }
+                                                    .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                                                        background: rgba(107, 114, 128, 0.5);
+                                                    }
+                                                `}</style>
+                                                <div className="prose prose-invert prose-sm max-w-none">
+                                                    <Markdown remarkPlugins={[remarkGfm]}>
+                                                        {truncatedContent}
+                                                    </Markdown>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : null}
+
+                                <div className={`flex justify-between items-center ${isExpanded ? 'px-4 pb-2' : ''}`}>
                                     <div className="flex -space-x-2 overflow-hidden">
                                         <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
                                             <span role="img" aria-label="user">🙂</span>

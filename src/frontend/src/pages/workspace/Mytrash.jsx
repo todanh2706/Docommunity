@@ -5,7 +5,8 @@ import { useDocument } from '../../context/DocumentContext';
 import { useState, useEffect } from 'react';
 import { useUIContext } from "../../context/useUIContext";
 import { Link } from "react-router";
-
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import {
     Edit, SortAsc, Search, X, Grid, List, MoreVertical, EllipsisVertical, RotateCcw, Trash2, Bookmark, AlertTriangle
@@ -117,20 +118,58 @@ const DocumentCard = ({ card, isExpanded, onRestore, onPermanentDelete }) => {
         <>
             <div className="bg-gray-800 rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-red-500 transition duration-200 relative opacity-75 hover:opacity-100">
                 {/* Card Body - Disabled link in trash */}
-                <div className={`p-4 ${isExpanded ? 'h-48' : 'h-10'} flex flex-col justify-between ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
+                <div className={`${isExpanded ? 'h-64' : 'h-10'} flex flex-col ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
                     {isBlank && isExpanded ? (
                         <div className="flex-grow flex items-center justify-center text-gray-500">
                             <Trash2 size={32} className="text-red-400" />
                         </div>
                     ) : (
                         <>
-                            {isExpanded && (
-                                <div className="flex items-center justify-center">
-                                    <AlertTriangle size={48} className="text-yellow-500 opacity-50" />
-                                </div>
-                            )}
+                            {isExpanded ? (() => {
+                                const content = card.content || card.note || '# Deleted Document\nThis document is in trash.';
+                                const truncatedContent = content.length > 400
+                                    ? content.substring(0, 400) + '...'
+                                    : content;
 
-                            <div className={`flex justify-between items-center ${isExpanded ? 'mt-4' : ''}`}>
+                                return (
+                                    <div className="flex-1 overflow-hidden px-4 pt-4 pb-2">
+                                        <div
+                                            className="h-full overflow-y-auto custom-scrollbar"
+                                            style={{
+                                                scrollbarWidth: 'thin',
+                                                scrollbarColor: 'rgba(107, 114, 128, 0.5) transparent'
+                                            }}
+                                        >
+                                            <style>{`
+                                                .custom-scrollbar::-webkit-scrollbar {
+                                                    width: 6px;
+                                                }
+                                                .custom-scrollbar::-webkit-scrollbar-track {
+                                                    background: transparent;
+                                                }
+                                                .custom-scrollbar::-webkit-scrollbar-thumb {
+                                                    background: rgba(107, 114, 128, 0.3);
+                                                    border-radius: 3px;
+                                                    transition: background 0.2s ease;
+                                                }
+                                                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                                    background: rgba(107, 114, 128, 0.6);
+                                                }
+                                                .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                                                    background: rgba(107, 114, 128, 0.5);
+                                                }
+                                            `}</style>
+                                            <div className="prose prose-invert prose-sm max-w-none opacity-60">
+                                                <Markdown remarkPlugins={[remarkGfm]}>
+                                                    {truncatedContent}
+                                                </Markdown>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })() : null}
+
+                            <div className={`flex justify-between items-center ${isExpanded ? 'px-4 pb-2' : ''}`}>
                                 <div className="flex -space-x-2 overflow-hidden">
                                     <div className="w-6 h-6 bg-gray-600 rounded-full border-2 border-gray-800 flex items-center justify-center text-xs text-white">
                                         <Trash2 size={14} />
