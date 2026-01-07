@@ -256,7 +256,19 @@ export const getBookmarkedDocuments = async () => {
 };
 
 // ============================================================
-// 11. MARK/BOOKMARK DOCUMENT (POST /documents/:id/mark)
+// 11. GET SHARED DOCUMENTS (GET /documents/shared)
+// ============================================================
+export const getSharedDocuments = async () => {
+    try {
+        const response = await axiosInstance.get(`${BACKEND_ROOT}/shared`);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 12. MARK/BOOKMARK DOCUMENT (POST /documents/:id/mark)
 // ============================================================
 export const bookmarkDocument = async (id) => {
     if (USE_MOCK_DATA) {
@@ -271,7 +283,7 @@ export const bookmarkDocument = async (id) => {
 };
 
 // ============================================================
-// 12. SHARE LINK (POST /documents/:id/share-link)
+// 13. SHARE LINK (POST /documents/:id/share-link)
 // ============================================================
 export const createShareLink = async (id) => {
     try {
@@ -283,7 +295,7 @@ export const createShareLink = async (id) => {
 };
 
 // ============================================================
-// 13. SHARE STATUS (GET /documents/:id/share-link)
+// 14. SHARE STATUS (GET /documents/:id/share-link)
 // ============================================================
 export const getShareStatus = async (id) => {
     try {
@@ -295,7 +307,7 @@ export const getShareStatus = async (id) => {
 };
 
 // ============================================================
-// 14. DISABLE SHARE LINK (DELETE /documents/:id/share-link)
+// 15. DISABLE SHARE LINK (DELETE /documents/:id/share-link)
 // ============================================================
 export const disableShareLink = async (id) => {
     try {
@@ -307,7 +319,7 @@ export const disableShareLink = async (id) => {
 };
 
 // ============================================================
-// 15. RESOLVE SHARE LINK (POST /documents/resolve-share)
+// 16. RESOLVE SHARE LINK (POST /documents/resolve-share)
 // ============================================================
 export const resolveShareToken = async (token) => {
     try {
@@ -319,7 +331,7 @@ export const resolveShareToken = async (token) => {
 };
 
 // ============================================================
-// 16. COLLABORATORS (CRUD)
+// 17. COLLABORATORS (CRUD)
 // ============================================================
 export const getCollaborators = async (id) => {
     try {

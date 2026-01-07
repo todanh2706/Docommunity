@@ -28,7 +28,9 @@ import com.se.documinity.entity.TagEntity;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -506,6 +508,27 @@ public class DocumentService {
         List<DocumentEntity> docs = documentRepository.findByMarkedByUsersContaining(user);
 
         return docs.stream()
+                .map(this::mapToDocumentResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<DocumentResponse> getSharedDocuments() {
+        UserEntity user = requireCurrentUser();
+        List<DocumentCollaboratorEntity> collaborations = documentCollaboratorRepository.findByUserId(user.getId());
+        Map<Long, DocumentEntity> uniqueDocs = new LinkedHashMap<>();
+
+        for (DocumentCollaboratorEntity collaboration : collaborations) {
+            DocumentEntity doc = collaboration.getDocument();
+            if (doc == null) {
+                continue;
+            }
+            if (!ACTIVE_STATUS.equals(doc.getStatus())) {
+                continue;
+            }
+            uniqueDocs.putIfAbsent(doc.getId(), doc);
+        }
+
+        return uniqueDocs.values().stream()
                 .map(this::mapToDocumentResponse)
                 .collect(Collectors.toList());
     }

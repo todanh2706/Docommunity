@@ -193,6 +193,16 @@ public class DocumentController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping("/shared")
+    public ResponseEntity<ResponseDTO> getSharedDocuments() {
+        List<DocumentResponse> documents = documentService.getSharedDocuments();
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(documents);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Shared documents retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @PostMapping("/resolve-share")
     public ResponseEntity<ResponseDTO> resolveShare(@RequestBody ResolveShareRequest request) {
         ResolveShareResponse response = documentService.resolveShareToken(request.getToken());

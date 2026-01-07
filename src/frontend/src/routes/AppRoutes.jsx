@@ -7,6 +7,7 @@ import Home from '@/pages/Home';
 import Bookmark from '@/pages/workspace/Bookmark';
 import Tagslist from '@/pages/workspace/Tagslist';
 import Myworkspace from '@/pages/workspace/Myworkspace';
+import MySharedWorkspace from '@/pages/workspace/MySharedWorkspace';
 import Mytrash from '@/pages/workspace/Mytrash';
 import SettingsPage from '@/pages/Setting';
 import EditorPage from '@/pages/EditorPage';
@@ -35,6 +36,7 @@ export default function AppRoutes() {
             <Route path='/home/find-people' element={<FindPeople />} />
             <Route path='/home/profile/:id' element={<UserProfile />} />
             <Route path='/home/myworkspace' element={<Myworkspace />} />
+            <Route path='/home/shared' element={<MySharedWorkspace />} />
             <Route path='/home/mytrash' element={<Mytrash />} />
             <Route path='/home/setting' element={<SettingsPage />} />
             <Route path='/home/editor' element={<EditorPage />} />
