@@ -20,6 +20,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.config.Customizer;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.core.Ordered;
+import org.springframework.web.filter.CorsFilter;
+import java.util.Arrays;
 
 import java.util.List;
 
@@ -31,27 +35,24 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService; // Your implementation
 
-    // 1. Defines the rules for API access
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults()) // Enable CORS
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless REST APIs
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .csrf(csrf -> csrf.disable())
+                // KHÔNG CẦN .cors(...) ở đây nữa nếu dùng bean CorsFilter bên dưới,
+                // nhưng để an toàn cứ giữ .cors(Customizer.withDefaults()) cũng không sao.
+                .cors(Customizer.withDefaults())
 
-                        // Allow /auth/** endpoints (login, register) to be public
+                .authorizeHttpRequests(auth -> auth
+                        // Quan trọng: Cho phép OPTIONS request đi qua mọi rào cản
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/**", "/avatars/**", "/api/avatars/**", "/documents/resolve-share",
                                 "/ws/**")
                         .permitAll()
-                        // All other requests must be authenticated (protected)
                         .anyRequest().authenticated())
-                // Set session management to STATELESS (we use tokens, not server sessions)
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Set the Authentication Provider (tells Spring how to find users and check
-                // passwords)
                 .authenticationProvider(authenticationProvider())
-                // CRUCIAL: Add your JWT filter BEFORE the standard Spring Security filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -79,16 +80,34 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    // --- XOÁ BEAN corsConfigurationSource CŨ VÀ THAY BẰNG CÁI NÀY ---
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOriginPattern("*");
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
+    public FilterRegistrationBean<CorsFilter> corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        CorsConfiguration config = new CorsConfiguration();
+
+        // Cấu hình Credentials
+        config.setAllowCredentials(true);
+
+        // Thay vì "*", hãy liệt kê cụ thể các domain (Frontend Render + Localhost)
+        // Render rất ghét việc dùng "*" chung với setAllowCredentials(true)
+        config.setAllowedOrigins(Arrays.asList(
+                "https://docommunity-frontend.onrender.com",
+                "http://localhost:5173",
+                "http://localhost:3000"));
+
+        config.setAllowedHeaders(Arrays.asList(
+                "Origin", "Content-Type", "Accept", "Authorization",
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
+
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        source.registerCorsConfiguration("/**", config);
+
+        // Đăng ký Filter
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
+        // Đặt độ ưu tiên cao nhất (HIGHEST_PRECEDENCE) để nó chạy trước Spring Security
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return bean;
     }
 }
