@@ -16,6 +16,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(documentCollabHandler, "/ws/documents")
-                .setAllowedOrigins("http://localhost:3000", "http://localhost:5173");
+                .setAllowedOriginPatterns("*");
     }
 }
