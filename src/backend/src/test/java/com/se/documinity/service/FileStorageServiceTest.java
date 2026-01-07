@@ -27,7 +27,7 @@ public class FileStorageServiceTest {
     @BeforeEach
     public void setUp() {
         ReflectionTestUtils.setField(fileStorageService, "uploadDir", tempDir.toString());
-        ReflectionTestUtils.setField(fileStorageService, "avatarBaseUrl", "http://localhost:8080/api/avatars");
+        ReflectionTestUtils.setField(fileStorageService, "avatarBaseUrl", "https://docommunity-api.onrender.com/api/avatars");
     }
 
     @Test
@@ -37,7 +37,7 @@ public class FileStorageServiceTest {
 
         String fileUrl = fileStorageService.saveAvatar(file, userId);
 
-        assertTrue(fileUrl.startsWith("http://localhost:8080/api/avatars/avatar_123_"));
+        assertTrue(fileUrl.startsWith("https://docommunity-api.onrender.com/api/avatars/avatar_123_"));
         assertTrue(fileUrl.endsWith(".png"));
 
         // Verify file exists

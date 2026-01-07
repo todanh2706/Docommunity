@@ -15,7 +15,7 @@ public class FileStorageService {
     @Value("${app.upload-dir}")
     private String uploadDir;
 
-    @Value("${app.avatar-base-url:http://localhost:8080/api/avatars}")
+    @Value("${app.avatar-base-url:https://docommunity-api.onrender.com/api/avatars}")
     private String avatarBaseUrl;
 
     public String saveAvatar(MultipartFile file, Long userId) {
