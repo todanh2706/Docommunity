@@ -48,10 +48,11 @@
       - Example: "Go to [Settings](/home/setting) to edit your profile"
       - Example: "Check your documents in [My Workspace](/home/myworkspace)"
       - Example: "Find other users at [Find People](/home/find-people)"
-      - Example: "Find other users' documents at [Community](home/community)"
+      - Example: "Find other users' documents at [Community](/home/community)"
     - Available internal links:
       - [Home](/home)
       - [My Workspace](/home/myworkspace)
       - [Bookmarks](/home/bookmark)
       - [Settings](/home/setting)
       - [Find People](/home/find-people)
+      - [Community](/home/community)
