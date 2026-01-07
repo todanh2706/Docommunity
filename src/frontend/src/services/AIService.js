@@ -99,8 +99,10 @@ export const suggestTags = async (content) => {
     }
 }
 
-// Writing suggestion (autocomplete)
-export const getWritingSuggestion = async (content, cursorText, maxTokens = 50) => {
+// Writing suggestion (autocomplete) - supports request cancellation via AbortController
+export const getWritingSuggestion = async (content, cursorText, maxTokens = 50, options = {}) => {
+    const { signal } = options;
+
     if (USE_MOCK_DATA) {
         await mockDelay(300);
         return { suggestion: " tiếp tục viết nội dung ở đây..." };
@@ -110,9 +112,13 @@ export const getWritingSuggestion = async (content, cursorText, maxTokens = 50) 
             content,
             cursorText,
             maxTokens
-        });
+        }, { signal });
         return response.data;
     } catch (error) {
+        // Don't log aborted requests as errors - they're intentional
+        if (error.name === 'CanceledError' || error.name === 'AbortError') {
+            return { suggestion: '' };
+        }
         console.error('Error getting suggestion:', error);
         // Return empty suggestion on error to avoid breaking the UI
         return { suggestion: '' };

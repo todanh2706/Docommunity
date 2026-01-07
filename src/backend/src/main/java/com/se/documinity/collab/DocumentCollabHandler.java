@@ -266,10 +266,34 @@ public class DocumentCollabHandler extends TextWebSocketHandler {
             DocumentEntity doc = documentRepository.findById(docId)
                     .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
             doc.setContent(room.content);
-            doc.setLastModified(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
+            LocalDateTime savedAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+            doc.setLastModified(savedAt);
             doc.setContentVersion(room.version);
             documentRepository.save(doc);
-        } catch (Exception ignored) {
+
+            // Broadcast save confirmation to all clients in the room
+            try {
+                broadcast(room, Map.of(
+                        "type", "saved",
+                        "docId", docId,
+                        "version", room.version,
+                        "savedAt", savedAt.toString()));
+            } catch (Exception broadcastError) {
+                System.err.println(
+                        "Failed to broadcast save confirmation for doc " + docId + ": " + broadcastError.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to save document " + docId + ": " + e.getMessage());
+            e.printStackTrace();
+            // Notify clients of save failure
+            try {
+                broadcast(room, Map.of(
+                        "type", "save-error",
+                        "docId", docId,
+                        "message", "Failed to save: " + e.getMessage()));
+            } catch (Exception broadcastError) {
+                System.err.println("Failed to broadcast save error: " + broadcastError.getMessage());
+            }
         }
     }
 

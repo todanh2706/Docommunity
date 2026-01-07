@@ -14,7 +14,7 @@ const getWsUrl = () => {
     return `${wsBase}/ws/documents`;
 };
 
-export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteContent, onError, onStatusChange }) => {
+export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteContent, onError, onStatusChange, onSaveConfirm }) => {
     const [connected, setConnected] = useState(false);
     const [remoteCursors, setRemoteCursors] = useState([]);
     const wsRef = useRef(null);
@@ -73,6 +73,16 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
                 if (data.type === 'presence') {
                     const activeIds = new Set((data.users || []).map((u) => u.clientId));
                     setRemoteCursors((prev) => prev.filter((c) => activeIds.has(c.user?.clientId)));
+                    return;
+                }
+                if (data.type === 'saved') {
+                    onStatusChange?.('saved');
+                    onSaveConfirm?.(data.savedAt);
+                    return;
+                }
+                if (data.type === 'save-error') {
+                    onStatusChange?.('error');
+                    onError?.(data.message || 'Save failed');
                     return;
                 }
                 if (data.type === 'error') {

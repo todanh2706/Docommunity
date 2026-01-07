@@ -269,7 +269,9 @@ export default function EditorPage({ initialContent = '' }) {
     const [markdown, setMarkdown] = useState(document?.content || "");
     const [activeTags, setActiveTags] = useState(document?.tags || []); // Sử dụng tags từ document
     const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'unsaved', 'saving', 'error'
+    const [lastSavedAt, setLastSavedAt] = useState(null); // Timestamp of last successful save
     const [scrollTick, setScrollTick] = useState(0);
+    const localStorageBackupRef = useRef(null); // For localStorage backup interval
 
     // State cho Toolbar & UI
     const [selectedTools, setSelectedTools] = useState([]);
@@ -289,6 +291,7 @@ export default function EditorPage({ initialContent = '' }) {
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
     const suggestionTimeoutRef = useRef(null);
+    const suggestionAbortRef = useRef(null); // AbortController for cancelling pending suggestion requests
     const lastSavedTitleRef = useRef(document?.title || "");
     const contentSendTimeoutRef = useRef(null);
 
@@ -331,6 +334,49 @@ export default function EditorPage({ initialContent = '' }) {
             }
         };
     }, []);
+
+    // localStorage backup - save content every 5 seconds as fallback
+    useEffect(() => {
+        if (!document?.id) return;
+
+        const backupKey = `docommunity_backup_${document.id}`;
+
+        // Try to recover from localStorage on mount
+        const backup = localStorage.getItem(backupKey);
+        if (backup) {
+            try {
+                const { content, savedAt } = JSON.parse(backup);
+                // Only use backup if it's newer than document (e.g., after reconnect)
+                const backupTime = new Date(savedAt);
+                const docTime = document.lastModified ? new Date(document.lastModified) : new Date(0);
+                if (backupTime > docTime && content !== document.content) {
+                    console.log('Recovered content from localStorage backup');
+                    // Don't auto-apply, just log for now
+                }
+            } catch (e) {
+                // Invalid backup, ignore
+            }
+        }
+
+        // Set up periodic backup
+        localStorageBackupRef.current = setInterval(() => {
+            localStorage.setItem(backupKey, JSON.stringify({
+                content: markdown,
+                title,
+                savedAt: new Date().toISOString()
+            }));
+        }, 5000); // Every 5 seconds
+
+        return () => {
+            if (localStorageBackupRef.current) {
+                clearInterval(localStorageBackupRef.current);
+            }
+            // Clear backup on clean unmount if saved
+            if (saveStatus === 'saved') {
+                localStorage.removeItem(backupKey);
+            }
+        };
+    }, [document?.id]);
 
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -429,13 +475,18 @@ export default function EditorPage({ initialContent = '' }) {
         setSaveStatus(status);
     }, []);
 
+    const handleSaveConfirm = useCallback((savedAt) => {
+        setLastSavedAt(new Date(savedAt));
+    }, []);
+
     const { connected, remoteCursors, sendContentUpdate, sendCursorUpdate } = useDocumentCollab({
         docId: document?.id,
         shareToken,
         displayName: isAnonymousShare ? 'Guest' : userData.fullname,
         onRemoteContent: handleRemoteContent,
         onError: handleCollabError,
-        onStatusChange: handleStatusChange
+        onStatusChange: handleStatusChange,
+        onSaveConfirm: handleSaveConfirm
     });
 
     useEffect(() => {
@@ -478,25 +529,51 @@ export default function EditorPage({ initialContent = '' }) {
             clearTimeout(suggestionTimeoutRef.current);
         }
 
+        // Cancel any pending suggestion request
+        if (suggestionAbortRef.current) {
+            suggestionAbortRef.current.abort();
+            suggestionAbortRef.current = null;
+        }
+
+        // Clear existing suggestion when user types (they're continuing to write)
+        setWritingSuggestion('');
+
         // Only fetch suggestion if enabled and content is long enough and cursor is at end
         const textarea = textareaRef.current;
-        const cursorAtEnd = textarea && textarea.selectionStart === newMarkdown.length;
+        // Check if cursor is at the end of the NEW content (not the old content in textarea)
+        const cursorAtEnd = textarea && textarea.selectionStart >= newMarkdown.length - 1;
 
         if (writingSuggestionEnabled && cursorAtEnd && newMarkdown.length > 20) {
             suggestionTimeoutRef.current = setTimeout(async () => {
+                // Double-check cursor is still at end before fetching
+                const currentTextarea = textareaRef.current;
+                if (!currentTextarea || currentTextarea.selectionStart < currentTextarea.value.length - 1) {
+                    return; // User moved cursor, don't fetch
+                }
+
+                // Create new AbortController for this request
+                const abortController = new AbortController();
+                suggestionAbortRef.current = abortController;
+
                 setIsFetchingSuggestion(true);
                 try {
                     const cursorText = newMarkdown.slice(-100); // Last 100 chars for cursor context
                     // Only send last 1000 chars to reduce token usage and improve speed
                     const contentWindow = newMarkdown.slice(-1000);
-                    const data = await getWritingSuggestion(contentWindow, cursorText);
-                    if (data.suggestion && data.suggestion.trim()) {
+                    const data = await getWritingSuggestion(contentWindow, cursorText, 50, { signal: abortController.signal });
+
+                    // Only set suggestion if this request wasn't aborted
+                    if (!abortController.signal.aborted && data.suggestion && data.suggestion.trim()) {
                         setWritingSuggestion(data.suggestion);
                     }
                 } catch (error) {
-                    console.error('Error fetching suggestion:', error);
+                    // Ignore abort errors, log others
+                    if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+                        console.error('Error fetching suggestion:', error);
+                    }
                 } finally {
                     setIsFetchingSuggestion(false);
+                    suggestionAbortRef.current = null;
                 }
             }, 500); // 500ms debounce
         }
@@ -728,11 +805,18 @@ export default function EditorPage({ initialContent = '' }) {
 
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
 
-        if (start !== end) {
+        // Only show Refine button if:
+        // 1. There's a selection (start !== end)
+        // 2. Selection is meaningful (at least 10 characters)
+        // 3. Selected text has actual content (not just whitespace)
+        const hasValidSelection = start !== end &&
+            (end - start) >= 10 &&
+            selectedText.trim().length >= 5;
+
+        if (hasValidSelection) {
             // Calculate position relative to viewport
-            // We want it above the selection.
-            // Since we only have mouse coordinates, we use those.
             setQuickRefinePos({ x: e.clientX, y: e.clientY });
         } else {
             setQuickRefinePos(null);
@@ -755,7 +839,7 @@ export default function EditorPage({ initialContent = '' }) {
 
         try {
             const docId = document?.id || null;
-            const data = await refineContent(docId, text, "Refine this text to be more professional, clear, and concise.");
+            const data = await refineContent(docId, text, "Refine this text to be more professional, clear, and concise. Keep the output in the SAME language as the input.");
 
             if (data && data.content) {
                 const before = markdown.substring(0, start);
@@ -846,19 +930,52 @@ export default function EditorPage({ initialContent = '' }) {
     const handleKeyDown = (e) => {
         // Keyboard shortcuts for formatting
         if (e.ctrlKey || e.metaKey) {
-            // Ctrl + B: Bold
+            // Ctrl/Cmd + Z: Undo
+            if (e.key === 'z' || e.key === 'Z') {
+                if (e.shiftKey) {
+                    // Ctrl/Cmd + Shift + Z: Redo
+                    e.preventDefault();
+                    handleRedo();
+                    return;
+                }
+                e.preventDefault();
+                handleUndo();
+                return;
+            }
+            // Ctrl/Cmd + Y: Redo (Windows style)
+            if (e.key === 'y' || e.key === 'Y') {
+                e.preventDefault();
+                handleRedo();
+                return;
+            }
+            // Ctrl/Cmd + S: Show save status (prevent browser save dialog)
+            if (e.key === 's' || e.key === 'S') {
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    if (saveStatus === 'saved' && lastSavedAt) {
+                        const timeStr = lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        success(`Already saved at ${timeStr}`);
+                    } else if (saveStatus === 'saving') {
+                        success('Saving in progress...');
+                    } else {
+                        success('Changes are auto-saved!');
+                    }
+                    return;
+                }
+            }
+            // Ctrl/Cmd + B: Bold
             if (e.key === 'b' || e.key === 'B') {
                 e.preventDefault();
                 toggleFormat('**');
                 return;
             }
-            // Ctrl + I: Italic
+            // Ctrl/Cmd + I: Italic
             if (e.key === 'i' || e.key === 'I') {
                 e.preventDefault();
                 toggleFormat('_');
                 return;
             }
-            // Ctrl + Shift + S: Strikethrough
+            // Ctrl/Cmd + Shift + S: Strikethrough
             if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 toggleFormat('~~');
@@ -1370,9 +1487,11 @@ export default function EditorPage({ initialContent = '' }) {
                     {/* Save Status Indicator */}
                     <div className="flex items-center space-x-2 text-xs ml-0 select-none">
                         {saveStatus === 'saved' && (
-                            <div className="flex items-center text-green-500 opacity-60">
+                            <div className="flex items-center text-green-500 opacity-60" title={lastSavedAt ? `Saved at ${lastSavedAt.toLocaleTimeString()}` : 'Saved'}>
                                 <Cloud size={14} className="mr-1" />
-                                <span className="hidden sm:inline">Saved</span>
+                                <span className="hidden sm:inline">
+                                    {lastSavedAt ? `Saved ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Saved'}
+                                </span>
                             </div>
                         )}
                         {saveStatus === 'saving' && (
