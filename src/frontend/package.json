@@ -18,6 +18,7 @@
     "@uiw/react-codemirror": "^4.25.4",
     "axios": "^1.13.2",
     "codemirror-copilot": "^0.0.7",
+    "diff-match-patch": "^1.0.5",
     "lucide-react": "^0.555.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

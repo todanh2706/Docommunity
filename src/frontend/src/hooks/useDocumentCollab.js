@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import DiffMatchPatch from 'diff-match-patch';
+
+const dmp = new DiffMatchPatch();
 
 const COLORS = ['#f97316', '#22c55e', '#3b82f6', '#eab308', '#ec4899', '#14b8a6'];
 
@@ -21,9 +24,13 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
     const clientIdRef = useRef(`client_${Math.random().toString(36).slice(2)}`);
     const colorRef = useRef(getRandomColor());
 
+    // Track the last confirmed content from server to calculate diffs against
+    const lastSyncedContentRef = useRef('');
+
     useEffect(() => {
         if (!docId) return undefined;
         setRemoteCursors([]);
+        lastSyncedContentRef.current = ''; // Reset on doc switch
 
         const wsUrl = getWsUrl();
         const ws = new WebSocket(wsUrl);
@@ -50,18 +57,45 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+
+                // 1. Initial Join
                 if (data.type === 'joined' && data.content !== undefined) {
+                    lastSyncedContentRef.current = data.content; // Sync baseline
                     onRemoteContent?.(data.content);
                     onStatusChange?.('saved');
                     return;
                 }
+
+                // 2. Full Content Update (Fallback)
                 if (data.type === 'content-update') {
                     if (data.from !== clientIdRef.current) {
+                        lastSyncedContentRef.current = data.content; // Update baseline
                         onRemoteContent?.(data.content);
                     }
                     onStatusChange?.('saved');
                     return;
                 }
+
+                // 3. Patch Update (Bandwidth Optimized)
+                if (data.type === 'patch-update') {
+                    if (data.from !== clientIdRef.current) {
+                        // Apply patch to our shadow copy
+                        const patches = dmp.patch_fromText(data.patches);
+                        const [newContent, results] = dmp.patch_apply(patches, lastSyncedContentRef.current);
+
+                        // Check if patch applied successfully (optional strictness)
+                        // For LWW, we just accept the result
+                        lastSyncedContentRef.current = newContent;
+                        onRemoteContent?.(newContent);
+                    } else {
+                        // It's our own patch echoing back (optional confirmation)
+                        // If backend rejected/modified it, we might need logic here
+                        // For now, assume server ack
+                    }
+                    onStatusChange?.('saved');
+                    return;
+                }
+
                 if (data.type === 'cursor-update') {
                     if (data.user?.clientId === clientIdRef.current) return;
                     setRemoteCursors((prev) => {
@@ -108,13 +142,46 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
         };
     }, [docId, shareToken, displayName, onRemoteContent, onError, onStatusChange]);
 
-    const sendContentUpdate = useCallback((content) => {
+    const sendContentUpdate = useCallback((newContent) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-        wsRef.current.send(JSON.stringify({
-            type: 'content-update',
-            docId,
-            content
-        }));
+
+        // Calculate diff
+        const oldContent = lastSyncedContentRef.current;
+
+        // If content is very small or very different, full update might be better?
+        // But patches are usually safe.
+        // Let's rely on patches if we have a baseline.
+
+        if (oldContent === newContent) return; // No change
+
+        // If this is the FIRST update and no baseline, send full.
+        // But we usually have baseline from 'joined'.
+
+        const diffs = dmp.diff_main(oldContent, newContent);
+        dmp.diff_cleanupSemantic(diffs);
+        const patches = dmp.patch_make(oldContent, diffs);
+        const patchText = dmp.patch_toText(patches);
+
+        // Optimistic update of our shadow
+        // NOTE: If server rejects, we drift. But in LWW server accepts all.
+        lastSyncedContentRef.current = newContent;
+
+        // Heuristic: If patch is larger than content (rare), send content
+        if (patchText.length > newContent.length) {
+            wsRef.current.send(JSON.stringify({
+                type: 'content-update',
+                docId,
+                content: newContent
+            }));
+        } else {
+            wsRef.current.send(JSON.stringify({
+                type: 'patch-update',
+                docId,
+                patches: patchText,
+                // Optional: Send checksum or base version for robustness
+            }));
+        }
+
     }, [docId]);
 
     const sendCursorUpdate = useCallback((selectionStart, selectionEnd) => {

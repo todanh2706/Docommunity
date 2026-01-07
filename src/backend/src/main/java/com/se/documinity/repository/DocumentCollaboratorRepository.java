@@ -11,5 +11,7 @@ public interface DocumentCollaboratorRepository extends JpaRepository<DocumentCo
 
     List<DocumentCollaboratorEntity> findByDocumentId(Long documentId);
 
+    List<DocumentCollaboratorEntity> findByUserId(Long userId);
+
     void deleteByDocumentIdAndUserId(Long documentId, Long userId);
 }

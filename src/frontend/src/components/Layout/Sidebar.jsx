@@ -124,6 +124,16 @@ export default function Sidebar({ onDocumentCreated }) {
                         </NavLink>
 
                         <NavLink
+                            to='/home/shared'
+                            className={({ isActive }) =>
+                                `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                            }
+                        >
+                            <LuFolderPlus className='w-5 h-5' />
+                            My share workspace
+                        </NavLink>
+
+                        <NavLink
                             to='/home/community'
                             className={({ isActive }) =>
                                 `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`

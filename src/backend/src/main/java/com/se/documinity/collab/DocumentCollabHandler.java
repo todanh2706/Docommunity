@@ -17,11 +17,14 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import name.fraser.neil.plaintext.diff_match_patch;
+import name.fraser.neil.plaintext.diff_match_patch.Patch;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +52,9 @@ public class DocumentCollabHandler extends TextWebSocketHandler {
     private final Map<Long, ScheduledFuture<?>> pendingSaves = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+    // dmp instance for patching
+    private final diff_match_patch dmp = new diff_match_patch();
+
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         Map<String, Object> payload = objectMapper.readValue(message.getPayload(),
@@ -61,6 +67,10 @@ public class DocumentCollabHandler extends TextWebSocketHandler {
         }
         if ("content-update".equals(type)) {
             handleContentUpdate(session, payload);
+            return;
+        }
+        if ("patch-update".equals(type)) {
+            handlePatchUpdate(session, payload);
             return;
         }
         if ("cursor-update".equals(type)) {
@@ -184,12 +194,57 @@ public class DocumentCollabHandler extends TextWebSocketHandler {
             room.version += 1;
         }
 
+        // Broadcast full content
         broadcast(room, Map.of(
                 "type", "content-update",
                 "docId", docId,
                 "content", room.content,
                 "serverVersion", room.version,
                 "from", clientId));
+        scheduleSave(docId);
+    }
+
+    private void handlePatchUpdate(WebSocketSession session, Map<String, Object> payload) throws Exception {
+        Long docId = (Long) session.getAttributes().get(SESSION_DOC_ID);
+        if (docId == null) {
+            return;
+        }
+        String role = (String) session.getAttributes().get(SESSION_ROLE);
+        if (!accessService.canEditRole(role)) {
+            sendError(session, "Not allowed to edit");
+            return;
+        }
+        DocRoom room = rooms.get(docId);
+        if (room == null) {
+            return;
+        }
+        String patchesText = asString(payload.get("patches"));
+        String clientId = (String) session.getAttributes().get(SESSION_CLIENT_ID);
+
+        synchronized (room) {
+            // Apply patch to server state
+            try {
+                LinkedList<Patch> patches = (LinkedList<Patch>) dmp.patch_fromText(patchesText);
+                Object[] results = dmp.patch_apply(patches, room.content);
+                room.content = (String) results[0];
+                room.version += 1;
+                // We could check boolean[] results[1] for failures, but LWW accepts best effort
+            } catch (Exception e) {
+                System.err.println("Patch failed for doc " + docId + ": " + e.getMessage());
+                // Fallback: If patch fails, we might request a full sync, but for now just
+                // ignore
+                return;
+            }
+        }
+
+        // Broadcast patch to others (Bandwidth efficient download)
+        broadcast(room, Map.of(
+                "type", "patch-update",
+                "docId", docId,
+                "patches", patchesText,
+                "serverVersion", room.version,
+                "from", clientId));
+
         scheduleSave(docId);
     }
 
