@@ -2,28 +2,24 @@ package com.se.documinity.config;
 
 import com.se.documinity.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+import org.springframework.security.config.Customizer;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -32,63 +28,39 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService; // Your implementation
 
+    // 1. Defines the rules for API access
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. TẮT CORS của Spring Security đi (để dùng Filter thủ công bên dưới)
-                .cors(AbstractHttpConfigurer::disable)
-
-                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults()) // Enable CORS
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless REST APIs
                 .authorizeHttpRequests(auth -> auth
-                        // Vẫn cho phép OPTIONS đi qua (để chắc chắn)
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Allow /auth/** endpoints (login, register) to be public
                         .requestMatchers("/auth/**", "/avatars/**", "/api/avatars/**", "/documents/resolve-share",
                                 "/ws/**")
                         .permitAll()
+                        // All other requests must be authenticated (protected)
                         .anyRequest().authenticated())
+                // Set session management to STATELESS (we use tokens, not server sessions)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Set the Authentication Provider (tells Spring how to find users and check
+                // passwords)
                 .authenticationProvider(authenticationProvider())
+                // CRUCIAL: Add your JWT filter BEFORE the standard Spring Security filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // 2. ĐỔI TÊN HÀM này để không trùng với tên mặc định "corsFilter" của Spring
-    // Dùng FilterRegistrationBean để set độ ưu tiên cao nhất
-    @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterConfiguration() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowCredentials(true);
-
-        // Cấu hình domain cụ thể
-        config.setAllowedOrigins(Arrays.asList(
-                "https://docommunity-frontend.onrender.com",
-                "http://localhost:5173",
-                "http://localhost:3000"));
-
-        config.setAllowedHeaders(Arrays.asList(
-                "Origin", "Content-Type", "Accept", "Authorization",
-                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
-
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
-        source.registerCorsConfiguration("/**", config);
-
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
-        // Quan trọng: Set thứ tự chạy đầu tiên (trước cả Spring Security)
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        return bean;
-    }
-
+    // 2. Defines the password encoder (BCrypt is standard and secure)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 3. Sets up the provider that connects UserDetailsService and PasswordEncoder
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -97,8 +69,23 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    // 4. Exposes the AuthenticationManager bean, needed in your AuthController for
+    // login
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.addAllowedOriginPattern("*");
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
