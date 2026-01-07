@@ -1,8 +1,8 @@
-import { useState } from "react";
-import useAuth from "../../hooks/useAuth";
+import { useState, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
@@ -10,16 +10,20 @@ export default function LoginForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    const { login, isLoading, error } = useAuth();
+    const { login, isLoading, error } = useContext(AuthContext);
     const { success } = useToast();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const message = await login(username, password);
+            await login(username, password);
             success("Login successfully!");
-            navigate('/home');
+
+            // Redirect to the page user was trying to access, or /home as default
+            const from = location.state?.from?.pathname || '/home';
+            navigate(from, { replace: true });
         } catch (err) {
             console.log('An error occured: ', err);
         }

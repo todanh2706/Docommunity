@@ -17,30 +17,33 @@ import FindPeople from '@/pages/FindPeople';
 import UserProfile from '@/pages/UserProfile';
 import VerifyAccountPage from '@/pages/Auth/VerifyAccountPage';
 
+// Auth
+import ProtectedRoute from '@/components/Auth/ProtectedRoute';
+
 export default function AppRoutes() {
     const location = useLocation();
     return (
         <Routes location={location} key={location.pathname}>
-            {/* Public Routes */}
+            {/* Public Routes - Accessible without authentication */}
             <Route path='/' element={<Navigate to='/login' replace />} />
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
             <Route path='/verify-account' element={<VerifyAccountPage />} />
 
-            {/* Protected Routes (Implicitly protected for now, layout should enforce this) */}
-            <Route path='/home' element={<Home />} />
-            <Route path='/home/bookmark' element={<Bookmark />} />
-            <Route path='/home/tagslist' element={<Tagslist />} />
-            <Route path='/home/community' element={<Community />} />
-            <Route path='/home/community/doc/:id' element={<ViewDocument />} />
-            <Route path='/home/find-people' element={<FindPeople />} />
-            <Route path='/home/profile/:id' element={<UserProfile />} />
-            <Route path='/home/myworkspace' element={<Myworkspace />} />
-            <Route path='/home/shared' element={<MySharedWorkspace />} />
-            <Route path='/home/mytrash' element={<Mytrash />} />
-            <Route path='/home/setting' element={<SettingsPage />} />
-            <Route path='/home/editor' element={<EditorPage />} />
-            <Route path='/share/:token' element={<EditorPage />} />
+            {/* Protected Routes - Require authentication */}
+            <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path='/home/bookmark' element={<ProtectedRoute><Bookmark /></ProtectedRoute>} />
+            <Route path='/home/tagslist' element={<ProtectedRoute><Tagslist /></ProtectedRoute>} />
+            <Route path='/home/community' element={<ProtectedRoute><Community /></ProtectedRoute>} />
+            <Route path='/home/community/doc/:id' element={<ProtectedRoute><ViewDocument /></ProtectedRoute>} />
+            <Route path='/home/find-people' element={<ProtectedRoute><FindPeople /></ProtectedRoute>} />
+            <Route path='/home/profile/:id' element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path='/home/myworkspace' element={<ProtectedRoute><Myworkspace /></ProtectedRoute>} />
+            <Route path='/home/shared' element={<ProtectedRoute><MySharedWorkspace /></ProtectedRoute>} />
+            <Route path='/home/mytrash' element={<ProtectedRoute><Mytrash /></ProtectedRoute>} />
+            <Route path='/home/setting' element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path='/home/editor' element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
+            <Route path='/share/:token' element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
         </Routes>
     );
 }
