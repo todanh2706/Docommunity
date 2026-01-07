@@ -1,6 +1,7 @@
 package com.se.documinity.dto.user;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.se.documinity.dto.comunity.PublicDocumentResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +29,11 @@ public class PublicUserResponse {
     // Follow stats
     private int followersCount;
     private int followingCount;
+    
+    @JsonProperty("isFollowing")
     private boolean isFollowing; // Whether current user is following this user
+    
+    @JsonProperty("isOwnProfile")
     private boolean isOwnProfile; // Whether this is the current user's own profile
 
     // User's public documents

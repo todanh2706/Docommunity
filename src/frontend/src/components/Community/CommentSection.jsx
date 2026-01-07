@@ -160,15 +160,15 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
                 ))}
             </div>
 
-            {/* Input Area */}
-            <div className="mt-6 pt-4 border-t border-white/10">
+            {/* Input Area - Added padding to avoid chatbot button overlap */}
+            <div className="mt-6 pt-4 border-t border-white/10 pb-16 md:pb-4">
                 <div className="flex gap-3">
                     <img
                         src={currentUserAvatar}
                         alt="Current User"
                         className="w-10 h-10 rounded-full object-cover border border-white/10"
                     />
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative mb-20">
                         <textarea
                             ref={commentInputRef}
                             value={newComment}
@@ -187,7 +187,7 @@ const CommentSection = ({ docId, shouldFocus = false }) => {
                         )}
                         <button
                             onClick={handleAddComment}
-                            className="absolute bottom-3 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg"
+                            className="absolute bottom-15 right-3 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-colors shadow-lg"
                             data-testid="comment-submit-btn"
                         >
                             <Send size={16} />

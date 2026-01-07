@@ -21,7 +21,13 @@ export default function HomePage() {
             try {
                 const data = await getPopularDocs(4); // Fetch top 4
                 if (data && data.data) {
-                    setPopularDocs(data.data);
+                    // Filter out documents with TRASHED tag
+                    const filteredDocs = data.data.filter(doc => 
+                        !(doc.tags && doc.tags.some(tag => 
+                            (typeof tag === 'string' ? tag : tag.name) === 'TRASHED'
+                        ))
+                    );
+                    setPopularDocs(filteredDocs);
                 }
             } catch (error) {
                 console.error("Failed to fetch popular docs", error);
@@ -232,21 +238,7 @@ export default function HomePage() {
                     )}
                 </div>
 
-                {/* === FOOTER === */}
-                <footer className="w-full mt-20 border-t border-white/10 bg-black/20 backdrop-blur-md">
-                    <div className="max-w-6xl mx-auto px-4 py-8">
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="text-white/40 text-sm">
-                                © 2024 Docommunity. All rights reserved.
-                            </div>
-                            <div className="flex gap-6">
-                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">About Us</Link>
-                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">Privacy Policy</Link>
-                                <Link to="#" className="text-white/60 hover:text-white transition-colors text-sm">Terms of Service</Link>
-                            </div>
-                        </div>
-                    </div>
-                </footer>
+              
 
             </main>
         </div>

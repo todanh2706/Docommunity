@@ -543,7 +543,10 @@ export default function EditorPage({ initialContent = '' }) {
 
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
-        setSaveStatus('saving');
+        // Only set saving if connected, otherwise sendContentUpdate will set error
+        if (connected) {
+            setSaveStatus('saving');
+        }
         if (contentSendTimeoutRef.current) {
             clearTimeout(contentSendTimeoutRef.current);
         }
@@ -624,7 +627,7 @@ export default function EditorPage({ initialContent = '' }) {
                 }
             }, 500); // 500ms debounce
         }
-    }, [sendContentUpdate, writingSuggestionEnabled]);
+    }, [sendContentUpdate, writingSuggestionEnabled, connected]);
     // Lưu ý: Các hàm format (toggleFormat, handleListFormat) cần gọi handleContentChange thay vì setMarkdown
 
     const handleCursorUpdate = useCallback(() => {
@@ -1689,6 +1692,15 @@ export default function EditorPage({ initialContent = '' }) {
                     }}
                 >
                     <div className="flex items-center gap-1 px-4 py-2 border-b border-white/5 sticky top-0 z-10 overflow-x-auto no-scrollbar bg-[#0f1011]">
+                        {/* AI Button - Highlighted at the beginning */}
+                        <button
+                            onClick={handleOpenAIModal}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-500 hover:to-blue-400 text-white font-medium text-sm transition-all duration-200 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40"
+                        >
+                            <Sparkles size={16} className="animate-pulse" />
+                            <span>AI</span>
+                        </button>
+                        <Divider />
                         <div className="flex items-center gap-0.5">
                             <ToolbarBtn icon={Undo2} onClick={handleUndo}
                                 // Disable nếu chỉ còn trạng thái khởi tạo
@@ -1715,10 +1727,6 @@ export default function EditorPage({ initialContent = '' }) {
                             {renderToolbarBtn(ImageIcon, 'img', () => handleFormat('img'))}
                             {renderToolbarBtn(LinkIcon, 'link', () => handleFormat('link'))}
                             {renderToolbarBtn(TableIcon, 'table', insertTable)}
-                        </div>
-                        <Divider />
-                        <div className="flex items-center gap-0.5">
-                            <ToolbarBtn icon={Sparkles} onClick={handleOpenAIModal} />
                         </div>
                     </div>
                     <div className="flex bg-[#121315] flex-1 relative">

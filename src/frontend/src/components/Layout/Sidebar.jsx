@@ -10,37 +10,23 @@ import {
     LuTrash2,
     LuChevronRight
 } from 'react-icons/lu';
-import { useState, useEffect } from 'react';
+import { useState, useContext } from 'react';
 import { BsPersonWorkspace } from 'react-icons/bs';
 import { useUIContext } from '../../context/useUIContext';
 import { CreateDocumentModal } from './Modal';
-import { useUser } from '../../hooks/useUser';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function Sidebar({ onDocumentCreated }) {
     const { showSidebar, setShowSidebar } = useUIContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { getUserProfile } = useUser();
-    const [userData, setUserData] = useState({
-        fullname: "User",
-        bio: "Member",
-        avatar_url: "/dump_avt.jpg"
-    });
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const data = await getUserProfile();
-                setUserData({
-                    fullname: data.fullname || data.username || "User",
-                    bio: data.bio || "Member",
-                    avatar_url: data.avatar_url || "/dump_avt.jpg"
-                });
-            } catch (error) {
-                console.error("Failed to fetch user for sidebar", error);
-            }
-        };
-        fetchUser();
-    }, []);
+    const { user } = useContext(AuthContext);
+    
+    // Use user data from AuthContext (already fetched on app load)
+    const userData = {
+        fullname: user?.fullname || user?.username || "User",
+        bio: user?.bio || "Member",
+        avatar_url: user?.avatar_url || "/dump_avt.jpg"
+    };
 
     const baseClasses = "flex items-center gap-3 rounded-lg px-3 py-2 transition-all";
     const activeClasses = "bg-blue-800 text-white";

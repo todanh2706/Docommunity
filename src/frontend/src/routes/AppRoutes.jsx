@@ -25,13 +25,13 @@ export default function AppRoutes() {
     return (
         <Routes location={location} key={location.pathname}>
             {/* Public Routes - Accessible without authentication */}
-            <Route path='/' element={<Navigate to='/login' replace />} />
+            <Route path='/' element={<Navigate to='/home' replace />} />
             <Route path='/login' element={<Login />} />
             <Route path='/register' element={<Register />} />
             <Route path='/verify-account' element={<VerifyAccountPage />} />
+            <Route path='/home' element={<Home />} />
 
             {/* Protected Routes - Require authentication */}
-            <Route path='/home' element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path='/home/bookmark' element={<ProtectedRoute><Bookmark /></ProtectedRoute>} />
             <Route path='/home/tagslist' element={<ProtectedRoute><Tagslist /></ProtectedRoute>} />
             <Route path='/home/community' element={<ProtectedRoute><Community /></ProtectedRoute>} />

@@ -143,7 +143,12 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
     }, [docId, shareToken, displayName, onRemoteContent, onError, onStatusChange]);
 
     const sendContentUpdate = useCallback((newContent) => {
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            // WebSocket not ready - notify error so UI can handle
+            onStatusChange?.('error');
+            onError?.('WebSocket not connected');
+            return false;
+        }
 
         // Calculate diff
         const oldContent = lastSyncedContentRef.current;
@@ -181,8 +186,9 @@ export const useDocumentCollab = ({ docId, shareToken, displayName, onRemoteCont
                 // Optional: Send checksum or base version for robustness
             }));
         }
+        return true;
 
-    }, [docId]);
+    }, [docId, onStatusChange, onError]);
 
     const sendCursorUpdate = useCallback((selectionStart, selectionEnd) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;

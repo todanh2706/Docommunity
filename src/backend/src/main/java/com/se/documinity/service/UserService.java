@@ -223,7 +223,7 @@ public class UserService {
                         user.getAvatarUrl(),
                         user.getIsPrivate(),
                         user.getFollowers() != null ? user.getFollowers().size() : 0,
-                        finalCurrentUser != null && finalCurrentUser.getFollowing() != null && finalCurrentUser.getFollowing().contains(user)))
+                        finalCurrentUser != null && userRepository.isFollowing(finalCurrentUser.getId(), user.getId())))
                 .collect(java.util.stream.Collectors.toList());
     }
 

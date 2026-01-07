@@ -5,7 +5,17 @@ import { useNavigate } from 'react-router-dom';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    // Initialize user state from localStorage to prevent redirect on reload
+    const [user, setUser] = useState(() => {
+        // Check if we have a token - if so, assume authenticated until verified
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            // Return a placeholder user to prevent immediate redirect
+            // This will be replaced with actual user data from API
+            return { _pending: true };
+        }
+        return null;
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const api = useApi();
@@ -34,6 +44,9 @@ export const AuthProvider = ({ children }) => {
                         localStorage.removeItem('refreshToken');
                     }
                 }
+            } else {
+                // No token found, ensure user is null
+                setUser(null);
             }
             setIsLoading(false);
         };

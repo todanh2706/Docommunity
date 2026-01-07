@@ -80,7 +80,13 @@ export default function Community() {
 
                 if (isMounted) {
                     const pagedData = response.data || {};
-                    const newDocs = pagedData.content || [];
+                    const allDocs = pagedData.content || [];
+                    // Filter out documents with TRASHED tag
+                    const newDocs = allDocs.filter(doc => 
+                        !(doc.tags && doc.tags.some(tag => 
+                            (typeof tag === 'string' ? tag : tag.name) === 'TRASHED'
+                        ))
+                    );
                     setDocuments(newDocs);
                     setTotalPages(pagedData.totalPages || 0);
                 }

@@ -307,7 +307,7 @@ public class DocumentCollabHandler extends TextWebSocketHandler {
         if (existing != null) {
             existing.cancel(false);
         }
-        ScheduledFuture<?> future = scheduler.schedule(() -> saveRoom(docId), 2, TimeUnit.SECONDS);
+        ScheduledFuture<?> future = scheduler.schedule(() -> saveRoom(docId), 500, TimeUnit.MILLISECONDS);
         pendingSaves.put(docId, future);
     }
 

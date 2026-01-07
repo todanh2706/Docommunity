@@ -4,12 +4,20 @@ import Sidebar from '../../components/Layout/Sidebar';
 import FilterToolbar from '../../components/Layout/FilterToolbar';
 import { useUIContext } from '../../context/useUIContext';
 import { getSharedDocuments } from '../../services/documentService';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const buildSnippet = (content) => {
     if (!content) return 'No content yet.';
-    const max = 300;
-    if (content.length <= max) return content;
-    return `${content.slice(0, max)}...`;
+    
+    // Remove markdown image syntax to prevent long URLs from showing
+    let cleaned = content.replace(/!\[[^\]]*\]\([^)]*\)/g, '[Image]');
+    // Remove markdown links but keep text
+    cleaned = cleaned.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+    
+    const max = 150;
+    if (cleaned.length <= max) return cleaned;
+    return `${cleaned.slice(0, max)}...`;
 };
 
 const formatDate = (value) => {
@@ -26,52 +34,99 @@ const formatDate = (value) => {
     });
 };
 
-const DocumentCard = ({ doc }) => {
+const DocumentCard = ({ doc, isExpanded = true }) => {
     const tags = Array.isArray(doc.tags) ? doc.tags : [];
-    const visibleTags = tags.slice(0, 3);
-    const remainingTags = tags.length - visibleTags.length;
+    const visibleTags = tags.slice(0, 2);
+    const remainingCount = tags.length - 2;
     const authorName = doc.authorName || 'Unknown';
     const authorAvatar = doc.author_avatar_url || doc.authorAvatarUrl || '/dump_avt.jpg';
     const lastModified = doc.lastModified || doc.createdDate;
+    const content = doc.content || '# Empty Document\nNo content yet.';
+    const truncatedContent = content.length > 400 ? content.substring(0, 400) + '...' : content;
+    const isBlank = !doc.content;
 
     return (
-        <Link to="/home/editor" state={{ document: doc }} className="block">
-            <div className="bg-gray-800 rounded-lg shadow-xl hover:ring-2 hover:ring-blue-500 transition duration-200">
-                <div className="p-4 flex flex-col gap-3">
-                    <div>
-                        <h3 className="text-lg font-semibold truncate">{doc.title || 'Untitled'}</h3>
-                        <p className="text-xs text-gray-400 mt-1">{formatDate(lastModified)}</p>
-                    </div>
+        <div className="bg-gray-800 rounded-lg shadow-xl overflow-visible hover:ring-2 hover:ring-blue-500 transition duration-200 relative">
+            <Link to="/home/editor" state={{ document: doc }}>
+                <div className={`${isExpanded ? 'h-64' : 'h-10'} flex flex-col ${isBlank && isExpanded ? 'bg-gray-700' : ''}`}>
+                    {isBlank && isExpanded ? (
+                        <div className="flex-grow flex items-center justify-center text-gray-500">
+                            <span className="text-2xl">📝</span>
+                        </div>
+                    ) : (
+                        <>
+                            {isExpanded && (
+                                <div className="flex-1 overflow-hidden px-4 pt-4 pb-2">
+                                    <div
+                                        className="h-full overflow-y-auto custom-scrollbar"
+                                        style={{
+                                            scrollbarWidth: 'thin',
+                                            scrollbarColor: 'rgba(107, 114, 128, 0.5) transparent'
+                                        }}
+                                    >
+                                        <style>{`
+                                            .custom-scrollbar::-webkit-scrollbar {
+                                                width: 6px;
+                                            }
+                                            .custom-scrollbar::-webkit-scrollbar-track {
+                                                background: transparent;
+                                            }
+                                            .custom-scrollbar::-webkit-scrollbar-thumb {
+                                                background: rgba(107, 114, 128, 0.3);
+                                                border-radius: 3px;
+                                            }
+                                            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                                background: rgba(107, 114, 128, 0.6);
+                                            }
+                                        `}</style>
+                                        <div className="prose prose-invert prose-sm max-w-none">
+                                            <Markdown remarkPlugins={[remarkGfm]}>
+                                                {truncatedContent}
+                                            </Markdown>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                    <p className="text-sm text-gray-300 leading-relaxed">
-                        {buildSnippet(doc.content)}
-                    </p>
+                            <div className={`flex justify-between items-center ${isExpanded ? 'px-4 pb-2' : ''}`}>
+                                <div className="flex items-center gap-2">
+                                    <img
+                                        src={authorAvatar}
+                                        alt={authorName}
+                                        className="w-6 h-6 rounded-full border-2 border-gray-800 object-cover"
+                                        onError={(e) => { e.target.onerror = null; e.target.src = '/dump_avt.jpg'; }}
+                                    />
+                                </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        {visibleTags.map(tag => (
-                            <span key={tag} className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-blue-300">
-                                {tag}
-                            </span>
-                        ))}
-                        {remainingTags > 0 && (
-                            <span className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-300">
-                                +{remainingTags}
-                            </span>
-                        )}
-                    </div>
+                                <div className="flex space-x-1 items-center">
+                                    {visibleTags.map(tag => (
+                                        <span key={tag} className="text-xs px-2 py-0.5 bg-gray-600 rounded-full text-blue-300">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                    {remainingCount > 0 && (
+                                        <span className="text-xs px-2 py-0.5 bg-gray-700 rounded-full text-gray-300 font-medium border border-gray-600">
+                                            +{remainingCount}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Link>
 
-                    <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <img
-                            src={authorAvatar}
-                            alt={authorName}
-                            className="w-6 h-6 rounded-full"
-                            onError={(e) => { e.target.onerror = null; e.target.src = '/dump_avt.jpg'; }}
-                        />
-                        <span className="truncate">{authorName}</span>
+            {/* Footer */}
+            <div className={`p-3 ${isExpanded ? "border-t border-gray-700" : ""}`}>
+                <div className="flex flex-row justify-between items-center">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-lg font-semibold truncate">{doc.title || 'Untitled'}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(lastModified)}</p>
                     </div>
+                    <span className="text-xs text-gray-500 truncate ml-2 max-w-[100px]">{authorName}</span>
                 </div>
             </div>
-        </Link>
+        </div>
     );
 };
 
@@ -199,7 +254,7 @@ export default function MySharedWorkspace() {
                         : 'space-y-4'
                     }>
                         {processedDocuments.map(doc => (
-                            <DocumentCard key={doc.id} doc={doc} />
+                            <DocumentCard key={doc.id} doc={doc} isExpanded={viewMode === 'grid'} />
                         ))}
                     </div>
                 ) : (

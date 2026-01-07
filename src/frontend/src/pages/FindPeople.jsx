@@ -3,16 +3,27 @@ import { Search } from 'lucide-react';
 import Sidebar from '../components/Layout/Sidebar';
 import { useUIContext } from '../context/useUIContext';
 import UserCard from '../components/Community/UserCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../hooks/useUser';
 
 export default function FindPeople() {
     const { showSidebar } = useUIContext();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchTerm, setSearchTerm] = useState('');
     const { getAllUsers, followUser } = useUser();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Refresh when page gains focus (e.g., navigating back from User Profile)
+    useEffect(() => {
+        const handleFocus = () => {
+            setRefreshKey(prev => prev + 1);
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -35,7 +46,7 @@ export default function FindPeople() {
             }
         };
         fetchUsers();
-    }, [searchTerm]);
+    }, [searchTerm, refreshKey, location.key]);
 
     const handleFollow = async (e, id) => {
         e.stopPropagation(); // Prevent navigation when clicking follow button

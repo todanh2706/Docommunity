@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { UserPlus, UserCheck, Flag, MessageSquare, MapPin, Link as LinkIcon, Calendar, Heart, FileText, ArrowLeft } from 'lucide-react';
 import Sidebar from '../components/Layout/Sidebar';
 import { useUIContext } from '../context/useUIContext';
@@ -12,6 +12,7 @@ import rehypeRaw from 'rehype-raw';
 export default function UserProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { showSidebar } = useUIContext();
     const { getPublicProfile, followUser } = useUser();
     const [user, setUser] = useState(null);
@@ -74,7 +75,7 @@ export default function UserProfile() {
         if (id) {
             fetchUser();
         }
-    }, [id, refreshKey]);
+    }, [id, refreshKey, location.key]);
 
     const handleFollow = async () => {
         try {
@@ -128,12 +129,12 @@ export default function UserProfile() {
                 {/* Profile Header Card */}
                 <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
                     {/* Cover Image */}
-                    <div className="h-48 bg-gradient-to-r from-blue-600 to-purple-600 opacity-80"></div>
+                    <div className="h-48 bg-gradient-to-r from-blue-600 to-purple-600 opacity-80 mb-15"></div>
 
                     <div className="px-8 pb-8">
                         <div className="flex flex-col md:flex-row items-start md:items-end gap-6 -mt-16 mb-6">
                             {/* Avatar */}
-                            <div className="relative">
+                            <div className="relative flex-shrink-0">
                                 <div className="w-32 h-32 rounded-full border-4 border-gray-900 overflow-hidden bg-gray-800">
                                     <img src={user.avatar || "/dump_avt.jpg"} alt={user.name} className="w-full h-full object-cover" />
                                 </div>
@@ -141,8 +142,8 @@ export default function UserProfile() {
                             </div>
 
                             {/* Info */}
-                            <div className="flex-1 mb-2">
-                                <h1 className="text-3xl font-black text-white mb-1">{user.name}</h1>
+                            <div className="flex-1 md:pb-2">
+                                <h1 className="text-3xl font-black text-white mb-5">{user.name}</h1>
                                 <p className="text-gray-400 font-mono text-sm">{user.username}</p>
                                 <p className="text-gray-500 text-sm mt-1">
                                     <span className="font-semibold text-white">{followersCount}</span> followers · <span className="font-semibold text-white">{user.stats.following}</span> following
@@ -151,10 +152,10 @@ export default function UserProfile() {
 
                             {/* Actions - Hide follow button for own profile */}
                             {!isOwnProfile && (
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex items-center gap-3 md:pb">
                                     <button
                                         onClick={handleFollow}
-                                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all
+                                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all 
                                         ${isFollowing
                                                 ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 border border-white/10'
                                                 : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'}`}

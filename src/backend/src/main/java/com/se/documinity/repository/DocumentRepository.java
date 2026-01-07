@@ -29,7 +29,7 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
 
     Page<DocumentEntity> findByIsPublicTrue(Pageable pageable);
 
-    @org.springframework.data.jpa.repository.Query("SELECT d FROM DocumentEntity d LEFT JOIN d.likedByUsers l WHERE d.isPublic = true GROUP BY d ORDER BY COUNT(l) DESC")
+    @org.springframework.data.jpa.repository.Query("SELECT d FROM DocumentEntity d LEFT JOIN d.likedByUsers l WHERE d.isPublic = true AND d.status = 'ACTIVE' GROUP BY d ORDER BY COUNT(l) DESC")
     List<DocumentEntity> findMostPopularDocuments(Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("SELECT d FROM DocumentEntity d LEFT JOIN d.user u " +
