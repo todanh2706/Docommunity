@@ -32,6 +32,10 @@ public class AIService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String callOpenRouter(String systemInstruction, String userPrompt) {
+        return callOpenRouter(systemInstruction, userPrompt, null);
+    }
+
+    private String callOpenRouter(String systemInstruction, String userPrompt, Integer maxTokens) {
         try {
             // Build headers
             HttpHeaders headers = new HttpHeaders();
@@ -48,6 +52,11 @@ public class AIService {
             messages.add(Map.of("role", "system", "content", systemInstruction));
             messages.add(Map.of("role", "user", "content", userPrompt));
             requestBody.put("messages", messages);
+
+            // Add max_tokens if specified (useful for autocomplete)
+            if (maxTokens != null && maxTokens > 0) {
+                requestBody.put("max_tokens", maxTokens);
+            }
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
@@ -73,13 +82,16 @@ public class AIService {
         if ("summarize".equalsIgnoreCase(action)) {
             systemRules = "You are a professional summarizer. " +
                     "Create a concise summary of the provided text. " +
-                    "Return ONLY the summary in Markdown." +
-                    "Keep the Language the same as input";
+                    "Return ONLY the summary in Markdown. " +
+                    "Do NOT include any conversational filler like 'Here is...', 'Sure...', etc. " +
+                    "Keep the output language the SAME as the input language.";
         } else {
             // Default: improve
             systemRules = "You are a professional technical editor. " +
                     "Rewrite the text to be clearer, more professional, and fix grammar. " +
-                    "Do NOT add conversational filler. Return ONLY the refined Markdown.";
+                    "Do NOT include any conversational filler like 'Here is...', 'Sure...', etc. " +
+                    "Return ONLY the refined Markdown. " +
+                    "Keep the output language the SAME as the input language.";
         }
         return callOpenRouter(systemRules, content);
     }
@@ -103,7 +115,9 @@ public class AIService {
     }
 
     public String chat(String message, String documentContext) {
-        String systemRules = appKnowledge + "\n\nAnswer the user's question based on the app knowledge above.";
+        String systemRules = appKnowledge + "\n\nAnswer the user's question based on the app knowledge above. " +
+                "Do NOT include conversational filler like 'Sure!', 'Of course!', 'Here you go!'. " +
+                "Keep your response language the SAME as the user's question language.";
 
         // Inject document context if available
         if (documentContext != null && !documentContext.isBlank()) {
@@ -118,7 +132,9 @@ public class AIService {
     public String suggestTags(String content) {
         // Instructions to return a clean CSV format
         return callOpenRouter(
-                "Analyze the text and return exactly 5 relevant tags, comma-separated (e.g. java, spring). Return ONLY the tags.",
+                "Analyze the text and return exactly 5 relevant tags, comma-separated (e.g. java, spring). " +
+                        "Return ONLY the tags, no explanations, no filler text. " +
+                        "Keep tag language matching the content language.",
                 content);
     }
 
@@ -126,7 +142,11 @@ public class AIService {
     public String generateContent(String type, String prompt) {
         String systemRules = "You are an expert content creator. " +
                 "Generate a " + (type != null ? type : "document") + " based on the user's prompt. " +
-                "Use Markdown formatting.";
+                "Use Markdown formatting. " +
+                "IMPORTANT: Do NOT include any conversational filler like 'Here is your...', 'Here's a...', or 'Sure, here you go'. "
+                +
+                "Return ONLY the generated content itself, nothing else. " +
+                "Keep the output language the SAME as the input language (e.g., if the prompt is in Vietnamese, respond in Vietnamese).";
         return callOpenRouter(systemRules, prompt);
     }
 
@@ -135,14 +155,15 @@ public class AIService {
         String systemRules = "You are an AI writing assistant. " +
                 "Based on the context provided, suggest the next sentence or phrase to continue the text. " +
                 "Return ONLY the suggested text continuation, nothing else. " +
+                "Do NOT include any conversational filler or explanations. " +
                 "Keep suggestions concise (1-2 sentences max). " +
-                "Match the writing style and language of the context. " +
+                "Match the writing style and language of the context EXACTLY. " +
                 "If no good suggestion is possible, return an empty string.";
 
         String prompt = "Document context:\n" + (content != null ? content : "") +
                 "\n\nContinue from: \"" + (cursorText != null ? cursorText : "") + "\"";
 
-        String result = callOpenRouter(systemRules, prompt);
+        String result = callOpenRouter(systemRules, prompt, maxTokens != null ? maxTokens : 50);
 
         // Clean up the result - remove quotes if AI wrapped them
         if (result != null) {
