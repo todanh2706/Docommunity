@@ -34,6 +34,7 @@
     - **Bookmarks**: /home/bookmark - Saved documents
     - **Settings**: /home/setting - Profile and account settings
     - **Find People**: /home/find-people - Discover other users
+    - **Find community document**: /home/community - Discover other user's documents
 
     ### 5. SEARCH & FILTER
     - Use search bar to find documents by title or content
@@ -47,6 +48,7 @@
       - Example: "Go to [Settings](/home/setting) to edit your profile"
       - Example: "Check your documents in [My Workspace](/home/myworkspace)"
       - Example: "Find other users at [Find People](/home/find-people)"
+      - Example: "Find other users' documents at [Community](home/community)"
     - Available internal links:
       - [Home](/home)
       - [My Workspace](/home/myworkspace)
