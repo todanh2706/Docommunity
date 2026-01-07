@@ -30,7 +30,7 @@ services:
     env_file:
       - ./backend/.env
     volumes:
-      - ./uploads:/uploads
+      - ./backend/uploads:/uploads
       - ./backend:/app # Mount source code for hot reload
       # - /app/target # Prevent local target conflicts if needed
 
