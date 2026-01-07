@@ -27,11 +27,14 @@ export default function ViewDocument() {
                 const response = await viewDoc(id);
                 const data = response.data;
                 // Map backend response to UI structure
+                // API returns: authorName, authorId, author_avatar_url (from DocumentResponse)
+                // or owner.name, owner.avatar_url (from ViewDocumentResponse)
                 setDocument({
                     ...data,
                     author: {
-                        name: data.owner?.name || "Unknown",
-                        avatar: data.owner?.avatar_url || "/dummy_avt.jpg",
+                        id: data.owner?.id || data.authorId,
+                        name: data.owner?.name || data.authorName || "Unknown",
+                        avatar: data.owner?.avatar_url || data.author_avatar_url || "/dump_avt.jpg",
                         role: "Member" // Placeholder
                     },
                     stats: {
@@ -145,9 +148,10 @@ export default function ViewDocument() {
                         <div className="flex items-center justify-between flex-wrap gap-4">
                             <div className="flex items-center gap-3">
                                 <img
-                                    src={document.author.avatar}
+                                    src={document.author.avatar || "/dump_avt.jpg"}
                                     alt={document.author.name}
                                     className="w-12 h-12 rounded-full border-2 border-blue-500/30"
+                                    onError={(e) => { e.target.onerror = null; e.target.src = '/dump_avt.jpg'; }}
                                 />
                                 <div>
                                     <p className="font-bold text-white">{document.author.name}</p>

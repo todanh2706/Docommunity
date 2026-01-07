@@ -21,7 +21,7 @@ export default function FindPeople() {
                 const data = await getAllUsers(searchTerm);
                 // Map backend response to component format
                 setUsers(data.map(user => ({
-                    id: user.id || Math.random(),
+                    id: user.id,
                     name: user.fullname || user.username,
                     bio: user.bio || "No bio yet",
                     followers: "0",

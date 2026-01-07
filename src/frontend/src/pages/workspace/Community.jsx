@@ -11,7 +11,15 @@ import { DocCardSkeleton } from '../../components/UI/Skeleton';
 export default function Community() {
     // Persistent State
     const { showSidebar, communityState, setCommunityState } = useUIContext();
-    const { searchValue: value, page, sortConfig, filterTags } = communityState;
+    const { searchValue: value, page, sortConfig, filterTags, isExpanded } = communityState;
+
+    // Toggle view mode function
+    const toggleList = () => {
+        setCommunityState(prev => ({
+            ...prev,
+            isExpanded: !prev.isExpanded
+        }));
+    };
 
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -254,11 +262,15 @@ export default function Community() {
                     onSortSelection={handleSortSelection}
                     onSortClear={handleClearSort}
                     onTagSelection={handleTagSelection}
-                    showViewToggle={false} // Disable Grid/List toggle for now as Community is Feed-only
+                    viewMode={isExpanded ? 'grid' : 'list'}
+                    setViewMode={() => toggleList()}
                 />
 
                 {/* Feed Content */}
-                <div className="space-y-6 pb-12">
+                <div className={isExpanded
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-12 items-stretch"
+                    : "space-y-6 pb-12"
+                }>
                     {loading ? (
                         // Render Skeletons for initial load
                         Array.from({ length: 3 }).map((_, index) => (
@@ -270,7 +282,7 @@ export default function Community() {
                                 <DocCard
                                     key={doc.id}
                                     title={doc.title}
-                                    content={doc.snipet_content || doc.content} // Fallback if snipet not provided
+                                    content={doc.snipetContent || doc.content}
                                     author={{
                                         id: doc.owner?.id,
                                         name: doc.owner?.name,
@@ -286,9 +298,10 @@ export default function Community() {
                                     }}
                                     likes={doc.likesCount || 0}
                                     comments={doc.commentsCount || 0}
-                                    tags={doc.tags} // Pass tags
+                                    tags={doc.tags}
                                     isLiked={doc.isLiked}
                                     isBookmarked={doc.isBookmarked}
+                                    isExpanded={isExpanded}
                                     onClick={() => handleCardClick(doc.id)}
                                     onLike={() => handleLikeToggle(doc)}
                                     onComment={() => handleCommentClick(doc.id)}

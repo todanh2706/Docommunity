@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponse {
+    private Long id;
+
     private String username;
-    
+
     private String email;
 
-    @JsonProperty("fullname") 
+    @JsonProperty("fullname")
     private String fullName;
 
     private String phone;

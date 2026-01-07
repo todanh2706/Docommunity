@@ -18,7 +18,8 @@ export const UIProvider = ({ children }) => {
         sortConfig: { title: '', date: '' },
         filterTags: [],
         searchValue: "",
-        page: 1
+        page: 1,
+        isExpanded: false  // Default to compact view (grid mode)
     });
 
     const value = {

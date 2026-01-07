@@ -19,6 +19,8 @@ public class DocumentResponse {
     private List<String> tags;
     private String authorName;
     private Long authorId;
+    @com.fasterxml.jackson.annotation.JsonProperty("author_avatar_url")
+    private String authorAvatarUrl;
     private int likesCount;
     private int commentsCount;
     private Boolean isLiked;

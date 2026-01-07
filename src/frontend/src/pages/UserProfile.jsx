@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { UserPlus, UserCheck, Flag, MessageSquare, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
+import { UserPlus, UserCheck, Flag, MessageSquare, MapPin, Link as LinkIcon, Calendar, Heart, FileText, ArrowLeft } from 'lucide-react';
 import Sidebar from '../components/Layout/Sidebar';
 import { useUIContext } from '../context/useUIContext';
 import { useUser } from '../hooks/useUser';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
 
 export default function UserProfile() {
     const { id } = useParams();
@@ -14,6 +18,7 @@ export default function UserProfile() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [activeTab, setActiveTab] = useState('documents');
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -26,18 +31,18 @@ export default function UserProfile() {
                     username: "@" + data.username,
                     bio: data.bio || "No bio yet.",
                     avatar: data.avatar_url || "/dump_avt.jpg",
-                    followers: 0, // Mock for now
-                    following: 0, // Mock for now
-                    location: "Unknown", // Mock for now
-                    website: "", // Mock for now
-                    joined: "Recently", // Mock for now
+                    joined: data.createdAt || "Member",
                     stats: {
-                        documents: 0, // Mock for now
-                        likes: 0, // Mock for now
-                        views: "0"
-                    }
+                        documents: data.documentsCount || 0,
+                        likes: data.likesCount || 0,
+                    },
+                    activity: {
+                        commentsCount: data.commentsCount || 0,
+                        likesGivenCount: data.likesGivenCount || 0
+                    },
+                    documents: data.documents || []
                 });
-                setIsFollowing(Math.random() > 0.5); // Mock following state
+                setIsFollowing(false);
             } catch (err) {
                 if (err.name === 'CanceledError') {
                     console.log('Request canceled', err.message);
@@ -85,6 +90,15 @@ export default function UserProfile() {
                 className={`transition-all duration-300 ease-in-out min-h-screen p-8 flex flex-col gap-8
                 ${showSidebar ? 'ml-0 md:ml-64 w-[calc(100%-16rem)]' : 'ml-0 w-full'}`}
             >
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors w-fit px-3 py-2 rounded-lg hover:bg-white/5"
+                >
+                    <ArrowLeft size={20} />
+                    <span>Back</span>
+                </button>
+
                 {/* Profile Header Card */}
                 <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
                     {/* Cover Image */}
@@ -136,44 +150,29 @@ export default function UserProfile() {
                             </div>
                         </div>
 
-                        {/* Bio & Details */}
+                        {/* Bio & Stats */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-2 space-y-6">
+                            <div className="lg:col-span-2 space-y-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white mb-2">About</h3>
+                                    <h3 className="text-lg font-bold text-white mb-2">Bio</h3>
                                     <p className="text-gray-300 leading-relaxed">{user.bio}</p>
                                 </div>
-
-                                <div className="flex flex-wrap gap-6 text-sm text-gray-400">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin size={16} />
-                                        <span>{user.location}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <LinkIcon size={16} />
-                                        <a href="#" className="text-blue-400 hover:underline">{user.website}</a>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar size={16} />
-                                        <span>Joined {user.joined}</span>
-                                    </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-400">
+                                    <Calendar size={16} />
+                                    <span>{user.joined}</span>
                                 </div>
                             </div>
 
                             {/* Stats */}
                             <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                <div className="grid grid-cols-3 gap-4 text-center">
-                                    <div>
-                                        <div className="text-2xl font-black text-white">{user.followers}</div>
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider font-bold">Followers</div>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-black text-white">{user.following}</div>
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider font-bold">Following</div>
-                                    </div>
+                                <div className="grid grid-cols-2 gap-4 text-center">
                                     <div>
                                         <div className="text-2xl font-black text-white">{user.stats.documents}</div>
-                                        <div className="text-xs text-gray-500 uppercase tracking-wider font-bold">Docs</div>
+                                        <div className="text-xs text-gray-500 uppercase tracking-wider font-bold">Documents</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-black text-white">{user.stats.likes}</div>
+                                        <div className="text-xs text-gray-500 uppercase tracking-wider font-bold">Likes Received</div>
                                     </div>
                                 </div>
                             </div>
@@ -181,21 +180,117 @@ export default function UserProfile() {
                     </div>
                 </div>
 
-                {/* Content Tabs (Placeholder) */}
+                {/* Content Tabs */}
                 <div className="flex gap-6 border-b border-white/10">
-                    <button className="pb-4 border-b-2 border-blue-500 text-blue-400 font-bold">Documents</button>
-                    <button className="pb-4 border-b-2 border-transparent text-gray-400 hover:text-white font-medium transition-colors">About</button>
-                    <button className="pb-4 border-b-2 border-transparent text-gray-400 hover:text-white font-medium transition-colors">Activity</button>
+                    <button
+                        onClick={() => setActiveTab('documents')}
+                        className={`pb-4 border-b-2 font-bold transition-colors ${activeTab === 'documents'
+                            ? 'border-blue-500 text-blue-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <FileText size={18} />
+                            Documents ({user.stats.documents})
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('activity')}
+                        className={`pb-4 border-b-2 font-bold transition-colors ${activeTab === 'activity'
+                            ? 'border-blue-500 text-blue-400'
+                            : 'border-transparent text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        <div className="flex items-center gap-2">
+                            <Heart size={18} />
+                            Activity
+                        </div>
+                    </button>
                 </div>
 
-                {/* Documents Grid (Placeholder) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-40 bg-white/5 rounded-xl border border-white/5 flex items-center justify-center text-gray-500">
-                            User Document {i}
+                {/* Tab Content */}
+                {activeTab === 'documents' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {user.documents && user.documents.length > 0 ? (
+                            user.documents.map((doc) => (
+                                <div
+                                    key={doc.id}
+                                    onClick={() => navigate(`/home/community/doc/${doc.id}`)}
+                                    className="group bg-white/5 rounded-xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-blue-500/50 transition-all cursor-pointer"
+                                >
+                                    {/* Content Preview with Markdown */}
+                                    <div className="h-32 overflow-hidden p-4">
+                                        <div className="prose prose-invert prose-sm max-w-none">
+                                            <Markdown
+                                                remarkPlugins={[remarkGfm]}
+                                                rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                                            >
+                                                {doc.snipetContent || ""}
+                                            </Markdown>
+                                        </div>
+                                    </div>
+                                    {/* Footer */}
+                                    <div className="p-4 pt-0 border-t border-white/5">
+                                        <h4 className="text-md font-bold text-white mb-2 group-hover:text-blue-400 transition-colors line-clamp-1">
+                                            {doc.title}
+                                        </h4>
+                                        <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <div className="flex items-center gap-4">
+                                                <span className="flex items-center gap-1">
+                                                    <Heart size={14} /> {doc.likesCount || 0}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <MessageSquare size={14} /> {doc.commentsCount || 0}
+                                                </span>
+                                            </div>
+                                            {doc.tags && doc.tags.length > 0 && (
+                                                <span className="text-blue-400">#{doc.tags[0]}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full text-center py-10 text-gray-500">
+                                No public documents yet
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'activity' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-red-500/20 rounded-xl">
+                                    <Heart size={24} className="text-red-400" />
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-black text-white">{user.activity.likesGivenCount}</div>
+                                    <div className="text-sm text-gray-400">Likes Given</div>
+                                </div>
+                            </div>
+                            <p className="text-gray-500 text-sm">
+                                Total number of documents {user.name} has liked in the community.
+                            </p>
                         </div>
-                    ))}
-                </div>
+
+                        <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="p-3 bg-blue-500/20 rounded-xl">
+                                    <MessageSquare size={24} className="text-blue-400" />
+                                </div>
+                                <div>
+                                    <div className="text-3xl font-black text-white">{user.activity.commentsCount}</div>
+                                    <div className="text-sm text-gray-400">Comments Made</div>
+                                </div>
+                            </div>
+                            <p className="text-gray-500 text-sm">
+                                Total number of comments {user.name} has posted on documents.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
             </main>
         </div>

@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class CommentAuthorResponse {
     private String id;
     private String name;
+    @com.fasterxml.jackson.annotation.JsonProperty("avatar")
+    private String avatarUrl;
 }

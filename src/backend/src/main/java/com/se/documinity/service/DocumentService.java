@@ -191,10 +191,37 @@ public class DocumentService {
     private String buildSnippet(String content) {
         if (content == null)
             return "";
-        int max = 100;
+        int max = 300; // Increased for better content preview
         if (content.length() <= max)
             return content;
-        return content.substring(0, max) + "...";
+
+        // Find a safe cut point that doesn't break markdown syntax
+        String snippet = content.substring(0, max);
+
+        // Check if we're in the middle of a markdown image: ![...](...)
+        int lastImageStart = snippet.lastIndexOf("![");
+        if (lastImageStart != -1) {
+            // Check if the image syntax is complete (has closing parenthesis after it)
+            int closingParen = snippet.indexOf(")", lastImageStart);
+            if (closingParen == -1) {
+                // Image syntax is incomplete, cut before it
+                snippet = snippet.substring(0, lastImageStart);
+            }
+        }
+
+        // Check if we're in the middle of a markdown link: [...](...)
+        int lastLinkStart = snippet.lastIndexOf("[");
+        if (lastLinkStart != -1 && (lastImageStart == -1 || lastLinkStart > lastImageStart)) {
+            // Make sure it's not part of an image (which starts with !)
+            if (lastLinkStart == 0 || snippet.charAt(lastLinkStart - 1) != '!') {
+                int closingParen = snippet.indexOf(")", lastLinkStart);
+                if (closingParen == -1) {
+                    snippet = snippet.substring(0, lastLinkStart);
+                }
+            }
+        }
+
+        return snippet.trim() + "...";
     }
 
     public ViewDocumentResponse getPublicDocument(Long documentId) {
@@ -218,7 +245,9 @@ public class DocumentService {
                 .title(doc.getTitle())
                 .content(doc.getContent())
                 .owner(PublicDocumentOwnerResponse.builder()
-                        .name(doc.getUser() != null ? doc.getUser().getFullname() : "Unknown")
+                        .id(doc.getUser() != null ? doc.getUser().getId() : null)
+                        .name(doc.getUser() != null ? (doc.getUser().getFullname() != null ? doc.getUser().getFullname()
+                                : doc.getUser().getUsername()) : "Unknown")
                         .avatarUrl(doc.getUser() != null ? doc.getUser().getAvatarUrl() : null)
                         .build())
                 .likesCount(doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0)
@@ -330,6 +359,7 @@ public class DocumentService {
                 tagNames,
                 doc.getUser().getFullname(),
                 doc.getUser().getId(),
+                doc.getUser().getAvatarUrl(),
                 doc.getLikedByUsers() != null ? doc.getLikedByUsers().size() : 0,
                 doc.getComments() != null ? doc.getComments().size() : 0,
                 isLiked,
@@ -408,9 +438,11 @@ public class DocumentService {
                 .content(comment.getContent())
                 .author(CommentAuthorResponse.builder()
                         .id(String.valueOf(comment.getUser().getId()))
-                        .name(comment.getUser().getFullname()) // chỉnh đúng field trong UserEntity
+                        .name(comment.getUser().getFullname() != null ? comment.getUser().getFullname()
+                                : comment.getUser().getUsername())
+                        .avatarUrl(comment.getUser().getAvatarUrl())
                         .build())
-                .createdAt(comment.getCreatedAt().toString()) // 2025-12-03T10:00:00Z
+                .createdAt(comment.getCreatedAt().toString())
                 .replies(replies)
                 .build();
     }
