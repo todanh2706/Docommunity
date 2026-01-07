@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from "react";
 import { useToast } from "../context/ToastContext";
 import { DocumentSettingsModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
@@ -7,6 +7,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { useDocument } from "../context/DocumentContext";
 import { useAISettings } from "../context/AISettingsContext";
 import { useUser } from '../hooks/useUser';
+import { useCommunity } from '../hooks/useCommunity';
 import { generateContent, refineContent, getWritingSuggestion, suggestTags } from '../services/AIService';
 import { resolveShareToken } from '../services/documentService';
 import { useDocumentCollab } from '../hooks/useDocumentCollab';
@@ -90,6 +91,7 @@ const SettingsPanel = ({ isOpen, onClose, tags, privacy, onSave, availableTags, 
     };
 
     return (
+        
         <div className="absolute top-4  right-6 w-80 bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-[9999] flex flex-col animate-in fade-in slide-in-from-top-4 duration-200">
             {/* Header */}
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#1e1f22] rounded-t-xl">
@@ -250,12 +252,28 @@ const ToolbarBtn = ({ icon: Icon, isActive, onClick }) => (
 
 const Divider = () => <div className="h-5 w-[1px] bg-gray-700 mx-1"></div>;
 
-// --- DUMMY DATA ---
-const INITIAL_COMMENTS = [
-    { id: 1, user: "User01", avatar: null, content: "ADFJSKDLJFLADKSFJA;DSL...", time: "5 min ago" },
-    { id: 2, user: "User02", avatar: null, content: "Đoạn này cần sửa lại logic markdown.", time: "10 min ago" },
-    { id: 3, user: "User03", avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s", content: "Hello everyone my name is user03", time: "1 hour ago" },
-];
+const formatCommentTime = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
+const mapCommentResponse = (comment) => ({
+    id: comment.id,
+    user: comment.author?.name || 'Unknown',
+    avatar: comment.author?.avatar || comment.author?.avatarUrl || null,
+    content: comment.content || '',
+    time: formatCommentTime(comment.created_at || comment.createdAt)
+});
+
 
 export default function EditorPage({ initialContent = '' }) {
     // --- 1. KHAI BÁO STATE (QUAN TRỌNG: PHẢI CÓ ĐỦ Ở ĐÂY) ---
@@ -283,8 +301,11 @@ export default function EditorPage({ initialContent = '' }) {
 
     // State cho Comment (NẾU THIẾU DÒNG NÀY NÚT SẼ KHÔNG CHẠY)
     const [showComments, setShowComments] = useState(false);
-    const [comments, setComments] = useState(INITIAL_COMMENTS);
+    const [comments, setComments] = useState([]);
     const [newCommentText, setNewCommentText] = useState("");
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentError, setCommentError] = useState(null);
+    const canComment = !isAnonymousShare && Boolean(localStorage.getItem('accessToken'));
     const [isInputActive, setIsInputActive] = useState(true); // <--- KIỂM TRA DÒNG NÀY
 
     // Refs
@@ -389,6 +410,8 @@ export default function EditorPage({ initialContent = '' }) {
     const [availableTags, setAvailableTags] = useState([]);
     const { getAllTags } = useTagService();
     const { getUserProfile } = useUser();
+    const { getComments, addComment } = useCommunity();
+    const getCommentsRef = useRef(getComments);
     const [userData, setUserData] = useState({
         fullname: "User",
         email: "user@example.com",
@@ -421,6 +444,10 @@ export default function EditorPage({ initialContent = '' }) {
     }, []);
 
     useEffect(() => {
+        getCommentsRef.current = getComments;
+    }, [getComments]);
+
+    useEffect(() => {
         if (!shareTokenParam) return;
         const loadSharedDocument = async () => {
             try {
@@ -451,6 +478,15 @@ export default function EditorPage({ initialContent = '' }) {
             ghostTextRef.current.scrollLeft = textareaRef.current.scrollLeft;
         }
     }, [writingSuggestion]);
+
+    const previewContent = useMemo(() => (
+        <Markdown
+            remarkPlugins={[remarkDirective, remarkGfm, remarkHighlightPlugin]}
+            rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        >
+            {markdown}
+        </Markdown>
+    ), [markdown]);
 
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
@@ -1410,33 +1446,67 @@ export default function EditorPage({ initialContent = '' }) {
 
 
 
+    const fetchComments = async (docId) => {
+        if (!docId) {
+            setComments([]);
+            return;
+        }
+        setCommentLoading(true);
+        setCommentError(null);
+        try {
+            const response = await getCommentsRef.current(docId);
+            const data = Array.isArray(response.data) ? response.data : [];
+            setComments(data.map(mapCommentResponse));
+        } catch (error) {
+            setCommentError('Failed to load comments');
+            setComments([]);
+        } finally {
+            setCommentLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (showComments && document?.id) {
+            fetchComments(document.id);
+        }
+    }, [showComments, document?.id]);
+
     // --- LOGIC COMMENT ---
     const toggleCommentSection = () => {
         if (!showComments) {
             setIsTagEditorOpen(false);
         }
-        setShowComments(!showComments);
-    }
+        setShowComments(prev => !prev);
+    };
 
-    const handlePostComment = () => {
-        if (!newCommentText.trim()) {
-            alert("Comment cannot be empty!");
+    const handlePostComment = async () => {
+        if (!canComment) return;
+        const content = newCommentText.trim();
+        if (!content) {
+            setCommentError("Comment cannot be empty");
             return;
         }
-        const newComment = {
-            id: Date.now(),
-            user: "You",
-            avatar: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s",
-            content: newCommentText,
-            time: "Just now"
-        };
-        setComments([...comments, newComment]);
-        setNewCommentText("");
-        setIsInputActive(false);
+        if (!document?.id) {
+            setCommentError("Document is not ready");
+            return;
+        }
+        setCommentError(null);
+        try {
+            const response = await addComment(document.id, content);
+            const created = response?.data ? mapCommentResponse(response.data) : null;
+            if (created) {
+                setComments(prev => [...prev, created]);
+            }
+            setNewCommentText("");
+            setIsInputActive(false);
+        } catch (error) {
+            setCommentError("Failed to add comment");
+        }
     };
 
     const handleCancelComment = () => {
         setNewCommentText("");
+        setCommentError(null);
         setIsInputActive(false);
     };
 
@@ -1758,7 +1828,7 @@ export default function EditorPage({ initialContent = '' }) {
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Preview</span>
                     </div>
                     <div className="flex-1 p-8 overflow-y-auto prose prose-invert max-w-none bg-[#0f1011] custom-scrollbar">
-                        <Markdown remarkPlugins={[remarkDirective, remarkGfm, remarkHighlightPlugin]} rehypePlugins={[rehypeRaw, rehypeHighlight]}>{markdown}</Markdown>
+                        {previewContent}
                     </div>
                 </div>
 
@@ -1766,8 +1836,7 @@ export default function EditorPage({ initialContent = '' }) {
 
                 {/* --- COMMENT PANEL --- */}
                 {/* Đã sửa z-index lên 9999 để không bị che bởi bất cứ thứ gì */}
-                {showComments && (
-                    <div className="absolute top-4 right-6 w-80 bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-[9999] flex flex-col max-h-[calc(100%-2rem)] animate-in fade-in slide-in-from-right-4 duration-200">
+                <div className={`fixed top-4 right-6 w-80 bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-[9999] flex flex-col max-h-[calc(100vh-2rem)] transition-transform transition-opacity duration-200 ease-out transform-gpu ${showComments ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0 pointer-events-none'}`}>
                         {/* Header */}
                         <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#1e1f22] rounded-t-xl">
                             <div className="flex items-center gap-2 text-white font-semibold">
@@ -1782,7 +1851,11 @@ export default function EditorPage({ initialContent = '' }) {
 
                         {/* List */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                            {comments.length === 0 ? (
+                            {commentLoading ? (
+                                <p className="text-center text-gray-500 text-sm mt-4">Loading comments...</p>
+                            ) : commentError ? (
+                                <p className="text-center text-red-400 text-sm mt-4">{commentError}</p>
+                            ) : comments.length === 0 ? (
                                 <p className="text-center text-gray-500 text-sm mt-4">No comments yet.</p>
                             ) : (
                                 comments.map((c) => (
@@ -1806,7 +1879,9 @@ export default function EditorPage({ initialContent = '' }) {
 
                         {/* Input Area */}
                         <div className="p-4 bg-[#1e1f22] border-t border-white/5 rounded-b-xl">
-                            {!isInputActive ? (
+                            {!canComment ? (
+                                <p className="text-sm text-gray-400 text-center">Login required to comment.</p>
+                            ) : !isInputActive ? (
                                 <button
                                     onClick={() => setIsInputActive(true)}
                                     className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm w-full p-2 rounded-lg hover:bg-white/5 group"
@@ -1820,28 +1895,38 @@ export default function EditorPage({ initialContent = '' }) {
                                 <div className="bg-[#2b2d31] p-3 rounded-xl border border-blue-500/50 animate-in fade-in zoom-in-95 duration-200">
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-blue-900">
-                                            <img src="[https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s)" className="w-full h-full object-cover" alt="You" />
+                                            <img
+                                                src={userData.avatar_url || "/dump_avt.jpg"}
+                                                className="w-full h-full object-cover"
+                                                alt="You"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = '/dump_avt.jpg'; }}
+                                            />
                                         </div>
                                         <span className="text-xs text-gray-400 font-medium">Commenting as You</span>
                                     </div>
                                     <textarea
                                         autoFocus
                                         value={newCommentText}
-                                        onChange={(e) => setNewCommentText(e.target.value)}
+                                        onChange={(e) => {
+                                            setNewCommentText(e.target.value);
+                                            if (commentError) setCommentError(null);
+                                        }}
                                         className="w-full bg-transparent text-sm text-white placeholder:text-gray-600 focus:outline-none resize-none min-h-[60px]"
                                         placeholder="Type your thoughts..."
-
                                     />
                                     <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-white/5">
                                         <button onClick={handleCancelComment} className="text-xs font-medium text-gray-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-white/5 transition-colors">Cancel</button>
-                                        <button onClick={handlePostComment} className="text-xs font-medium bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20">Comment</button>
+                                        <button
+                                            onClick={handlePostComment}
+                                            className="text-xs font-medium bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20"
+                                        >
+                                            Comment
+                                        </button>
                                     </div>
                                 </div>
                             )}
                         </div>
-
-                    </div>
-                )}
+                </div>
 
                 <ShareModal
                     isOpen={isShareModalOpen}

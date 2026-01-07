@@ -23,4 +23,13 @@ public class UserResponse {
     private String bio;
     @JsonProperty("avatar_url")
     private String avatarUrl;
+    
+    @JsonProperty("is_private")
+    private Boolean isPrivate;
+
+    @JsonProperty("followers_count")
+    private Integer followersCount;
+
+    @JsonProperty("is_following")
+    private Boolean isFollowing;
 }

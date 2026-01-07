@@ -115,4 +115,28 @@ public class UserController {
 
         return ResponseEntity.ok(res);
     }
+
+    @PostMapping("/me/privacy")
+    public ResponseEntity<ResponseDTO> togglePrivacy() {
+        Boolean newPrivacyState = userService.togglePrivacy();
+
+        ResponseDTO res = new ResponseDTO();
+        res.setMessage("success");
+        res.setDetail("Privacy updated successfully");
+        res.setData(Map.of("isPrivate", newPrivacyState));
+
+        return ResponseEntity.ok(res);
+    }
+
+    @PostMapping("/{id}/follow")
+    public ResponseEntity<ResponseDTO> followUser(@PathVariable Long id) {
+        boolean isFollowing = userService.followUser(id);
+
+        ResponseDTO res = new ResponseDTO();
+        res.setMessage("success");
+        res.setDetail(isFollowing ? "User followed successfully" : "User unfollowed successfully");
+        res.setData(Map.of("isFollowing", isFollowing));
+
+        return ResponseEntity.ok(res);
+    }
 }

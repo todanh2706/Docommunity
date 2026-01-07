@@ -46,6 +46,7 @@ public class DocumentService {
     private final CommentRepository commentRepository;
     private final DocumentCollaboratorRepository documentCollaboratorRepository;
     private final DocumentAccessService documentAccessService;
+    private final EmailService emailService;
 
     private static final int PAGE_SIZE = 10;
     private static final String ACTIVE_STATUS = "ACTIVE";
@@ -87,8 +88,33 @@ public class DocumentService {
         // 4. Save
         DocumentEntity savedDoc = documentRepository.save(doc);
 
-        // 5. Convert to Response
+        // 5. Send notification to followers if document is public
+        if (Boolean.TRUE.equals(savedDoc.getIsPublic())) {
+            notifyFollowersOfNewPost(user, savedDoc);
+        }
+
+        // 6. Convert to Response
         return mapToDocumentResponse(savedDoc);
+    }
+
+    /**
+     * Send email notification to all followers when a user publishes a new document
+     */
+    private void notifyFollowersOfNewPost(UserEntity author, DocumentEntity document) {
+        Set<UserEntity> followers = author.getFollowers();
+        if (followers == null || followers.isEmpty()) {
+            return;
+        }
+
+        String authorName = author.getFullname() != null ? author.getFullname() : author.getUsername();
+        
+        // Collect follower emails and names
+        List<String[]> followerData = followers.stream()
+                .filter(f -> f.getEmail() != null && !f.getEmail().isBlank())
+                .map(f -> new String[]{f.getEmail(), f.getFullname() != null ? f.getFullname() : f.getUsername()})
+                .collect(Collectors.toList());
+
+        emailService.sendNewPostNotificationToFollowers(followerData, authorName, document.getTitle(), document.getId());
     }
 
     public DocumentResponse getDocument(Long id) {
@@ -281,6 +307,9 @@ public class DocumentService {
         }
 
         // 3. Partial Update Logic
+        // Track if document is being published (from private to public)
+        boolean wasPrivate = !Boolean.TRUE.equals(doc.getIsPublic());
+        boolean willBePublic = Boolean.TRUE.equals(request.getIsPublic());
 
         if (request.getTitle() != null) {
             doc.setTitle(request.getTitle());
@@ -308,6 +337,11 @@ public class DocumentService {
         }
         doc.setLastModified(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
         documentRepository.save(doc);
+
+        // 4. Send notification to followers if document is being published
+        if (wasPrivate && willBePublic) {
+            notifyFollowersOfNewPost(doc.getUser(), doc);
+        }
 
         return mapToDocumentResponse(doc);
     }

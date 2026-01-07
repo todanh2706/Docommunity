@@ -25,6 +25,12 @@ public class PublicUserResponse {
     private int commentsCount; // Number of comments user made
     private int likesGivenCount; // Number of likes user gave
 
+    // Follow stats
+    private int followersCount;
+    private int followingCount;
+    private boolean isFollowing; // Whether current user is following this user
+    private boolean isOwnProfile; // Whether this is the current user's own profile
+
     // User's public documents
     private List<PublicDocumentResponse> documents;
 }

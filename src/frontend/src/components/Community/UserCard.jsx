@@ -21,7 +21,7 @@ const UserCard = ({ name, bio, followers, avatar, isFollowing, onFollow }) => {
             <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    onFollow();
+                    onFollow(e);
                 }}
                 className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300
                 ${isFollowing
