@@ -439,8 +439,9 @@ export default function EditorPage({ initialContent = '' }) {
     });
 
     useEffect(() => {
-        setIsCollaborativeMode(connected);
-    }, [connected]);
+        // Only show collaborative UI when there are actual other users present
+        setIsCollaborativeMode(remoteCursors.length > 0);
+    }, [remoteCursors]);
 
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
@@ -485,8 +486,10 @@ export default function EditorPage({ initialContent = '' }) {
             suggestionTimeoutRef.current = setTimeout(async () => {
                 setIsFetchingSuggestion(true);
                 try {
-                    const cursorText = newMarkdown.slice(-100); // Last 100 chars for context
-                    const data = await getWritingSuggestion(newMarkdown, cursorText);
+                    const cursorText = newMarkdown.slice(-100); // Last 100 chars for cursor context
+                    // Only send last 1000 chars to reduce token usage and improve speed
+                    const contentWindow = newMarkdown.slice(-1000);
+                    const data = await getWritingSuggestion(contentWindow, cursorText);
                     if (data.suggestion && data.suggestion.trim()) {
                         setWritingSuggestion(data.suggestion);
                     }
