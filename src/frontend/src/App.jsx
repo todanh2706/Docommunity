@@ -1,5 +1,6 @@
 import './App.css'
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '@/context/AuthContext';
 import { UIProvider } from '@/context/UIProvider';
 import { ToastProvider } from '@/context/ToastContext';
 import { DocumentProvider } from '@/context/DocumentContext';
@@ -17,18 +18,20 @@ function ChatbotWrapper() {
 export default function App() {
   return (
     <BrowserRouter>
-      <UIProvider>
-        <ToastProvider>
-          <DocumentProvider>
-            <AISettingsProvider>
-              <AxiosInterceptor>
-                <AppRoutes />
-                <ChatbotWrapper />
-              </AxiosInterceptor>
-            </AISettingsProvider>
-          </DocumentProvider>
-        </ToastProvider>
-      </UIProvider>
+      <AuthProvider>
+        <UIProvider>
+          <ToastProvider>
+            <DocumentProvider>
+              <AISettingsProvider>
+                <AxiosInterceptor>
+                  <AppRoutes />
+                  <ChatbotWrapper />
+                </AxiosInterceptor>
+              </AISettingsProvider>
+            </DocumentProvider>
+          </ToastProvider>
+        </UIProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

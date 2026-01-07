@@ -106,8 +106,56 @@ export const AuthProvider = ({ children }) => {
         }
     }
 
+    const verifyAccount = async (email, otp) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const res = await api.post(`/auth/verify-account`, { email, otp });
+            return res.data;
+        } catch (err) {
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Verification failed!";
+            setError(errMessage);
+            throw new Error(errMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const resendVerification = async (email) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const res = await api.post(`/auth/resend-verification`, { email });
+            return res.data;
+        } catch (err) {
+            const errMessage = err.response?.data?.data?.error ||
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Failed to resend code!";
+            setError(errMessage);
+            throw new Error(errMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, register, isLoading, error, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{
+            user,
+            login,
+            logout,
+            register,
+            verifyAccount,
+            resendVerification,
+            isLoading,
+            error,
+            isAuthenticated: !!user
+        }}>
             {children}
         </AuthContext.Provider>
     );
