@@ -44,6 +44,9 @@ public class UserEntity {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
+    @Column(name = "is_private")
+    private Boolean isPrivate = false;
+
     @ManyToMany(mappedBy = "likedByUsers")
     private Set<DocumentEntity> likedDocuments = new HashSet<>();
 
@@ -52,6 +55,17 @@ public class UserEntity {
 
     @ManyToMany(mappedBy = "markedByUsers")
     private Set<DocumentEntity> markedDocuments = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "user_follows",
+        joinColumns = @JoinColumn(name = "follower_id"),
+        inverseJoinColumns = @JoinColumn(name = "following_id")
+    )
+    private Set<UserEntity> following = new HashSet<>();
+
+    @ManyToMany(mappedBy = "following")
+    private Set<UserEntity> followers = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUIContext } from '../context/useUIContext';
 import { useToast } from '../context/ToastContext';
 import useAuth from '../hooks/useAuth';
 import { useUser } from '../hooks/useUser';
 import Sidebar from "../components/Layout/Sidebar";
 import { ConfirmDialog } from '../components/Layout/Dialog';
-import { Settings, Edit2, Save, LogOut } from 'lucide-react';
+import { Settings, Edit2, Save, LogOut, Eye } from 'lucide-react';
 import ProfileSection from '../components/Settings/ProfileSection';
 import SecuritySection from '../components/Settings/SecuritySection';
 import DangerZoneSection from '../components/Settings/DangerZoneSection';
@@ -13,7 +14,9 @@ import AISettingsSection from '../components/Settings/AISettingsSection';
 
 // --- 3. MAIN PAGE ---
 export default function SettingsPage() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
+        id: null,
         username: "toilaHinacon",
         fullname: "Hina Chono",
         email: "wibu23214@gmail.com",
@@ -24,7 +27,7 @@ export default function SettingsPage() {
     const { showSidebar } = useUIContext();
     const [isEditing, setIsEditing] = useState(false);
     const [backupData, setBackupData] = useState(null);
-    const { getUserProfile, updateUserProfile, uploadAvatar } = useUser();
+    const { getUserProfile, updateUserProfile, uploadAvatar, togglePrivacy: togglePrivacyApi } = useUser();
     const { logout } = useAuth();
     const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
     const toast = useToast();
@@ -50,6 +53,7 @@ export default function SettingsPage() {
                 const userData = await getUserProfile();
                 setFormData(prev => ({
                     ...prev,
+                    id: userData.id,
                     username: userData.username || "",
                     fullname: userData.fullname || "",
                     email: userData.email || "",
@@ -57,6 +61,8 @@ export default function SettingsPage() {
                     bio: userData.bio || "",
                     avatar: userData.avatar_url || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3xAnstGJRFjiZXWl2GSh15ZOLhhPJ2K6ENA&s"
                 }));
+                // Set privacy state from API
+                setIsPrivate(userData.is_private || false);
             } catch (error) {
                 // Error is already logged in the hook
             }
@@ -65,10 +71,14 @@ export default function SettingsPage() {
         fetchUserData();
     }, []);
 
-    const togglePrivacy = () => {
-        setIsPrivate((prev) => !prev);
-        // TODO: Gọi API để lưu trạng thái mới vào DB
-        console.log(`Privacy set to: ${!isPrivate ? 'Private' : 'Public'}`);
+    const togglePrivacy = async () => {
+        try {
+            const result = await togglePrivacyApi();
+            setIsPrivate(result.isPrivate);
+            toast.success(`Account is now ${result.isPrivate ? 'Private' : 'Public'}`);
+        } catch (error) {
+            toast.error("Failed to update privacy setting");
+        }
     };
 
 
@@ -225,6 +235,14 @@ export default function SettingsPage() {
 
                         {/* Nút Edit/Save & Sign Out */}
                         <div className="flex gap-3">
+                            <button
+                                onClick={() => formData.id && navigate(`/home/profile/${formData.id}`)}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg 
+                                bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20"
+                            >
+                                <Eye size={16} />
+                                <span>View Profile</span>
+                            </button>
                             <button
                                 onClick={logout}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-lg 

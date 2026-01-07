@@ -10,7 +10,7 @@ export default function FindPeople() {
     const { showSidebar } = useUIContext();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
-    const { getAllUsers } = useUser();
+    const { getAllUsers, followUser } = useUser();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -24,9 +24,9 @@ export default function FindPeople() {
                     id: user.id,
                     name: user.fullname || user.username,
                     bio: user.bio || "No bio yet",
-                    followers: "0",
+                    followers: user.followers_count || 0,
                     avatar: user.avatar_url || "/dump_avt.jpg",
-                    isFollowing: false
+                    isFollowing: user.is_following || false
                 })));
             } catch (error) {
                 console.error("Failed to fetch users", error);
@@ -37,10 +37,20 @@ export default function FindPeople() {
         fetchUsers();
     }, [searchTerm]);
 
-    const handleFollow = (id) => {
-        setUsers(users.map(user =>
-            user.id === id ? { ...user, isFollowing: !user.isFollowing } : user
-        ));
+    const handleFollow = async (e, id) => {
+        e.stopPropagation(); // Prevent navigation when clicking follow button
+        try {
+            const result = await followUser(id);
+            setUsers(users.map(user =>
+                user.id === id ? { 
+                    ...user, 
+                    isFollowing: result.isFollowing,
+                    followers: result.isFollowing ? user.followers + 1 : user.followers - 1
+                } : user
+            ));
+        } catch (error) {
+            console.error("Failed to follow/unfollow user", error);
+        }
     };
 
     const handleUserClick = (id) => {
@@ -89,7 +99,7 @@ export default function FindPeople() {
                                 <div key={user.id} onClick={() => handleUserClick(user.id)} className="cursor-pointer">
                                     <UserCard
                                         {...user}
-                                        onFollow={() => handleFollow(user.id)}
+                                        onFollow={(e) => handleFollow(e, user.id)}
                                     />
                                 </div>
                             ))

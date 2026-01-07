@@ -13,12 +13,24 @@ export default function UserProfile() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSidebar } = useUIContext();
-    const { getPublicProfile } = useUser();
+    const { getPublicProfile, followUser } = useUser();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [isOwnProfile, setIsOwnProfile] = useState(false);
+    const [followersCount, setFollowersCount] = useState(0);
     const [activeTab, setActiveTab] = useState('documents');
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Refresh when page gains focus (e.g., navigating back from Find People)
+    useEffect(() => {
+        const handleFocus = () => {
+            setRefreshKey(prev => prev + 1);
+        };
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, []);
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -35,6 +47,8 @@ export default function UserProfile() {
                     stats: {
                         documents: data.documentsCount || 0,
                         likes: data.likesCount || 0,
+                        followers: data.followersCount || 0,
+                        following: data.followingCount || 0,
                     },
                     activity: {
                         commentsCount: data.commentsCount || 0,
@@ -42,7 +56,9 @@ export default function UserProfile() {
                     },
                     documents: data.documents || []
                 });
-                setIsFollowing(false);
+                setIsFollowing(data.isFollowing || false);
+                setIsOwnProfile(data.isOwnProfile || false);
+                setFollowersCount(data.followersCount || 0);
             } catch (err) {
                 if (err.name === 'CanceledError') {
                     console.log('Request canceled', err.message);
@@ -58,7 +74,17 @@ export default function UserProfile() {
         if (id) {
             fetchUser();
         }
-    }, [id]);
+    }, [id, refreshKey]);
+
+    const handleFollow = async () => {
+        try {
+            const result = await followUser(user.id);
+            setIsFollowing(result.isFollowing);
+            setFollowersCount(prev => result.isFollowing ? prev + 1 : prev - 1);
+        } catch (error) {
+            console.error("Failed to follow/unfollow user", error);
+        }
+    };
 
     if (loading) {
         return (
@@ -118,36 +144,35 @@ export default function UserProfile() {
                             <div className="flex-1 mb-2">
                                 <h1 className="text-3xl font-black text-white mb-1">{user.name}</h1>
                                 <p className="text-gray-400 font-mono text-sm">{user.username}</p>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    <span className="font-semibold text-white">{followersCount}</span> followers · <span className="font-semibold text-white">{user.stats.following}</span> following
+                                </p>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-3 mb-2">
-                                <button className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl border border-white/10 transition-colors">
-                                    <MessageSquare size={20} />
-                                </button>
-                                <button
-                                    onClick={() => setIsFollowing(!isFollowing)}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all
-                                    ${isFollowing
-                                            ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 border border-white/10'
-                                            : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'}`}
-                                >
-                                    {isFollowing ? (
-                                        <>
-                                            <UserCheck size={20} />
-                                            <span>Following</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus size={20} />
-                                            <span>Follow</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-colors">
-                                    <Flag size={20} />
-                                </button>
-                            </div>
+                            {/* Actions - Hide follow button for own profile */}
+                            {!isOwnProfile && (
+                                <div className="flex items-center gap-3 mb-2">
+                                    <button
+                                        onClick={handleFollow}
+                                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all
+                                        ${isFollowing
+                                                ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400 border border-white/10'
+                                                : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'}`}
+                                    >
+                                        {isFollowing ? (
+                                            <>
+                                                <UserCheck size={20} />
+                                                <span>Following</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus size={20} />
+                                                <span>Follow</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Bio & Stats */}

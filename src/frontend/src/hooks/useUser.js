@@ -121,6 +121,38 @@ export const useUser = () => {
         }
     };
 
+    const togglePrivacy = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post('/users/me/privacy');
+            setIsLoading(false);
+            return response.data.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.detail || "Failed to toggle privacy";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
+    const followUser = async (userId) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.post(`/users/${userId}/follow`);
+            setIsLoading(false);
+            return response.data.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.detail || "Failed to follow/unfollow user";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
     return {
         getUserProfile,
         updateUserProfile,
@@ -128,6 +160,8 @@ export const useUser = () => {
         deleteAccount,
         uploadAvatar,
         getAllUsers,
+        togglePrivacy,
+        followUser,
         isLoading,
         error
     };

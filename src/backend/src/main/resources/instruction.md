@@ -33,7 +33,7 @@
     - **My Workspace**: /home/myworkspace - Your personal documents
     - **Bookmarks**: /home/bookmark - Saved documents
     - **Settings**: /home/setting - Profile and account settings
-    - **Find People**: /home/findpeople - Discover other users
+    - **Find People**: /home/find-people - Discover other users
 
     ### 5. SEARCH & FILTER
     - Use search bar to find documents by title or content
@@ -46,10 +46,10 @@
     - **IMPORTANT**: When referencing app pages, ALWAYS include clickable markdown links using the format: [Page Name](/path)
       - Example: "Go to [Settings](/home/setting) to edit your profile"
       - Example: "Check your documents in [My Workspace](/home/myworkspace)"
-      - Example: "Find other users at [Find People](/home/findpeople)"
+      - Example: "Find other users at [Find People](/home/find-people)"
     - Available internal links:
       - [Home](/home)
       - [My Workspace](/home/myworkspace)
       - [Bookmarks](/home/bookmark)
       - [Settings](/home/setting)
-      - [Find People](/home/findpeople)
+      - [Find People](/home/find-people)
