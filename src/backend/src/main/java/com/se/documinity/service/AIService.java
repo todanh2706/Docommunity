@@ -28,8 +28,18 @@ public class AIService {
     @Value("${openrouter.site-name:Docommunity}")
     private String siteName;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Constructor với timeout configuration
+    public AIService() {
+        // Tạo RestTemplate với timeout 25 giây (dưới Render's 30s limit)
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
+            new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);  // 5 giây để connect
+        factory.setReadTimeout(25000);    // 25 giây để đọc response
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     private String callOpenRouter(String systemInstruction, String userPrompt) {
         return callOpenRouter(systemInstruction, userPrompt, null);
@@ -122,7 +132,8 @@ public class AIService {
     public String chat(String message, String documentContext) {
         String systemRules = appKnowledge + "\n\nAnswer the user's question based on the app knowledge above. " +
                 "Do NOT include conversational filler like 'Sure!', 'Of course!', 'Here you go!'. " +
-                "Keep your response language the SAME as the user's question language.";
+                "Keep your response language the SAME as the user's question language." +
+                "Give precise answer, not too long";
 
         // Inject document context if available
         if (documentContext != null && !documentContext.isBlank()) {

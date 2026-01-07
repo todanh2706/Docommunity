@@ -3,6 +3,9 @@ import axiosInstance from '../hooks/useApi';
 const BACKEND_ROOT = '/ai';
 const USE_MOCK_DATA = false;
 
+// Timeout riêng cho AI requests (30 giây - AI cần thời gian xử lý lâu hơn)
+const AI_TIMEOUT = 30000;
+
 const mockDelay = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 
 
@@ -14,7 +17,11 @@ export const getAiChat = async (message) => {
         };
     }
     try {
-        const response = await axiosInstance.post(`${BACKEND_ROOT}/chat`, { 'message': message });
+        const response = await axiosInstance.post(
+            `${BACKEND_ROOT}/chat`, 
+            { 'message': message },
+            { timeout: AI_TIMEOUT }
+        );
         return response.data;
     } catch (error) {
         console.error('Error fetching documents:', error);
@@ -30,8 +37,11 @@ export const generateContent = async (type, prompt) => {
         };
     }
     try {
-        const response = await axiosInstance.post(`${BACKEND_ROOT}/generate`, { type, prompt });
-
+        const response = await axiosInstance.post(
+            `${BACKEND_ROOT}/generate`, 
+            { type, prompt },
+            { timeout: AI_TIMEOUT }
+        );
         return response.data;
     } catch (error) {
         console.error('Error generating content:', error);
@@ -66,7 +76,7 @@ export const refineContent = async (docId, text, instruction) => {
             };
         }
 
-        const response = await axiosInstance.post(url, payload);
+        const response = await axiosInstance.post(url, payload, { timeout: AI_TIMEOUT });
 
         // Backend returns ResponseDTO { data: { refineContent: "..." } }
         const result = response.data.data || response.data;
@@ -91,7 +101,11 @@ export const suggestTags = async (content) => {
         };
     }
     try {
-        const response = await axiosInstance.post(`${BACKEND_ROOT}/tags`, { content });
+        const response = await axiosInstance.post(
+            `${BACKEND_ROOT}/tags`, 
+            { content },
+            { timeout: AI_TIMEOUT }
+        );
         return response.data;
     } catch (error) {
         console.error('Error suggesting tags:', error);
