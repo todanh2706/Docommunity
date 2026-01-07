@@ -77,23 +77,28 @@ public class AIService {
     }
 
     // --- 1. Refine (Improve / Summarize) ---
+    // --- 1. Refine (Improve / Summarize) ---
     public String refineText(String content, String action) {
-        String systemRules;
+        String baseSystemRules = "You are a professional technical editor. " +
+                "Your task is to improve the provided text based on the user's instruction. " +
+                "CRITICAL: You MUST preserve the original language of the text. " +
+                "If the text is in Vietnamese, you MUST respond in Vietnamese. " +
+                "If the text is in English, you MUST respond in English. " +
+                "Do NOT translate under any circumstances unless explicitly asked. " +
+                "Do NOT include conversational filler. Return ONLY the result.";
+
+        String specificInstruction;
         if ("summarize".equalsIgnoreCase(action)) {
-            systemRules = "You are a professional summarizer. " +
-                    "Create a concise summary of the provided text. " +
-                    "Return ONLY the summary in Markdown. " +
-                    "Do NOT include any conversational filler like 'Here is...', 'Sure...', etc. " +
-                    "Keep the output language the SAME as the input language.";
+            specificInstruction = "Summarize the text concisely.";
+        } else if ("improve".equalsIgnoreCase(action) || action == null || action.isBlank()) {
+            specificInstruction = "Rewrite the text to be clearer, more professional, and fix grammar.";
         } else {
-            // Default: improve
-            systemRules = "You are a professional technical editor. " +
-                    "Rewrite the text to be clearer, more professional, and fix grammar. " +
-                    "Do NOT include any conversational filler like 'Here is...', 'Sure...', etc. " +
-                    "Return ONLY the refined Markdown. " +
-                    "Keep the output language the SAME as the input language.";
+            // Use the custom instruction from the frontend
+            specificInstruction = action;
         }
-        return callOpenRouter(systemRules, content);
+
+        String finalPrompt = baseSystemRules + "\n\nInstruction: " + specificInstruction;
+        return callOpenRouter(finalPrompt, content);
     }
 
     // --- 2. Chat (With Document Context and App Knowledge) ---

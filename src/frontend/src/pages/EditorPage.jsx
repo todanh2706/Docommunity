@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
 import { useToast } from "../context/ToastContext";
 import { DocumentSettingsModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
@@ -290,6 +290,7 @@ export default function EditorPage({ initialContent = '' }) {
     // Refs
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
+    const ghostTextRef = useRef(null); // Added ref for ghost text synchronization
     const suggestionTimeoutRef = useRef(null);
     const suggestionAbortRef = useRef(null); // AbortController for cancelling pending suggestion requests
     const lastSavedTitleRef = useRef(document?.title || "");
@@ -440,6 +441,16 @@ export default function EditorPage({ initialContent = '' }) {
             setDocument(location.state.document);
         }
     }, [location.state?.document]);
+
+
+
+    // Sync ghost text scroll immediately when suggestion appears
+    useLayoutEffect(() => {
+        if (writingSuggestion && ghostTextRef.current && textareaRef.current) {
+            ghostTextRef.current.scrollTop = textareaRef.current.scrollTop;
+            ghostTextRef.current.scrollLeft = textareaRef.current.scrollLeft;
+        }
+    }, [writingSuggestion]);
 
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
@@ -1651,7 +1662,13 @@ export default function EditorPage({ initialContent = '' }) {
                             onClick={handleEditorClick}
                             onMouseUp={handleMouseUp}
                             onSelect={handleCursorUpdate}
-                            onScroll={() => setScrollTick((prev) => prev + 1)}
+                            onScroll={(e) => {
+                                setScrollTick((prev) => prev + 1);
+                                if (ghostTextRef.current) {
+                                    ghostTextRef.current.scrollTop = e.target.scrollTop;
+                                    ghostTextRef.current.scrollLeft = e.target.scrollLeft;
+                                }
+                            }}
                         />
                         {remoteCursors.length > 0 && (
                             <div className="absolute inset-0 pointer-events-none">
@@ -1679,11 +1696,12 @@ export default function EditorPage({ initialContent = '' }) {
                         {/* Writing Suggestion - Inline Ghost Text (Single User Mode) */}
                         {writingSuggestion && !isCollaborativeMode && (
                             <div
-                                className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none p-6 font-mono text-sm leading-relaxed overflow-hidden"
+                                ref={ghostTextRef}
+                                className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none p-6 font-mono text-sm leading-relaxed overflow-y-auto custom-scrollbar [&::-webkit-scrollbar-thumb]:!bg-transparent [&::-webkit-scrollbar-track]:!bg-transparent"
                                 style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                             >
                                 {/* Invisible text to match position */}
-                                <span className="invisible">{markdown}</span>
+                                <span className="invisible text-transparent" style={{ color: 'transparent' }}>{markdown}</span>
                                 {/* Ghost suggestion text */}
                                 <span className="text-gray-500/50 italic">{writingSuggestion}</span>
                                 {/* Tab hint */}
