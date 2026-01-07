@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Share2, Heart, MoreVertical, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Share2, Heart, MoreVertical, Clock, Calendar, MessageCircle, X } from 'lucide-react';
 import Sidebar from '../../components/Layout/Sidebar';
 import CommentSection from '../../components/Community/CommentSection';
 import { useUIContext } from '../../context/useUIContext';
@@ -19,6 +19,7 @@ export default function ViewDocument() {
     const [document, setDocument] = useState(null);
     const { viewDoc, likeDocument, unlikeDocument } = useCommunity();
     const [isLiked, setIsLiked] = useState(false);
+    const [showComments, setShowComments] = useState(false);
 
     useEffect(() => {
         const fetchDoc = async () => {
@@ -30,7 +31,7 @@ export default function ViewDocument() {
                     ...data,
                     author: {
                         name: data.owner?.name || "Unknown",
-                        avatar: data.owner?.avatar_url || "/dump_avt.jpg",
+                        avatar: data.owner?.avatar_url || "/dummy_avt.jpg",
                         role: "Member" // Placeholder
                     },
                     stats: {
@@ -105,6 +106,19 @@ export default function ViewDocument() {
                             <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-colors">
                                 <Share2 size={20} />
                             </button>
+                            {/* Comment Toggle Button */}
+                            <button
+                                onClick={() => setShowComments(!showComments)}
+                                className={`xl:hidden relative p-2 hover:bg-white/5 rounded-full transition-colors ${showComments ? 'text-blue-400' : 'text-gray-400 hover:text-white'
+                                    }`}
+                            >
+                                <MessageCircle size={20} />
+                                {document.stats?.comments > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        {document.stats.comments}
+                                    </span>
+                                )}
+                            </button>
                             <button className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-colors">
                                 <MoreVertical size={20} />
                             </button>
@@ -175,10 +189,42 @@ export default function ViewDocument() {
                     </div>
                 </div>
 
-                {/* Right Panel - Comments */}
+                {/* Right Panel - Comments (Desktop) */}
                 <div className="w-96 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl hidden xl:flex flex-col">
                     <CommentSection docId={id} shouldFocus={location.state?.focusComment} />
                 </div>
+
+                {/* Mobile/Tablet Comment Sidebar - Slides from Right */}
+                <div className={`xl:hidden fixed top-0 right-0 h-full w-full sm:w-96 bg-gray-900 border-l border-white/10 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out ${showComments ? 'translate-x-0' : 'translate-x-full'
+                    }`}>
+                    <div className="h-full flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-white/10">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <MessageCircle size={20} />
+                                Comments ({document.stats?.comments || 0})
+                            </h3>
+                            <button
+                                onClick={() => setShowComments(false)}
+                                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X size={20} className="text-gray-400" />
+                            </button>
+                        </div>
+                        {/* Comment Section */}
+                        <div className="flex-1 overflow-hidden p-4">
+                            <CommentSection docId={id} shouldFocus={location.state?.focusComment} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Backdrop for sidebar */}
+                {showComments && (
+                    <div
+                        className="xl:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-30"
+                        onClick={() => setShowComments(false)}
+                    />
+                )}
             </main>
         </div>
     );

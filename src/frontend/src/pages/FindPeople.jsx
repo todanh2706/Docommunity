@@ -1,24 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import Sidebar from '../components/Layout/Sidebar';
 import { useUIContext } from '../context/useUIContext';
 import UserCard from '../components/Community/UserCard';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../hooks/useUser';
 
 export default function FindPeople() {
     const { showSidebar } = useUIContext();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const { getAllUsers } = useUser();
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock data for popular users
-    const [users, setUsers] = useState([
-        { id: 1, name: "Sarah Connor", bio: "Full Stack Developer | React & Node.js Enthusiast", followers: "1.2k", avatar: null, isFollowing: false },
-        { id: 2, name: "John Doe", bio: "UI/UX Designer | Creating beautiful experiences", followers: "850", avatar: null, isFollowing: true },
-        { id: 3, name: "Jane Smith", bio: "Product Manager @ TechCorp", followers: "2.5k", avatar: null, isFollowing: false },
-        { id: 4, name: "Mike Ross", bio: "Legal Tech Consultant", followers: "500", avatar: null, isFollowing: false },
-        { id: 5, name: "Rachel Green", bio: "Fashion Blogger & Content Creator", followers: "10k", avatar: null, isFollowing: false },
-        { id: 6, name: "Harvey Specter", bio: "Senior Partner | Closer", followers: "5.8k", avatar: null, isFollowing: true },
-    ]);
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                setLoading(true);
+                const data = await getAllUsers(searchTerm);
+                // Map backend response to component format
+                setUsers(data.map(user => ({
+                    id: user.id || Math.random(),
+                    name: user.fullname || user.username,
+                    bio: user.bio || "No bio yet",
+                    followers: "0",
+                    avatar: user.avatar_url || "/dump_avt.jpg",
+                    isFollowing: false
+                })));
+            } catch (error) {
+                console.error("Failed to fetch users", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUsers();
+    }, [searchTerm]);
 
     const handleFollow = (id) => {
         setUsers(users.map(user =>
@@ -29,11 +46,6 @@ export default function FindPeople() {
     const handleUserClick = (id) => {
         navigate(`/home/profile/${id}`);
     };
-
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.bio.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     return (
         <div className="flex flex-row items-left justify-between min-h-screen bg-gray-900 text-gray-100">
@@ -62,16 +74,18 @@ export default function FindPeople() {
                     </div>
                 </div>
 
-                {/* Popular Users Grid */}
+                {/* Users Grid */}
                 <div>
                     <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                         <span className="w-2 h-8 bg-blue-600 rounded-full"></span>
-                        Popular Users
+                        {searchTerm ? 'Search Results' : 'All Users'}
                     </h2>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredUsers.length > 0 ? (
-                            filteredUsers.map(user => (
+                        {loading ? (
+                            <div className="col-span-full text-center py-10 text-gray-500">Loading users...</div>
+                        ) : users.length > 0 ? (
+                            users.map(user => (
                                 <div key={user.id} onClick={() => handleUserClick(user.id)} className="cursor-pointer">
                                     <UserCard
                                         {...user}
@@ -81,7 +95,7 @@ export default function FindPeople() {
                             ))
                         ) : (
                             <div className="col-span-full text-center py-10 text-gray-500">
-                                No users found matching "{searchTerm}"
+                                {searchTerm ? `No users found matching "${searchTerm}"` : 'No users found'}
                             </div>
                         )}
                     </div>

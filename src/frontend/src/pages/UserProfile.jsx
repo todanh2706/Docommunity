@@ -25,7 +25,7 @@ export default function UserProfile() {
                     name: data.fullname || data.username,
                     username: "@" + data.username,
                     bio: data.bio || "No bio yet.",
-                    avatar: null, // Backend doesn't support avatar yet
+                    avatar: data.avatar_url || "/dump_avt.jpg",
                     followers: 0, // Mock for now
                     following: 0, // Mock for now
                     location: "Unknown", // Mock for now

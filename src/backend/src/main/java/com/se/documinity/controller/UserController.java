@@ -46,6 +46,15 @@ public class UserController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping
+    public ResponseEntity<ResponseDTO> getAllUsers(@RequestParam(required = false) String search) {
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(userService.getAllUsers(search));
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Users retrieved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ResponseDTO> getPublicUserProfile(@PathVariable Long id) {
         ResponseDTO responseDTO = new ResponseDTO();

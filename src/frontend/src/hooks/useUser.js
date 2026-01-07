@@ -103,12 +103,31 @@ export const useUser = () => {
         }
     };
 
+    const getAllUsers = async (search = '') => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await api.get('/users', {
+                params: search ? { search } : {}
+            });
+            setIsLoading(false);
+            return response.data.data;
+        } catch (err) {
+            setIsLoading(false);
+            const errMessage = err.response?.data?.detail || "Failed to fetch users";
+            setError(errMessage);
+            console.error(errMessage);
+            throw err;
+        }
+    };
+
     return {
         getUserProfile,
         updateUserProfile,
         getPublicProfile,
         deleteAccount,
         uploadAvatar,
+        getAllUsers,
         isLoading,
         error
     };

@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -30,8 +32,7 @@ public class UserService {
                 user.getFullname(),
                 user.getPhoneNumber(),
                 user.getBio(),
-                user.getAvatarUrl()
-        );
+                user.getAvatarUrl());
     }
 
     public UserResponse updateUser(UpdateUserRequest request) {
@@ -64,8 +65,7 @@ public class UserService {
                 updatedUser.getFullname(),
                 updatedUser.getPhoneNumber(),
                 updatedUser.getBio(),
-                updatedUser.getAvatarUrl()
-        );
+                updatedUser.getAvatarUrl());
     }
 
     public void deleteAccount(DeleteUserRequest request) {
@@ -92,5 +92,25 @@ public class UserService {
                 user.getUsername(),
                 user.getFullname(),
                 user.getBio());
+    }
+
+    public List<UserResponse> getAllUsers(String search) {
+        List<UserEntity> users;
+
+        if (search != null && !search.isBlank()) {
+            users = userRepository.findByUsernameContainingIgnoreCaseOrFullnameContainingIgnoreCase(search, search);
+        } else {
+            users = userRepository.findAll();
+        }
+
+        return users.stream()
+                .map(user -> new UserResponse(
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getFullname(),
+                        user.getPhoneNumber(),
+                        user.getBio(),
+                        user.getAvatarUrl()))
+                .collect(java.util.stream.Collectors.toList());
     }
 }
