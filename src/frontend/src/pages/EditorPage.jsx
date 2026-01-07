@@ -3,11 +3,13 @@ import { useToast } from "../context/ToastContext";
 import { DocumentSettingsModal } from '../components/Layout/Modal'
 import { ShareModal } from '../components/Layout/Modal'
 import { AIModal } from '../components/Layout/AIModal'
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { useDocument } from "../context/DocumentContext";
 import { useAISettings } from "../context/AISettingsContext";
 import { useUser } from '../hooks/useUser';
 import { generateContent, refineContent, getWritingSuggestion, suggestTags } from '../services/AIService';
+import { resolveShareToken } from '../services/documentService';
+import { useDocumentCollab } from '../hooks/useDocumentCollab';
 
 import Markdown from 'react-markdown';
 
@@ -259,11 +261,15 @@ export default function EditorPage({ initialContent = '' }) {
     // --- 1. KHAI BÁO STATE (QUAN TRỌNG: PHẢI CÓ ĐỦ Ở ĐÂY) ---
     // Khởi tạo state với giá trị mặc định (rỗng hoặc giá trị từ document nếu có)
     const location = useLocation();
-    const document = location.state?.document;
+    const { token: shareTokenParam } = useParams();
+    const [document, setDocument] = useState(location.state?.document || null);
+    const [shareToken, setShareToken] = useState(shareTokenParam || null);
+    const isAnonymousShare = Boolean(shareTokenParam) && !localStorage.getItem('accessToken');
     const [title, setTitle] = useState(document?.title || "");
     const [markdown, setMarkdown] = useState(document?.content || "");
     const [activeTags, setActiveTags] = useState(document?.tags || []); // Sử dụng tags từ document
     const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'unsaved', 'saving', 'error'
+    const [scrollTick, setScrollTick] = useState(0);
 
     // State cho Toolbar & UI
     const [selectedTools, setSelectedTools] = useState([]);
@@ -283,12 +289,13 @@ export default function EditorPage({ initialContent = '' }) {
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
     const suggestionTimeoutRef = useRef(null);
+    const lastSavedTitleRef = useRef(document?.title || "");
+    const contentSendTimeoutRef = useRef(null);
 
     // Writing Suggestion State
     const [writingSuggestion, setWritingSuggestion] = useState('');
     const [isFetchingSuggestion, setIsFetchingSuggestion] = useState(false);
     // Collaborative mode: when true, show bottom bar; when false, show inline ghost text
-    // TODO: Set this to true when real-time collaboration is detected
     const [isCollaborativeMode, setIsCollaborativeMode] = useState(false);
 
     //Toasts
@@ -317,15 +324,13 @@ export default function EditorPage({ initialContent = '' }) {
     }, [viewMode]);
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
 
-    const handleCopyLink = () => {
-        // Logic copy link hiện tại (URL trình duyệt hoặc link custom)
-        const currentUrl = window.location.href;
-        navigator.clipboard.writeText(currentUrl);
-        success("Link copied to clipboard!"); // Dùng lại toast có sẵn của bạn
-    };
-
-
-
+    useEffect(() => {
+        return () => {
+            if (contentSendTimeoutRef.current) {
+                clearTimeout(contentSendTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const [isTagEditorOpen, setIsTagEditorOpen] = useState(false);
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -350,6 +355,9 @@ export default function EditorPage({ initialContent = '' }) {
     }, [isTagEditorOpen]);
 
     useEffect(() => {
+        if (!localStorage.getItem('accessToken')) {
+            return;
+        }
         const fetchUser = async () => {
             try {
                 const data = await getUserProfile();
@@ -365,6 +373,28 @@ export default function EditorPage({ initialContent = '' }) {
         fetchUser();
     }, []);
 
+    useEffect(() => {
+        if (!shareTokenParam) return;
+        const loadSharedDocument = async () => {
+            try {
+                const data = await resolveShareToken(shareTokenParam);
+                if (data?.document) {
+                    setDocument(data.document);
+                    setShareToken(shareTokenParam);
+                }
+            } catch (error) {
+                console.error("Failed to resolve share token", error);
+            }
+        };
+        loadSharedDocument();
+    }, [shareTokenParam]);
+
+    useEffect(() => {
+        if (location.state?.document) {
+            setDocument(location.state.document);
+        }
+    }, [location.state?.document]);
+
     // Lưu trữ các trạng thái đã qua (trạng thái hiện tại luôn là phần tử cuối cùng)
     const [history, setHistory] = useState([initialContent]);
     // Lưu trữ các trạng thái có thể làm lại (Redo)
@@ -379,73 +409,48 @@ export default function EditorPage({ initialContent = '' }) {
             setMarkdown(document.content || "");
             setActiveTags(document.tags || []);
             setIsBookmark(document.isBookmarked || false)
+            setPrivacy(document.isPublic ? 'public' : 'private');
             setSaveStatus('saved');
+            lastSavedTitleRef.current = document.title || "";
         }
     }, [document]);
     const { handleDocumentUpdate, toggleBookmark } = useDocument();
-    const docDataRef = useRef({
-        id: document?.id, // Giả sử document có id
-        title,
-        content: markdown,
-        tags: activeTags,
+    const handleRemoteContent = useCallback((content) => {
+        setMarkdown(content);
+        setHistory([content]);
+        setFuture([]);
+    }, []);
 
+    const handleCollabError = useCallback(() => {
+        setSaveStatus('error');
+    }, []);
+
+    const handleStatusChange = useCallback((status) => {
+        setSaveStatus(status);
+    }, []);
+
+    const { connected, remoteCursors, sendContentUpdate, sendCursorUpdate } = useDocumentCollab({
+        docId: document?.id,
+        shareToken,
+        displayName: isAnonymousShare ? 'Guest' : userData.fullname,
+        onRemoteContent: handleRemoteContent,
+        onError: handleCollabError,
+        onStatusChange: handleStatusChange
     });
-    useEffect(() => {
-        docDataRef.current = {
-            id: document?.id,
-            title,
-            content: markdown,
-            tags: activeTags, // State này bạn đang dùng
-        };
-    }, [title, markdown, activeTags, document?.id]);
-    // Ref to track saveStatus for interval without triggering re-renders/loop
-    const saveStatusRef = useRef(saveStatus);
-    useEffect(() => {
-        saveStatusRef.current = saveStatus;
-    }, [saveStatus]);
-
-    const saveData = useCallback(async () => {
-        if (saveStatusRef.current !== 'unsaved') return;
-
-        setSaveStatus('saving');
-        const currentData = docDataRef.current;
-        console.log("Auto-saving data...", currentData);
-
-        try {
-            await handleDocumentUpdate(currentData.id, {
-                title: currentData.title,
-                content: currentData.content,
-                tags: currentData.tags
-            });
-            setSaveStatus('saved');
-        } catch (error) {
-            console.error("Auto-save failed:", error);
-            setSaveStatus('error');
-        }
-    }, [handleDocumentUpdate]);
 
     useEffect(() => {
-        const intervalId = setInterval(() => {
-            saveData();
-        }, 10000);
-
-        return () => {
-            clearInterval(intervalId);
-            if (saveStatusRef.current === 'unsaved') {
-                const currentData = docDataRef.current;
-                // Fire and forget on unmount
-                handleDocumentUpdate(currentData.id, {
-                    title: currentData.title,
-                    content: currentData.content,
-                    tags: currentData.tags
-                }).catch(e => console.error("Unmount save failed", e));
-            }
-        };
-    }, [saveData, handleDocumentUpdate]);
+        setIsCollaborativeMode(connected);
+    }, [connected]);
 
     const handleContentChange = useCallback((newMarkdown) => {
         setMarkdown(newMarkdown);
-        setSaveStatus('unsaved');
+        setSaveStatus('saving');
+        if (contentSendTimeoutRef.current) {
+            clearTimeout(contentSendTimeoutRef.current);
+        }
+        contentSendTimeoutRef.current = setTimeout(() => {
+            sendContentUpdate(newMarkdown);
+        }, 300);
 
         setHistory(prevHistory => {
             const lastState = prevHistory[prevHistory.length - 1];
@@ -492,8 +497,18 @@ export default function EditorPage({ initialContent = '' }) {
                 }
             }, 500); // 500ms debounce
         }
-    }, []);
+    }, [sendContentUpdate, writingSuggestionEnabled]);
     // Lưu ý: Các hàm format (toggleFormat, handleListFormat) cần gọi handleContentChange thay vì setMarkdown
+
+    const handleCursorUpdate = useCallback(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        sendCursorUpdate(textarea.selectionStart, textarea.selectionEnd);
+    }, [sendCursorUpdate]);
+
+    const applyLocalChange = useCallback((newText) => {
+        handleContentChange(newText);
+    }, [handleContentChange]);
 
     const handleUndo = useCallback(() => {
         if (history.length > 1) {
@@ -509,10 +524,12 @@ export default function EditorPage({ initialContent = '' }) {
 
             // 3. Cập nhật nội dung hiển thị
             setMarkdown(newHistory[newHistory.length - 1]);
+            setSaveStatus('saving');
+            sendContentUpdate(newHistory[newHistory.length - 1]);
 
             setTimeout(() => { textareaRef.current?.focus(); }, 0);
         }
-    }, [history]);
+    }, [history, sendContentUpdate]);
 
     const handleRedo = useCallback(() => {
         if (future.length > 0) {
@@ -527,44 +544,113 @@ export default function EditorPage({ initialContent = '' }) {
 
             // 3. Cập nhật nội dung hiển thị
             setMarkdown(nextState);
+            setSaveStatus('saving');
+            sendContentUpdate(nextState);
 
             setTimeout(() => { textareaRef.current?.focus(); }, 0);
         }
-    }, [future]);
+    }, [future, sendContentUpdate]);
 
-    const handleSaveTags = (newTags, newPrivacy) => {
+    const handleSaveTags = async (newTags, newPrivacy) => {
         setActiveTags(newTags);
         setPrivacy(newPrivacy);
 
-        handleDocumentUpdate(document?.id, {
-            ...docDataRef.current, // Giữ nguyên các thông tin cũ (content, title...)
-            tags: newTags // Chỉ cập nhật tags mới
-        });
-        // We triggered manual save, but let's sync status just in case, or assume handleDocumentUpdate handles it?
-        // Actually, handleDocumentUpdate is async, but here we don't await. 
-        // Let's set unsaved to trigger auto-save if manual fails? 
-        // Or better: set 'saved' if we trust this manual call, OR set 'unsaved' to let auto-save pick it up.
-        // Given existing code calls handleDocumentUpdate directly, let's trust it but maybe set 'saving' -> 'saved' if we could await.
-        // For now, setting 'unsaved' ensures consistency with auto-save loop if we want to rely on single source of truth, 
-        // BUT here we call API explicitly. 
-        // Let's leave it as is, but maybe setStatus('saved') after await if we changed this function to async.
-        // For minimal change, let's just mark it dirty and let the next auto-save cycle catch it OR (since we call update directly) we assume it saves.
-        // Ideally:
-        setSaveStatus('unsaved'); // Mark dirty so auto-save picks it up if this call fails? No, this call executes immediately.
-        // Let's keep it simple: assume this manual save works or adds to queue. 
-        // Actually, to show "Saved", we should await it.
-        // But for now, let's just set 'unsaved' so `saveData` loop will eventually try again or confirm it's saved.
-        // Wait, if we call update directly, docDataRef is updated via useEffect [activeTags].
-        // So `saveData` loop will see new tags.
-        // If we set 'unsaved', `saveData` will check state and save again. Unique double save?
-        // Fix: Call setSaveStatus('saved') if we await, or set 'unsaved' to rely on auto-save.
-        // Let's rely on auto-save for consistency? No, user expects immediate tag save.
-        // Let's just set 'saved' after a timeout or await.
-        // Since I can't easily change signature to async without checking callers, I will set 'unsaved' to be safe.
-        setSaveStatus('unsaved');
+        if (isAnonymousShare || !document?.id) {
+            setIsTagEditorOpen(false);
+            return;
+        }
 
-        setIsTagEditorOpen(false); // Đóng modal sau khi lưu
+        setSaveStatus('saving');
+        try {
+            await handleDocumentUpdate(document.id, {
+                title,
+                tags: newTags,
+                isPublic: newPrivacy === 'public'
+            });
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error("Tag update failed", error);
+            setSaveStatus('error');
+        }
+
+        setIsTagEditorOpen(false);
     };
+
+    const handleTitleSave = async () => {
+        if (!document?.id || isAnonymousShare) return;
+        if (title === lastSavedTitleRef.current) return;
+        setSaveStatus('saving');
+        try {
+            await handleDocumentUpdate(document.id, { title });
+            lastSavedTitleRef.current = title;
+            setSaveStatus('saved');
+        } catch (error) {
+            console.error("Title update failed", error);
+            setSaveStatus('error');
+        }
+    };
+
+    const getCaretCoordinates = useCallback((textarea, position) => {
+        if (!textarea) return null;
+        const div = window.document.createElement('div');
+        const style = window.getComputedStyle(textarea);
+        const properties = [
+            'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
+            'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+            'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+            'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch',
+            'fontSize', 'fontSizeAdjust', 'lineHeight', 'fontFamily',
+            'textAlign', 'textTransform', 'textIndent', 'textDecoration',
+            'letterSpacing', 'wordSpacing', 'tabSize', 'MozTabSize'
+        ];
+        properties.forEach((prop) => {
+            div.style[prop] = style[prop];
+        });
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.wordWrap = 'break-word';
+        div.style.top = '0px';
+        div.style.left = '-9999px';
+        div.textContent = textarea.value.substring(0, position);
+        const span = window.document.createElement('span');
+        span.textContent = textarea.value.substring(position) || '.';
+        div.appendChild(span);
+        window.document.body.appendChild(div);
+        const coords = {
+            left: span.offsetLeft - textarea.scrollLeft,
+            top: span.offsetTop - textarea.scrollTop,
+            height: span.offsetHeight
+        };
+        window.document.body.removeChild(div);
+        return coords;
+    }, []);
+
+    const renderRemoteCursors = useCallback(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return null;
+        void scrollTick;
+        return remoteCursors.map((cursor) => {
+            const coords = getCaretCoordinates(textarea, cursor.selectionStart || 0);
+            if (!coords) return null;
+            const color = cursor.user?.color || '#22c55e';
+            const name = cursor.user?.name || 'User';
+            const left = textarea.offsetLeft + coords.left;
+            const top = textarea.offsetTop + coords.top;
+            return (
+                <div
+                    key={cursor.user?.clientId || `${left}-${top}`}
+                    className="absolute pointer-events-none"
+                    style={{ left, top }}
+                >
+                    <div className="w-0.5" style={{ height: coords.height, backgroundColor: color }} />
+                    <div className="px-1 py-0.5 text-[10px] text-white rounded mt-0.5" style={{ backgroundColor: color }}>
+                        {name}
+                    </div>
+                </div>
+            );
+        });
+    }, [remoteCursors, scrollTick, getCaretCoordinates]);
 
     const handleOpenAIModal = () => {
         const textarea = textareaRef.current;
@@ -609,13 +695,17 @@ export default function EditorPage({ initialContent = '' }) {
         setActiveTags(newTags);
         setPrivacy(newPrivacy);
 
+        if (isAnonymousShare || !document?.id) {
+            setIsSettingsPanelOpen(false);
+            return;
+        }
+
         setSaveStatus('saving');
         try {
-            const currentData = docDataRef.current;
-            await handleDocumentUpdate(document?.id, {
-                title: currentData.title,
-                content: currentData.content,
-                tags: newTags
+            await handleDocumentUpdate(document.id, {
+                title,
+                tags: newTags,
+                isPublic: newPrivacy === 'public'
             });
             setSaveStatus('saved');
         } catch (error) {
@@ -644,6 +734,7 @@ export default function EditorPage({ initialContent = '' }) {
         } else {
             setQuickRefinePos(null);
         }
+        handleCursorUpdate();
     };
 
     const handleQuickRefine = async () => {
@@ -669,9 +760,7 @@ export default function EditorPage({ initialContent = '' }) {
                 // Using the mark syntax as per existing pattern
                 const newText = before + `\n:::mark\n${data.content}\n:::\n` + after;
 
-                setMarkdown(newText);
-                setHistory(prev => [...prev, newText]);
-                setFuture([]);
+                applyLocalChange(newText);
             }
         } catch (error) {
             console.error("Quick refine error:", error);
@@ -704,9 +793,7 @@ export default function EditorPage({ initialContent = '' }) {
                     newText = markdown + '\n\n' + data.content;
                 }
 
-                setMarkdown(newText);
-                setHistory(prev => [...prev, newText]);
-                setFuture([]);
+                applyLocalChange(newText);
                 success("Content generated successfully!");
             } else {
                 console.warn("No content in response data");
@@ -720,7 +807,7 @@ export default function EditorPage({ initialContent = '' }) {
 
     // --- LOGIC BOOKMARK ---
     const toggleBookmarkSection = async () => {
-        if (!document?.id) return;
+        if (!document?.id || isAnonymousShare) return;
 
         // Optimistic UI update
         const newStatus = !isBookmark;
@@ -747,7 +834,7 @@ export default function EditorPage({ initialContent = '' }) {
         const selected = markdown.substring(start, end);
         const after = markdown.substring(end);
         const newText = `${before}${symbol}${selected}${symbol}${after}`;
-        setMarkdown(newText);
+        applyLocalChange(newText);
         setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + symbol.length, end + symbol.length);
@@ -780,10 +867,8 @@ export default function EditorPage({ initialContent = '' }) {
         if (e.key === 'Tab' && writingSuggestion) {
             e.preventDefault();
             const newText = markdown + writingSuggestion;
-            setMarkdown(newText);
+            applyLocalChange(newText);
             setWritingSuggestion('');
-            setHistory(prev => [...prev, newText]);
-            setFuture([]);
 
             // Move cursor to end
             setTimeout(() => {
@@ -832,7 +917,7 @@ export default function EditorPage({ initialContent = '' }) {
                 if (content.trim() === '') {
                     // Xóa ký hiệu list ở dòng hiện tại
                     const newValue = value.substring(0, lineStart) + indent + value.substring(end);
-                    setMarkdown(newValue);
+                    applyLocalChange(newValue);
 
                     // Đặt con trỏ về đầu dòng (sau indent)
                     setTimeout(() => {
@@ -857,7 +942,7 @@ export default function EditorPage({ initialContent = '' }) {
                 const insertText = `\n${indent}${nextSymbol} `;
                 const newValue = value.substring(0, start) + insertText + value.substring(end);
 
-                setMarkdown(newValue);
+                applyLocalChange(newValue);
 
                 // Đặt con trỏ sau ký hiệu mới
                 setTimeout(() => {
@@ -895,7 +980,7 @@ export default function EditorPage({ initialContent = '' }) {
 
             const newText = `${markdown.substring(0, start)}${insertText}${markdown.substring(end)}`;
 
-            setMarkdown(newText);
+            applyLocalChange(newText);
 
             // Đặt con trỏ sau ký hiệu list đã chèn
             setTimeout(() => {
@@ -970,7 +1055,7 @@ export default function EditorPage({ initialContent = '' }) {
         const newSelected = newLines.join('\n');
         const newText = `${before}${newSelected}${after}`;
 
-        setMarkdown(newText);
+        applyLocalChange(newText);
 
         setTimeout(() => {
             textarea.focus();
@@ -1008,7 +1093,7 @@ export default function EditorPage({ initialContent = '' }) {
         const end = textarea.selectionEnd;
         const newText = markdown.substring(0, start) + tableMarkdown + markdown.substring(end);
 
-        setMarkdown(newText);
+        applyLocalChange(newText);
 
 
         setTimeout(() => {
@@ -1042,7 +1127,7 @@ export default function EditorPage({ initialContent = '' }) {
                 const content = match[1];
                 const newText = text.substring(0, start) + content + text.substring(end);
 
-                setMarkdown(newText);
+                applyLocalChange(newText);
 
                 // Adjust cursor
                 // We removed ":::mark\n" (approx 8 chars) from the start
@@ -1174,7 +1259,7 @@ export default function EditorPage({ initialContent = '' }) {
             return; // Không xử lý định dạng không xác định
         }
 
-        setMarkdown(newText);
+        applyLocalChange(newText);
 
         // Điều chỉnh vị trí con trỏ
         setTimeout(() => {
@@ -1270,8 +1355,12 @@ export default function EditorPage({ initialContent = '' }) {
                             value={title}
                             onChange={(e) => {
                                 setTitle(e.target.value);
-                                setSaveStatus('unsaved');
-                            }} />
+                                if (!isAnonymousShare) {
+                                    setSaveStatus('unsaved');
+                                }
+                            }}
+                            onBlur={handleTitleSave}
+                            readOnly={isAnonymousShare} />
                         <Edit2 size={14} className="text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
 
@@ -1357,7 +1446,13 @@ export default function EditorPage({ initialContent = '' }) {
                         <ToolbarBtn icon={Tag} onClick={handleOpenTagPanel} />
                         {activeTags.length > 0 && <span className="absolute -top-0.5 -right-0.5 bg-blue-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">{activeTags.length}</span>}
                     </div>
-                    <button onClick={() => setIsShareModalOpen(true)} className="flex items-center py-1.5 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-900/20">Share</button>
+                    <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        disabled={isAnonymousShare}
+                        className={`flex items-center py-1.5 px-5 rounded-lg bg-blue-600 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-900/20 ${isAnonymousShare ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-500'}`}
+                    >
+                        Share
+                    </button>
                     <div className="relative">
                         <div onClick={() => setIsOpen(!isOpen)} className="w-9 h-9 rounded-full overflow-hidden shrink-0 cursor-pointer ring-2 ring-transparent hover:ring-blue-500/50 transition-all">
                             <img className="w-full h-full object-cover" src={userData.avatar_url} alt="User" />
@@ -1430,9 +1525,17 @@ export default function EditorPage({ initialContent = '' }) {
                             placeholder="# Start writing..." value={markdown}
                             onChange={(e) => handleContentChange(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            onKeyUp={handleCursorUpdate}
                             onClick={handleEditorClick}
                             onMouseUp={handleMouseUp}
+                            onSelect={handleCursorUpdate}
+                            onScroll={() => setScrollTick((prev) => prev + 1)}
                         />
+                        {remoteCursors.length > 0 && (
+                            <div className="absolute inset-0 pointer-events-none">
+                                {renderRemoteCursors()}
+                            </div>
+                        )}
                         {quickRefinePos && (
                             <div
                                 className="fixed z-50 flex items-center gap-2 bg-gray-800 border border-gray-700 shadow-xl rounded-lg p-1 animate-in fade-in zoom-in-95 duration-200"
@@ -1604,7 +1707,7 @@ export default function EditorPage({ initialContent = '' }) {
                     isOpen={isShareModalOpen}
                     onClose={() => setIsShareModalOpen(false)}
                     documentTitle={title}
-                    onCopyLink={handleCopyLink}
+                    documentId={document?.id}
                 />
                 <SettingsPanel
                     isOpen={isSettingsPanelOpen}

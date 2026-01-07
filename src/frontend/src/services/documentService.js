@@ -269,3 +269,90 @@ export const bookmarkDocument = async (id) => {
         throw error;
     }
 };
+
+// ============================================================
+// 12. SHARE LINK (POST /documents/:id/share-link)
+// ============================================================
+export const createShareLink = async (id) => {
+    try {
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/${id}/share-link`);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 13. SHARE STATUS (GET /documents/:id/share-link)
+// ============================================================
+export const getShareStatus = async (id) => {
+    try {
+        const response = await axiosInstance.get(`${BACKEND_ROOT}/${id}/share-link`);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 14. DISABLE SHARE LINK (DELETE /documents/:id/share-link)
+// ============================================================
+export const disableShareLink = async (id) => {
+    try {
+        const response = await axiosInstance.delete(`${BACKEND_ROOT}/${id}/share-link`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 15. RESOLVE SHARE LINK (POST /documents/resolve-share)
+// ============================================================
+export const resolveShareToken = async (token) => {
+    try {
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/resolve-share`, { token });
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// ============================================================
+// 16. COLLABORATORS (CRUD)
+// ============================================================
+export const getCollaborators = async (id) => {
+    try {
+        const response = await axiosInstance.get(`${BACKEND_ROOT}/${id}/collaborators`);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const addCollaborator = async (id, payload) => {
+    try {
+        const response = await axiosInstance.post(`${BACKEND_ROOT}/${id}/collaborators`, payload);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const updateCollaboratorRole = async (id, userId, payload) => {
+    try {
+        const response = await axiosInstance.patch(`${BACKEND_ROOT}/${id}/collaborators/${userId}`, payload);
+        return response.data.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const removeCollaborator = async (id, userId) => {
+    try {
+        const response = await axiosInstance.delete(`${BACKEND_ROOT}/${id}/collaborators/${userId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

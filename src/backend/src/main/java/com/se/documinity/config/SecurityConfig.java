@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless REST APIs
                 .authorizeHttpRequests(auth -> auth
                         // Allow /auth/** endpoints (login, register) to be public
-                        .requestMatchers("/auth/**", "/avatars/**", "/api/avatars/**").permitAll()
+                        .requestMatchers("/auth/**", "/avatars/**", "/api/avatars/**", "/documents/resolve-share", "/ws/**").permitAll()
                         // All other requests must be authenticated (protected)
                         .anyRequest().authenticated())
                 // Set session management to STATELESS (we use tokens, not server sessions)
@@ -78,7 +78,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173")); // Frontend URLs
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

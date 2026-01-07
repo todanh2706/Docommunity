@@ -36,6 +36,21 @@ public class DocumentEntity {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "share_enabled")
+    private Boolean shareEnabled = false;
+
+    @Column(name = "share_token_hash")
+    private String shareTokenHash;
+
+    @Column(name = "share_token")
+    private String shareToken;
+
+    @Column(name = "share_role")
+    private String shareRole;
+
+    @Column(name = "content_version")
+    private Long contentVersion = 0L;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private UserEntity user;

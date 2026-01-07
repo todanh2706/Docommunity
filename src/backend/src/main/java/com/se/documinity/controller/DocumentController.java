@@ -193,4 +193,85 @@ public class DocumentController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @PostMapping("/resolve-share")
+    public ResponseEntity<ResponseDTO> resolveShare(@RequestBody ResolveShareRequest request) {
+        ResolveShareResponse response = documentService.resolveShareToken(request.getToken());
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Share resolved successfully");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/{id}/share-link")
+    public ResponseEntity<ResponseDTO> createShareLink(@PathVariable Long id) {
+        ShareLinkResponse response = documentService.createShareLink(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Share link created");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @GetMapping("/{id}/share-link")
+    public ResponseEntity<ResponseDTO> getShareStatus(@PathVariable Long id) {
+        ShareLinkResponse response = documentService.getShareStatus(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Share status retrieved");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @DeleteMapping("/{id}/share-link")
+    public ResponseEntity<ResponseDTO> disableShareLink(@PathVariable Long id) {
+        documentService.disableShareLink(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Share link disabled");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @GetMapping("/{id}/collaborators")
+    public ResponseEntity<ResponseDTO> listCollaborators(@PathVariable Long id) {
+        List<CollaboratorResponse> response = documentService.listCollaborators(id);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Collaborators retrieved");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PostMapping("/{id}/collaborators")
+    public ResponseEntity<ResponseDTO> addCollaborator(@PathVariable Long id,
+            @RequestBody CollaboratorRequest request) {
+        CollaboratorResponse response = documentService.addCollaborator(id, request);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Collaborator added");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @PatchMapping("/{id}/collaborators/{userId}")
+    public ResponseEntity<ResponseDTO> updateCollaborator(@PathVariable Long id,
+            @PathVariable Long userId,
+            @RequestBody CollaboratorRequest request) {
+        CollaboratorResponse response = documentService.updateCollaboratorRole(id, userId, request.getRole());
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setData(response);
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Collaborator updated");
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @DeleteMapping("/{id}/collaborators/{userId}")
+    public ResponseEntity<ResponseDTO> removeCollaborator(@PathVariable Long id, @PathVariable Long userId) {
+        documentService.removeCollaborator(id, userId);
+        ResponseDTO responseDTO = new ResponseDTO();
+        responseDTO.setMessage("success");
+        responseDTO.setDetail("Collaborator removed");
+        return ResponseEntity.ok(responseDTO);
+    }
+
 }

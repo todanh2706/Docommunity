@@ -41,4 +41,6 @@ public interface DocumentRepository extends JpaRepository<DocumentEntity, Long> 
             @org.springframework.data.repository.query.Param("tagName") String tagName,
             @org.springframework.data.repository.query.Param("search") String search,
             Pageable pageable);
+
+    Optional<DocumentEntity> findByShareTokenHashAndShareEnabledTrue(String shareTokenHash);
 }

@@ -4,10 +4,12 @@ import com.se.documinity.dto.comunity.PublicDocumentOwnerResponse;
 import com.se.documinity.dto.comunity.PublicDocumentResponse;
 import com.se.documinity.dto.comunity.ViewDocumentResponse;
 import com.se.documinity.entity.CommentEntity;
+import com.se.documinity.entity.DocumentCollaboratorEntity;
 import com.se.documinity.entity.DocumentEntity;
 import com.se.documinity.exception.DocumentNotFoundException;
 import com.se.documinity.exception.NotAuthorizedException;
 import com.se.documinity.repository.CommentRepository;
+import com.se.documinity.repository.DocumentCollaboratorRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import com.se.documinity.entity.UserEntity;
 import com.se.documinity.repository.DocumentRepository;
 import com.se.documinity.repository.TagRepository;
 import com.se.documinity.repository.UserRepository;
+import com.se.documinity.util.ShareTokenUtil;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -39,6 +42,8 @@ public class DocumentService {
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
     private final CommentRepository commentRepository;
+    private final DocumentCollaboratorRepository documentCollaboratorRepository;
+    private final DocumentAccessService documentAccessService;
 
     private static final int PAGE_SIZE = 10;
     private static final String ACTIVE_STATUS = "ACTIVE";
@@ -74,6 +79,9 @@ public class DocumentService {
         doc.setUser(user);
         doc.setTags(tagEntities);
         doc.setStatus(ACTIVE_STATUS);
+        doc.setShareEnabled(false);
+        doc.setShareRole(DocumentAccessService.ROLE_EDITOR);
+        doc.setContentVersion(0L);
         // 4. Save
         DocumentEntity savedDoc = documentRepository.save(doc);
 
@@ -85,11 +93,14 @@ public class DocumentService {
         DocumentEntity doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        if (!doc.getIsPublic()) {
-            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-            if (!doc.getUser().getUsername().equals(currentUsername)) {
-                throw new NotAuthorizedException("You are not authorized to view this private document");
-            }
+        UserEntity user = null;
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (currentUsername != null && !currentUsername.equals("anonymousUser")) {
+            user = userRepository.findByUsername(currentUsername)
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+        }
+        if (!documentAccessService.canView(doc, user)) {
+            throw new NotAuthorizedException("You are not authorized to view this document");
         }
 
         return mapToDocumentResponse(doc);
@@ -230,10 +241,12 @@ public class DocumentService {
         DocumentEntity doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found"));
 
-        // 2. Security Check: Ensure Current User is the Owner
+        // 2. Security Check: Ensure Current User can edit
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!doc.getUser().getUsername().equals(currentUsername)) {
-            throw new NotAuthorizedException("Not owner of document");
+        UserEntity user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (!documentAccessService.canEdit(doc, user)) {
+            throw new NotAuthorizedException("Not allowed to edit document");
         }
 
         // 3. Partial Update Logic
@@ -243,6 +256,7 @@ public class DocumentService {
         }
         if (request.getContent() != null) {
             doc.setContent(request.getContent());
+            doc.setContentVersion(doc.getContentVersion() != null ? doc.getContentVersion() + 1 : 1L);
         }
         if (request.getIsPublic() != null) {
             doc.setIsPublic(request.getIsPublic());
@@ -273,7 +287,9 @@ public class DocumentService {
         System.out.println("Fetched document for deletion: " + doc.getTitle());
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         System.out.println("Current username: " + currentUsername);
-        if (!doc.getUser().getUsername().equals(currentUsername)) {
+        UserEntity user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (!documentAccessService.isOwner(doc, user)) {
             throw new NotAuthorizedException("Not owner of document");
         }
         System.out.println("Authorization check passed for user: " + currentUsername);
@@ -460,5 +476,176 @@ public class DocumentService {
         return docs.stream()
                 .map(this::mapToDocumentResponse)
                 .collect(Collectors.toList());
+    }
+
+    public ShareLinkResponse createShareLink(Long documentId) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity user = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, user)) {
+            throw new NotAuthorizedException("Not allowed to share document");
+        }
+
+        if (Boolean.TRUE.equals(doc.getShareEnabled()) && doc.getShareToken() != null) {
+            return new ShareLinkResponse(true, doc.getShareToken());
+        }
+
+        String token = ShareTokenUtil.generateToken();
+        doc.setShareEnabled(true);
+        if (doc.getShareRole() == null) {
+            doc.setShareRole(DocumentAccessService.ROLE_EDITOR);
+        }
+        doc.setShareTokenHash(ShareTokenUtil.hashToken(token));
+        doc.setShareToken(token);
+        documentRepository.save(doc);
+
+        return new ShareLinkResponse(true, token);
+    }
+
+    public ShareLinkResponse getShareStatus(Long documentId) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity user = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, user)) {
+            throw new NotAuthorizedException("Not allowed to view share status");
+        }
+        return new ShareLinkResponse(Boolean.TRUE.equals(doc.getShareEnabled()),
+                Boolean.TRUE.equals(doc.getShareEnabled()) ? doc.getShareToken() : null);
+    }
+
+    public void disableShareLink(Long documentId) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity user = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, user)) {
+            throw new NotAuthorizedException("Not allowed to disable share link");
+        }
+        doc.setShareEnabled(false);
+        doc.setShareTokenHash(null);
+        doc.setShareToken(null);
+        documentRepository.save(doc);
+    }
+
+    public ResolveShareResponse resolveShareToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new DocumentNotFoundException("Share token is required");
+        }
+        String hash = ShareTokenUtil.hashToken(token);
+        DocumentEntity doc = documentRepository.findByShareTokenHashAndShareEnabledTrue(hash)
+                .orElseThrow(() -> new DocumentNotFoundException("Share link not found"));
+        if (!ACTIVE_STATUS.equals(doc.getStatus())) {
+            throw new NotAuthorizedException("Forbidden");
+        }
+        String role = doc.getShareRole() != null ? doc.getShareRole() : DocumentAccessService.ROLE_EDITOR;
+        return new ResolveShareResponse(mapToDocumentResponse(doc), role);
+    }
+
+    public List<CollaboratorResponse> listCollaborators(Long documentId) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity currentUser = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, currentUser)) {
+            throw new NotAuthorizedException("Not allowed to view collaborators");
+        }
+
+        UserEntity owner = doc.getUser();
+        List<CollaboratorResponse> responses = documentCollaboratorRepository.findByDocumentId(documentId).stream()
+                .filter(c -> owner == null || !c.getUser().getId().equals(owner.getId()))
+                .map(c -> toCollaboratorResponse(doc, c.getUser(), c.getRole(), currentUser))
+                .collect(Collectors.toList());
+
+        if (owner != null) {
+            responses.add(0, toCollaboratorResponse(doc, owner, DocumentAccessService.ROLE_OWNER, currentUser));
+        }
+
+        return responses;
+    }
+
+    public CollaboratorResponse addCollaborator(Long documentId, CollaboratorRequest request) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity currentUser = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, currentUser)) {
+            throw new NotAuthorizedException("Not allowed to add collaborator");
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new NotAuthorizedException("Email is required");
+        }
+
+        UserEntity target = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (documentAccessService.isOwner(doc, target)) {
+            return toCollaboratorResponse(doc, target, DocumentAccessService.ROLE_OWNER, currentUser);
+        }
+
+        DocumentCollaboratorEntity collaborator = documentCollaboratorRepository
+                .findByDocumentIdAndUserId(documentId, target.getId())
+                .orElseGet(DocumentCollaboratorEntity::new);
+        collaborator.setDocument(doc);
+        collaborator.setUser(target);
+        String role = request.getRole() != null ? request.getRole().toUpperCase() : DocumentAccessService.ROLE_EDITOR;
+        collaborator.setRole(role);
+        if (collaborator.getCreatedAt() == null) {
+            collaborator.setCreatedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
+        }
+        collaborator.setUpdatedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
+        documentCollaboratorRepository.save(collaborator);
+
+        return toCollaboratorResponse(doc, target, collaborator.getRole(), currentUser);
+    }
+
+    public CollaboratorResponse updateCollaboratorRole(Long documentId, Long userId, String role) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity currentUser = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, currentUser)) {
+            throw new NotAuthorizedException("Not allowed to update collaborator");
+        }
+        if (doc.getUser() != null && doc.getUser().getId().equals(userId)) {
+            return toCollaboratorResponse(doc, doc.getUser(), DocumentAccessService.ROLE_OWNER, currentUser);
+        }
+
+        DocumentCollaboratorEntity collaborator = documentCollaboratorRepository
+                .findByDocumentIdAndUserId(documentId, userId)
+                .orElseThrow(() -> new DocumentNotFoundException("Collaborator not found"));
+        if (role != null) {
+            collaborator.setRole(role.toUpperCase());
+        }
+        collaborator.setUpdatedAt(LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
+        documentCollaboratorRepository.save(collaborator);
+
+        return toCollaboratorResponse(doc, collaborator.getUser(), collaborator.getRole(), currentUser);
+    }
+
+    public void removeCollaborator(Long documentId, Long userId) {
+        DocumentEntity doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException("Document not found"));
+        UserEntity currentUser = requireCurrentUser();
+        if (!documentAccessService.canManageShare(doc, currentUser)) {
+            throw new NotAuthorizedException("Not allowed to remove collaborator");
+        }
+        if (doc.getUser() != null && doc.getUser().getId().equals(userId)) {
+            throw new NotAuthorizedException("Cannot remove owner");
+        }
+        documentCollaboratorRepository.deleteByDocumentIdAndUserId(documentId, userId);
+    }
+
+    private CollaboratorResponse toCollaboratorResponse(DocumentEntity doc, UserEntity user, String role,
+            UserEntity currentUser) {
+        boolean isOwner = doc.getUser() != null && user != null && doc.getUser().getId().equals(user.getId());
+        boolean isMe = currentUser != null && user != null && currentUser.getId().equals(user.getId());
+        return new CollaboratorResponse(
+                user != null ? user.getId() : null,
+                user != null ? user.getEmail() : null,
+                user != null ? user.getFullname() : null,
+                role,
+                isOwner,
+                isMe);
+    }
+
+    private UserEntity requireCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 }

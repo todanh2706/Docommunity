@@ -1,9 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, ChevronDown, LinkIcon, Sparkles } from 'lucide-react';
+import { X, Search, Plus, Tag, Lock as LockIcon, Globe as GlobeIcon, Settings, ChevronDown, LinkIcon, Sparkles, User } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useDocument } from '../../context/DocumentContext'; // 1. Import Context
 import { suggestTags } from '../../services/AIService';
 import { useTagService } from '../../services/tagService'; // Import service
+import {
+  createShareLink,
+  getShareStatus,
+  disableShareLink,
+  getCollaborators,
+  addCollaborator,
+  updateCollaboratorRole,
+  removeCollaborator
+} from '../../services/documentService';
 const HARDCODED_TAGS = ['security', 'mailflood', 'design', 'react', 'backend', 'frontend', 'database', 'devops', 'testing'];
 
 
@@ -223,7 +232,7 @@ export const TagEditorModal = ({ isOpen, onClose, currentTags, onSave, documentC
   if (!isOpen) return null;
 
   // Lọc các tag gợi ý: Phải khớp từ khóa search VÀ chưa được chọn
-  const filteredSuggestions = AVAILABLE_TAGS.filter(
+  const filteredSuggestions = HARDCODED_TAGS.filter(
     tag => tag.toLowerCase().includes(searchTerm.toLowerCase()) && !selectedTags.includes(tag)
   );
 
@@ -622,22 +631,128 @@ export const DocumentSettingsModal = ({
 
 
 
-export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
-  // Dummy data cho danh sách user
-  const [collaborators, setCollaborators] = useState([
-    { email: 'dhkien23@clc.fitus.edu.vn', role: 'Owner', isMe: true, avatar: null },
-    { email: 'teacher@school.edu.vn', role: 'Editor', isMe: false, avatar: null }
-  ]);
-
-  const [generalAccess, setGeneralAccess] = useState('anyone'); // 'restricted' | 'anyone'
+export const ShareModal = ({ isOpen, onClose, documentTitle, documentId }) => {
+  const { success } = useToast();
+  const [collaborators, setCollaborators] = useState([]);
+  const [generalAccess, setGeneralAccess] = useState('restricted'); // 'restricted' | 'anyone'
   const [inviteText, setInviteText] = useState('');
+  const [shareEnabled, setShareEnabled] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !documentId) return;
+    const loadShareData = async () => {
+      try {
+        const [status, people] = await Promise.all([
+          getShareStatus(documentId),
+          getCollaborators(documentId)
+        ]);
+        const enabled = Boolean(status?.shareEnabled);
+        const token = status?.shareToken;
+        setShareEnabled(enabled);
+        setGeneralAccess(enabled ? 'anyone' : 'restricted');
+        setShareLink(enabled && token ? buildShareLink(token) : '');
+        setCollaborators(Array.isArray(people) ? people : []);
+      } catch (error) {
+        console.error("Failed to load share data", error);
+      }
+    };
+    loadShareData();
+  }, [isOpen, documentId]);
 
   if (!isOpen) return null;
 
-  const handleRoleChange = (index, newRole) => {
-    const updatedCollaborators = [...collaborators];
-    updatedCollaborators[index].role = newRole;
-    setCollaborators(updatedCollaborators);
+  const buildShareLink = (token) => {
+    if (!token) return '';
+    return `${window.location.origin}/share/${token}`;
+  };
+
+  const handleInvite = async () => {
+    const email = inviteText.trim();
+    if (!email || !documentId) return;
+    setLoading(true);
+    try {
+      const response = await addCollaborator(documentId, { email, role: 'EDITOR' });
+      setCollaborators((prev) => {
+        const filtered = prev.filter((c) => c.userId !== response.userId);
+        return [...filtered, response];
+      });
+      setInviteText('');
+    } catch (error) {
+      console.error("Invite failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId, newRole) => {
+    if (!documentId) return;
+    setLoading(true);
+    try {
+      const response = await updateCollaboratorRole(documentId, userId, { role: newRole });
+      setCollaborators((prev) => prev.map((c) => (c.userId === response.userId ? response : c)));
+    } catch (error) {
+      console.error("Role update failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemove = async (userId) => {
+    if (!documentId) return;
+    setLoading(true);
+    try {
+      await removeCollaborator(documentId, userId);
+      setCollaborators((prev) => prev.filter((c) => c.userId !== userId));
+    } catch (error) {
+      console.error("Remove collaborator failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGeneralAccessChange = async (value) => {
+    if (!documentId) return;
+    setLoading(true);
+    try {
+      if (value === 'anyone') {
+        const response = await createShareLink(documentId);
+        const token = response?.shareToken;
+        setShareEnabled(true);
+        setGeneralAccess('anyone');
+        setShareLink((prev) => token ? buildShareLink(token) : prev);
+      } else {
+        await disableShareLink(documentId);
+        setShareEnabled(false);
+        setGeneralAccess('restricted');
+        setShareLink('');
+      }
+    } catch (error) {
+      console.error("Share link update failed", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!documentId || !shareEnabled) return;
+    let link = shareLink;
+    if (!link) {
+      const status = await getShareStatus(documentId);
+      if (status?.shareToken) {
+        link = buildShareLink(status.shareToken);
+        setShareLink(link);
+      } else {
+        const response = await createShareLink(documentId);
+        link = buildShareLink(response?.shareToken);
+        setShareLink(link);
+      }
+    }
+    if (link) {
+      await navigator.clipboard.writeText(link);
+      success("Link copied to clipboard!");
+    }
   };
 
   return (
@@ -658,14 +773,25 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
 
           {/* Search/Add Input */}
           <div>
-            <div className="bg-[#2b2d31] border border-gray-600 rounded-md px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all flex items-center shadow-inner">
+            <div className="bg-[#2b2d31] border border-gray-600 rounded-md px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all flex items-center shadow-inner gap-2">
               <input
                 type="text"
-                placeholder="Add people, groups, and calendar events"
+                placeholder="Add people by email"
                 className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-gray-500 h-8"
                 value={inviteText}
                 onChange={(e) => setInviteText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleInvite();
+                }}
               />
+              <button
+                type="button"
+                onClick={handleInvite}
+                disabled={loading}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-50"
+              >
+                Invite
+              </button>
             </div>
           </div>
 
@@ -673,46 +799,54 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
           <div>
             <h3 className="text-sm font-medium text-gray-400 mb-3">People with access</h3>
             <div className="space-y-4 max-h-40 overflow-y-auto custom-scrollbar pr-2">
-              {collaborators.map((user, idx) => (
-                <div key={idx} className="flex items-center justify-between group">
+              {collaborators.length === 0 && (
+                <div className="text-xs text-gray-500">No collaborators</div>
+              )}
+              {collaborators.map((user) => (
+                <div key={user.userId} className="flex items-center justify-between group">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-purple-700 flex items-center justify-center text-white font-medium text-sm">
-                      {user.avatar ? <img src={user.avatar} className="w-full h-full rounded-full" /> : user.email.charAt(0).toUpperCase()}
+                      {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-gray-200 font-medium">
-                        {user.isMe ? `${user.email.split('@')[0]} (you)` : user.email.split('@')[0]}
+                        {user.isMe ? `${user.name || user.email} (you)` : (user.name || user.email)}
                       </span>
                       <span className="text-xs text-gray-500">{user.email}</span>
                     </div>
                   </div>
 
-                  {/* Role Dropdown (Fake) */}
-                  <div className="relative">
-                    {user.isMe ? (
-                      // Nếu là "Me" (Owner) thì chỉ hiện text, không cho sửa
+                  <div className="flex items-center gap-2">
+                    {user.isOwner ? (
                       <span className="text-gray-400 text-sm font-medium px-2 py-1">
-                        {user.role}
+                        OWNER
                       </span>
                     ) : (
-                      // Nếu là người khác thì hiện Dropdown
                       <div className="relative group flex items-center">
                         <select
                           value={user.role}
-                          onChange={(e) => handleRoleChange(idx, e.target.value)} // 'idx' lấy từ map(user, idx)
+                          onChange={(e) => handleRoleChange(user.userId, e.target.value)}
                           className="appearance-none bg-transparent text-sm font-medium text-gray-400 hover:text-gray-200 outline-none cursor-pointer py-1 pl-2 pr-6 hover:bg-white/5 rounded transition-colors"
                         >
-                          <option value="Viewer" className="bg-[#1e1f22] text-gray-300 py-2">Viewer</option>
-                          <option value="Editor" className="bg-[#1e1f22] text-gray-300 py-2">Editor</option>
-                          <option value="Host" className="bg-[#1e1f22] text-gray-300 py-2">Host</option>
+                          <option value="VIEWER" className="bg-[#1e1f22] text-gray-300 py-2">Viewer</option>
+                          <option value="COMMENTER" className="bg-[#1e1f22] text-gray-300 py-2">Commenter</option>
+                          <option value="EDITOR" className="bg-[#1e1f22] text-gray-300 py-2">Editor</option>
                         </select>
-
-                        {/* Icon mũi tên giả (nằm đè lên select nhờ position absolute) */}
                         <ChevronDown
                           size={14}
                           className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-200"
                         />
                       </div>
+                    )}
+
+                    {!user.isOwner && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(user.userId)}
+                        className="text-xs text-gray-500 hover:text-red-400 transition"
+                      >
+                        Remove
+                      </button>
                     )}
                   </div>
                 </div>
@@ -732,8 +866,9 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
                   <div className="relative group cursor-pointer flex items-center gap-1">
                     <select
                       value={generalAccess}
-                      onChange={(e) => setGeneralAccess(e.target.value)}
+                      onChange={(e) => handleGeneralAccessChange(e.target.value)}
                       className="appearance-none bg-transparent text-sm text-gray-200 font-medium outline-none cursor-pointer py-0.5 pr-4"
+                      disabled={loading}
                     >
                       <option value="restricted" className="bg-[#1e1f22]">Restricted</option>
                       <option value="anyone" className="bg-[#1e1f22]">Anyone with the link</option>
@@ -742,19 +877,20 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
                   </div>
                   <span className="text-xs text-gray-500">
                     {generalAccess === 'anyone'
-                      ? 'Anyone on the internet with the link can view'
+                      ? 'Anyone on the internet with the link can edit'
                       : 'Only people with access can open with the link'}
                   </span>
                 </div>
               </div>
 
-              {/* Permission for General Access */}
               {generalAccess === 'anyone' && (
                 <div className="relative">
-                  <select className="appearance-none bg-transparent text-sm text-gray-200 font-medium outline-none cursor-pointer py-1 pr-5 hover:bg-white/5 rounded pl-2">
-                    <option value="viewer" className="bg-[#1e1f22]">Viewer</option>
+                  <select
+                    className="appearance-none bg-transparent text-sm text-gray-200 font-medium outline-none cursor-pointer py-1 pr-5 hover:bg-white/5 rounded pl-2"
+                    value="editor"
+                    disabled
+                  >
                     <option value="editor" className="bg-[#1e1f22]">Editor</option>
-                    <option value="commenter" className="bg-[#1e1f22]">Commenter</option>
                   </select>
                   <ChevronDown size={14} className="text-gray-400 absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -766,8 +902,9 @@ export const ShareModal = ({ isOpen, onClose, documentTitle, onCopyLink }) => {
         {/* 3. Footer */}
         <div className="px-6 py-5 mt-2 flex justify-between items-center border-t border-white/5">
           <button
-            onClick={onCopyLink}
-            className="flex items-center gap-2 px-4 py-2 rounded-3xl border border-gray-600 text-blue-400 text-sm font-medium hover:bg-blue-500/10 hover:border-blue-500/50 transition-colors"
+            onClick={handleCopyLink}
+            disabled={!shareEnabled || loading}
+            className="flex items-center gap-2 px-4 py-2 rounded-3xl border border-gray-600 text-blue-400 text-sm font-medium hover:bg-blue-500/10 hover:border-blue-500/50 transition-colors disabled:opacity-50"
           >
             <LinkIcon size={16} />
             Copy link

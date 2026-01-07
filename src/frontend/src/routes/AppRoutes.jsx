@@ -38,6 +38,7 @@ export default function AppRoutes() {
             <Route path='/home/mytrash' element={<Mytrash />} />
             <Route path='/home/setting' element={<SettingsPage />} />
             <Route path='/home/editor' element={<EditorPage />} />
+            <Route path='/share/:token' element={<EditorPage />} />
         </Routes>
     );
 }
